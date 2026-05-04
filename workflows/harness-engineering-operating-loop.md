@@ -8,10 +8,12 @@ Skills/tools:
 
 - `harness-engineering`
 - `bin/super-skill harness --json`
+- `bin/super-skill hermes --json`
 
 Outputs:
 
 - harness readiness score
+- Hermes-style self-improving readiness score
 - missing capability list
 - ordered upgrade plan
 
@@ -21,6 +23,7 @@ Skills:
 
 - `agent-legible-architecture`
 - `context-engineering`
+- `prompt-cache-layering`
 - `token-budgeting`
 
 Outputs:
@@ -29,6 +32,7 @@ Outputs:
 - local validation commands
 - service boundaries and contracts
 - context pack template
+- stable and ephemeral prompt layer map
 
 ## 2. Make Validation Deterministic
 
@@ -50,6 +54,7 @@ Outputs:
 Skills:
 
 - `ai-review-gates`
+- `checkpoint-rollback-safety`
 - `code-review`
 - `security-review`
 
@@ -59,6 +64,7 @@ Outputs:
 - security review pass
 - dependency/license review pass
 - product-risk review pass
+- checkpoint and rollback contract for risky changes
 
 ## 4. Add Progressive Delivery
 
@@ -93,13 +99,16 @@ Outputs:
 
 Skills:
 
+- `persistent-memory-curation`
 - `continuous-learning`
+- `skill-evolution-loop`
 - `skill-authoring-system`
 - `output-quality-gate`
 
 Outputs:
 
 - new or updated skills
+- curated memory/session-history/project-context decisions
 - runbooks
 - CI/audit/tool improvements
 - final user-expectation fit check

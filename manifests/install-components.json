@@ -5,7 +5,7 @@
       "id": "stage:orchestration",
       "family": "lifecycle",
       "stage": "00-orchestration",
-      "description": "Intent contracts, context engineering, autonomous workflow routing, design-to-dev flow, and persistence loops."
+      "description": "Intent contracts, context engineering, prompt/cache layering, toolset/sandbox routing, durable boards, autonomous workflow routing, design-to-dev flow, and persistence loops."
     },
     {
       "id": "stage:research",
@@ -47,7 +47,7 @@
       "id": "stage:quality",
       "family": "lifecycle",
       "stage": "07-testing-and-quality",
-      "description": "Testing, debugging, AI review gates, output quality gates, security, performance, browser automation, and review skills."
+      "description": "Testing, debugging, checkpoint rollback safety, AI review gates, output quality gates, security, performance, browser automation, and review skills."
     },
     {
       "id": "stage:delivery-growth",
@@ -59,13 +59,13 @@
       "id": "stage:operations-knowledge",
       "family": "lifecycle",
       "stage": "09-operations-and-knowledge",
-      "description": "Observability triage, documentation, curation, learning, and knowledge operations skills."
+      "description": "Observability triage, persistent memory curation, documentation, curation, learning, and knowledge operations skills."
     },
     {
       "id": "stage:codex-patterns",
       "family": "capability",
       "stage": "90-codex-patterns",
-      "description": "Harness engineering, Codex-native packaging, token budgeting, verification, routing, and skill authoring patterns."
+      "description": "Harness engineering, Hermes-style skill evolution, Codex-native packaging, token budgeting, verification, routing, and skill authoring patterns."
     }
   ]
 }

@@ -1,6 +1,6 @@
 # Agentic Development Model
 
-Super Skill 的核心目标不是让 LLM 多输出内容，而是让 AI agent 更稳定地交付用户真正期待的结果。项目能力的关键不只是模型，而是 harness：让 agent 能看懂系统、运行验证、发布实验、观察生产、学习改进。
+Super Skill 的核心目标不是让 LLM 多输出内容，而是让 AI agent 更稳定地交付用户真正期待的结果。项目能力的关键不只是模型，而是 harness + self-improving loop：让 agent 能看懂系统、运行验证、发布实验、观察生产、压缩上下文、沉淀记忆、演进技能并安全回滚。
 
 ## Operating Loop
 
@@ -29,6 +29,7 @@ Agentic development asks:
 - Which evidence proves the result?
 - What harness capability is missing if the agent fails?
 - What should be remembered, and what should be discarded to save context?
+- What should become memory, searchable history, project context, a skill, a test, or an automation?
 
 ## Skill Layers
 
@@ -37,12 +38,13 @@ Agentic development asks:
 | Intent | `intent-contract` | Turn broad user wishes into acceptance criteria and output shape. |
 | Context | `context-engineering` | Build compact context packs for large codebases and long tasks. |
 | Harness | `harness-engineering`, `agent-legible-architecture` | Make the project inspectable, enforceable, testable, and operable by agents. |
+| Hermes Loop | `persistent-memory-curation`, `prompt-cache-layering`, `toolset-sandbox-routing`, `durable-agent-board`, `checkpoint-rollback-safety` | Keep long sessions efficient, preserve durable knowledge, route tools safely, and coordinate work beyond one turn. |
 | Execution | `auto-flow`, `design-dev-flow`, `test-driven-development` | Move from idea to implementation with staged verification. |
 | Quality | `ai-review-gates`, `qa-strategy`, `verification-loop`, `output-quality-gate` | Prove behavior and user-expectation fit before delivery. |
 | Delivery | `agentic-product-iteration`, `experiment-driven-delivery` | Ship behind metrics, flags, kill switches, and decision rules. |
 | Operations | `observability-triage-loop` | Convert production signals into clustered investigation and re-verification loops. |
 | Economy | `token-budgeting` | Keep the right context alive while reducing noise and repeated tokens. |
-| Learning | `continuous-learning`, `skill-authoring-system` | Convert repeated wins and failures into better future skills. |
+| Learning | `continuous-learning`, `skill-authoring-system`, `skill-evolution-loop` | Convert repeated wins and failures into better future memory, docs, tests, skills, and automation. |
 
 ## Design Principles
 
@@ -60,5 +62,8 @@ Agentic development asks:
 3. Use the lifecycle skills from research through delivery.
 4. Use `token-budgeting` whenever source material grows.
 5. Use `harness-engineering` when an agent failure reveals a missing capability.
-6. Use `output-quality-gate` before final response, commit, PR, or handoff.
-7. Store reusable lessons through `skill-authoring-system` or `continuous-learning`.
+6. Use `prompt-cache-layering` and `persistent-memory-curation` when context or memory pressure rises.
+7. Use `durable-agent-board` when work must survive restarts, human unblock, or multi-role handoffs.
+8. Use `checkpoint-rollback-safety` before risky generated edits or broad refactors.
+9. Use `output-quality-gate` before final response, commit, PR, or handoff.
+10. Store reusable lessons through `skill-evolution-loop`, `skill-authoring-system`, or `continuous-learning`.

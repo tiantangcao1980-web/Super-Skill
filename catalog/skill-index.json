@@ -1,5 +1,5 @@
 {
-  "generated_at": 1777898658,
+  "generated_at": 1777899538,
   "installable_skills": [
     {
       "name": "auto-flow",
@@ -26,6 +26,14 @@
       "path": "skills/00-orchestration/design-dev-flow"
     },
     {
+      "name": "durable-agent-board",
+      "description": "Use when coordinating multi-agent, long-running, interruptible, or human-in-the-loop work that should survive context compression, restarts, retries, or ownership handoffs.",
+      "stage": "00-orchestration",
+      "stage_label": "Orchestration",
+      "source": "core",
+      "path": "skills/00-orchestration/durable-agent-board"
+    },
+    {
       "name": "intent-contract",
       "description": "Use when a user request is broad, ambiguous, high-impact, or expectation-sensitive and the agent needs to turn it into a clear delivery contract before research, design, coding, or final output.",
       "stage": "00-orchestration",
@@ -34,12 +42,28 @@
       "path": "skills/00-orchestration/intent-contract"
     },
     {
+      "name": "prompt-cache-layering",
+      "description": "Use when designing LLM context, system prompts, memory, project instructions, or ephemeral task context so long sessions stay token-efficient and cache-friendly.",
+      "stage": "00-orchestration",
+      "stage_label": "Orchestration",
+      "source": "core",
+      "path": "skills/00-orchestration/prompt-cache-layering"
+    },
+    {
       "name": "ralph-loop",
       "description": "Ralph Wiggum 迭代循环引擎:明确退出条件 → 小步执行 → 自动验证 → 决定继续或停止。 适用场景:长任务自动迭代、构建/测试反复跑、PR 反复打磨、批量修复、任何\"做完一遍还要再做一遍\"的工作。 触发词:「Ralph」「循环」「迭代」「跑直到」「自动重试」「持续做 X 直到 Y」「loop」「until」。 与 /loop 命令的区别:/loop 是节奏调度(跨会话);本 skill 是一次会话内的循环工作模式 + 退出判定 + 单步质量门。",
       "stage": "00-orchestration",
       "stage_label": "Orchestration",
       "source": "core",
       "path": "skills/00-orchestration/ralph-loop"
+    },
+    {
+      "name": "toolset-sandbox-routing",
+      "description": "Use when deciding which tools, integrations, sandboxes, models, or execution environments an AI agent should have for a task while preserving safety and token efficiency.",
+      "stage": "00-orchestration",
+      "stage_label": "Orchestration",
+      "source": "core",
+      "path": "skills/00-orchestration/toolset-sandbox-routing"
     },
     {
       "name": "market-research",
@@ -602,6 +626,14 @@
       "path": "skills/07-testing-and-quality/browser-automation"
     },
     {
+      "name": "checkpoint-rollback-safety",
+      "description": "Use before risky AI-driven edits, cleanup, refactors, generated code changes, destructive commands, migrations, or parallel agent work where rollback evidence matters.",
+      "stage": "07-testing-and-quality",
+      "stage_label": "Quality",
+      "source": "core",
+      "path": "skills/07-testing-and-quality/checkpoint-rollback-safety"
+    },
+    {
       "name": "code-review",
       "description": "Run a comprehensive code review",
       "stage": "07-testing-and-quality",
@@ -770,6 +802,14 @@
       "path": "skills/09-operations-and-knowledge/observability-triage-loop"
     },
     {
+      "name": "persistent-memory-curation",
+      "description": "Use when deciding what an AI agent should remember across sessions, what should stay in searchable history, and how to keep long-term memory compact and safe.",
+      "stage": "09-operations-and-knowledge",
+      "stage_label": "Operations",
+      "source": "core",
+      "path": "skills/09-operations-and-knowledge/persistent-memory-curation"
+    },
+    {
       "name": "agent-routing",
       "description": "Use when a task can be handled by direct editing, shell tools, browser tools, MCP connectors, or subagents and the agent needs to choose the lightest reliable execution path.",
       "stage": "90-codex-patterns",
@@ -808,6 +848,14 @@
       "stage_label": "Codex Patterns",
       "source": "core",
       "path": "skills/90-codex-patterns/skill-authoring-system"
+    },
+    {
+      "name": "skill-evolution-loop",
+      "description": "Use when turning completed agent work, repeated failures, user corrections, or useful workflows into improved skills without bloating the skill collection.",
+      "stage": "90-codex-patterns",
+      "stage_label": "Codex Patterns",
+      "source": "core",
+      "path": "skills/90-codex-patterns/skill-evolution-loop"
     },
     {
       "name": "token-budgeting",

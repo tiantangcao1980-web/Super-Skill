@@ -56,6 +56,15 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertIn("deterministic-ci", ids)
         self.assertIn("observability-triage", ids)
 
+    def test_hermes_assessment_reports_self_improving_capabilities(self) -> None:
+        data = run_cli("hermes", "--project", ".")
+        self.assertGreaterEqual(data["score"], 70)
+        self.assertEqual(data["total"], len(data["capabilities"]))
+        ids = {item["id"] for item in data["capabilities"]}
+        self.assertIn("progressive-skill-disclosure", ids)
+        self.assertIn("memory-curation", ids)
+        self.assertIn("durable-agent-board", ids)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -20,12 +20,14 @@ Outputs:
 Skills:
 
 - `context-engineering`
+- `prompt-cache-layering`
 - `token-budgeting`
 - `file-curation`
 
 Outputs:
 
 - compact context pack
+- stable versus ephemeral prompt layers
 - working file/source list
 - decisions and open unknowns
 - token budget
@@ -36,6 +38,8 @@ Skills:
 
 - `harness-engineering`
 - `agent-legible-architecture`
+- `toolset-sandbox-routing`
+- `durable-agent-board`
 - `auto-flow`
 - `research-to-delivery` lifecycle skills
 - `design-dev-flow`
@@ -45,6 +49,7 @@ Outputs:
 
 - product/design/development artifacts
 - agent-readable architecture and validation plan
+- toolset, sandbox, and durable-task routing decisions
 - implementation with evidence
 - changed files and decision records
 
@@ -56,12 +61,14 @@ Skills:
 - `qa-strategy`
 - `verification-loop`
 - `security-review`
+- `checkpoint-rollback-safety`
 - `browser-automation`
 - `output-quality-gate`
 
 Outputs:
 
 - test and audit evidence
+- checkpoint or rollback evidence for risky work
 - risk list
 - user-expectation fit check
 
@@ -87,11 +94,13 @@ Skills:
 - `git`
 - `github`
 - `documentation`
+- `persistent-memory-curation`
 - `continuous-learning`
+- `skill-evolution-loop`
 - `skill-authoring-system`
 
 Outputs:
 
 - commit, PR, release, or deployed artifact
 - concise final report
-- reusable lessons converted into docs or skills
+- reusable lessons routed into memory, searchable history, docs, tests, automation, or skills

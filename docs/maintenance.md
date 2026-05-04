@@ -12,6 +12,7 @@
 bin/super-skill validate
 bin/super-skill audit
 bin/super-skill harness
+bin/super-skill hermes
 bin/super-skill catalog
 ```
 
@@ -35,6 +36,7 @@ Then update NOTICE and run validation.
 - `bin/super-skill validate` exits 0.
 - `bin/super-skill audit` exits 0 with no blocking failures.
 - `bin/super-skill harness --json` reports the AI-first harness capability matrix.
+- `bin/super-skill hermes --json` reports the Hermes-style self-improving agent capability matrix.
 - `bin/super-skill plan --profile core --json` emits a deterministic read-only plan.
 - `bin/super-skill install --profile all --dry-run` exits 0.
 - `python3 -m unittest discover -s tests` passes.

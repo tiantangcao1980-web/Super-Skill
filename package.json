@@ -10,6 +10,7 @@
     "validate": "bin/super-skill validate",
     "audit": "bin/super-skill audit",
     "harness": "bin/super-skill harness",
+    "hermes": "bin/super-skill hermes",
     "plan": "bin/super-skill plan --profile core",
     "doctor": "bin/super-skill doctor",
     "catalog": "bin/super-skill catalog",

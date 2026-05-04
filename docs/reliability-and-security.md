@@ -48,6 +48,16 @@ bin/super-skill harness --json
 
 This checks whether a project exposes the capabilities agents need for production work: intent/context contracts, agent-legible architecture, deterministic CI, AI review gates, progressive delivery, observability triage, output gates, and learning loops.
 
+## Hermes Engineering Readiness
+
+Run:
+
+```bash
+bin/super-skill hermes --json
+```
+
+This checks whether a project exposes the self-improving agent surfaces inspired by Hermes-style engineering: progressive skill disclosure, bounded memory curation, prompt/cache layering, toolset/sandbox routing, durable agent boards, checkpoint rollback, scheduled operations, provider routing, session recall, and closed learning loops.
+
 ## Install Safety
 
 Preview before mutation:

@@ -48,3 +48,22 @@
 
 - 新增 `skills/90-codex-patterns/*` 四个原创模式技能。
 - `scripts/super_skill.py` 实现嵌套发现、扁平安装、验证和目录生成。
+
+## NousResearch/hermes-agent
+
+定位：自进化 agent 运行系统与长期上下文工程参考。
+
+保留价值：
+
+- 渐进式技能加载：技能索引轻量，技能正文和 references/scripts/assets 按需加载。
+- 记忆分层：长期记忆、用户画像、会话搜索、项目上下文和技能各自承担不同职责。
+- 上下文缓存与压缩：稳定系统层和临时任务层分离，避免长会话持续膨胀。
+- 工具集与沙箱：按任务开放最小工具能力，并使用审批、容器/远程环境和隔离边界控制风险。
+- 持久任务队列：长期、多角色、人机协同任务需要 board/queue，而不只是一次性 subagent 调用。
+- 安全回滚：高速 agent 编辑需要 checkpoint、worktree、dry-run 和恢复路径配套。
+
+处理方式：
+
+- 新增 `persistent-memory-curation`, `skill-evolution-loop`, `prompt-cache-layering`, `toolset-sandbox-routing`, `durable-agent-board`, `checkpoint-rollback-safety`。
+- 新增 `docs/hermes-engineering-analysis.md` 与 `workflows/hermes-engineering-learning-loop.md`。
+- 新增 `bin/super-skill hermes` readiness 检查，作为 Hermes-style self-improving agent 能力矩阵。

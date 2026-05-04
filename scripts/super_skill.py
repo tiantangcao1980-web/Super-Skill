@@ -182,6 +182,79 @@ HARNESS_CAPABILITIES = [
     },
 ]
 
+HERMES_CAPABILITIES = [
+    {
+        "id": "progressive-skill-disclosure",
+        "label": "Progressive skill disclosure",
+        "patterns": [r"progressive disclosure", r"skill-evolution-loop", r"skill-authoring-system", r"references/", r"scripts/"],
+        "paths": ["README.md", "docs", "workflows", "skills"],
+        "recommendation": "Keep skill discovery compact, load detailed references on demand, and evolve skills from evidence.",
+    },
+    {
+        "id": "memory-curation",
+        "label": "Bounded persistent memory curation",
+        "patterns": [r"persistent-memory-curation", r"memory tiers", r"searchable history", r"durable facts", r"session history"],
+        "paths": ["docs", "workflows", "skills", "AGENTS.md"],
+        "recommendation": "Separate durable memory, searchable history, project context, and procedural skills.",
+    },
+    {
+        "id": "prompt-cache-layering",
+        "label": "Prompt cache and context layering",
+        "patterns": [r"prompt-cache-layering", r"stable prompt", r"ephemeral", r"frozen", r"token-budgeting"],
+        "paths": ["docs", "workflows", "skills", "AGENTS.md"],
+        "recommendation": "Separate stable prompt layers from volatile task evidence and preserve exact blockers through compression.",
+    },
+    {
+        "id": "toolset-sandbox-routing",
+        "label": "Toolset and sandbox routing",
+        "patterns": [r"toolset-sandbox-routing", r"tool access", r"sandbox", r"worktree", r"approval", r"rollback"],
+        "paths": ["docs", "workflows", "skills", "AGENTS.md"],
+        "recommendation": "Map task capability needs to minimal toolsets, sandboxes, approvals, and rollback gates.",
+    },
+    {
+        "id": "durable-agent-board",
+        "label": "Durable agent work board",
+        "patterns": [r"durable-agent-board", r"durable board", r"work queue", r"kanban", r"human unblock", r"idempotency"],
+        "paths": ["docs", "workflows", "skills"],
+        "recommendation": "Use durable task state for multi-role, retryable, human-in-the-loop, or restart-safe work.",
+    },
+    {
+        "id": "checkpoint-rollback",
+        "label": "Checkpoint and rollback safety",
+        "patterns": [r"checkpoint-rollback-safety", r"checkpoint", r"rollback", r"shadow", r"worktree"],
+        "paths": ["docs", "workflows", "skills", "AGENTS.md"],
+        "recommendation": "Add checkpoints, worktrees, dry runs, or restore paths before risky agent-driven edits.",
+    },
+    {
+        "id": "scheduled-agent-ops",
+        "label": "Scheduled agent operations",
+        "patterns": [r"cron", r"scheduled", r"observability-triage-loop", r"daily", r"automation"],
+        "paths": ["docs", "workflows", "skills", ".github/workflows"],
+        "recommendation": "Turn recurring checks into scheduled agent jobs with bounded context and delivery targets.",
+    },
+    {
+        "id": "provider-aux-routing",
+        "label": "Provider and auxiliary model routing",
+        "patterns": [r"agent-routing", r"provider", r"auxiliary", r"model routing", r"fallback"],
+        "paths": ["docs", "workflows", "skills", "AGENTS.md"],
+        "recommendation": "Route main, auxiliary, review, and low-risk tasks to appropriate models with fallback policy.",
+    },
+    {
+        "id": "session-search-history",
+        "label": "Session search and history recall",
+        "patterns": [r"session search", r"session history", r"searchable history", r"past conversations?", r"recall"],
+        "paths": ["docs", "workflows", "skills"],
+        "recommendation": "Keep detailed episodic recall outside always-on memory and retrieve it on demand.",
+    },
+    {
+        "id": "learning-loop",
+        "label": "Closed learning loop",
+        "patterns": [r"skill-evolution-loop", r"continuous-learning", r"learning loop", r"lessons learned", r"postmortem"],
+        "paths": ["README.md", "docs", "workflows", "skills"],
+        "recommendation": "Convert repeated successes and failures into memory, docs, tests, skills, or automation.",
+    },
+]
+
 
 @dataclass(frozen=True)
 class Skill:
@@ -772,11 +845,11 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     return EXIT_OK if ok else EXIT_DEPENDENCY
 
 
-def assess_harness(project: Path) -> dict:
+def assess_capability_set(project: Path, capabilities_spec: list[dict]) -> dict:
     project = project.expanduser().resolve()
     capabilities = []
     present = 0
-    for capability in HARNESS_CAPABILITIES:
+    for capability in capabilities_spec:
         haystack, files = project_text_for_paths(project, capability["paths"])
         matches = []
         for pattern in capability["patterns"]:
@@ -796,14 +869,18 @@ def assess_harness(project: Path) -> dict:
             }
         )
 
-    score = round((present / len(HARNESS_CAPABILITIES)) * 100)
+    score = round((present / len(capabilities_spec)) * 100)
     return {
         "project": str(project),
         "score": score,
         "present": present,
-        "total": len(HARNESS_CAPABILITIES),
+        "total": len(capabilities_spec),
         "capabilities": capabilities,
     }
+
+
+def assess_harness(project: Path) -> dict:
+    return assess_capability_set(project, HARNESS_CAPABILITIES)
 
 
 def cmd_harness(args: argparse.Namespace) -> int:
@@ -829,6 +906,33 @@ def cmd_harness(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def assess_hermes(project: Path) -> dict:
+    return assess_capability_set(project, HERMES_CAPABILITIES)
+
+
+def cmd_hermes(args: argparse.Namespace) -> int:
+    project = Path(args.project)
+    if not project.expanduser().exists():
+        if args.json:
+            emit_json(False, {"message": f"project path not found: {project}"}, code="USAGE")
+        else:
+            print(f"error: project path not found: {project}", file=sys.stderr)
+        return EXIT_USAGE
+
+    payload = assess_hermes(project)
+    if args.json:
+        emit_json(True, payload)
+    else:
+        print(f"Hermes engineering readiness: {payload['score']}% ({payload['present']}/{payload['total']})")
+        print(f"Project: {payload['project']}")
+        for item in payload["capabilities"]:
+            mark = "OK" if item["status"] == "present" else "MISS"
+            print(f"[{mark}] {item['label']}")
+            if item["status"] != "present":
+                print(f"      {item['recommendation']}")
+    return EXIT_OK
+
+
 def cmd_describe(args: argparse.Namespace) -> int:
     payload = {
         "name": "super-skill",
@@ -840,6 +944,7 @@ def cmd_describe(args: argparse.Namespace) -> int:
             {"name": "install", "purpose": "Install a profile into a flat agent skill directory"},
             {"name": "audit", "purpose": "Check duplicates, manifests, compatibility links, secrets, and risky patterns"},
             {"name": "harness", "purpose": "Assess AI-first harness readiness for this or another project"},
+            {"name": "hermes", "purpose": "Assess Hermes-inspired self-improving agent system readiness"},
             {"name": "vendor", "purpose": "Summarize vendored Cowork domain ecosystem skills"},
             {"name": "catalog", "purpose": "Generate catalog/skill-index.json and catalog/skill-index.md"},
             {"name": "doctor", "purpose": "Check local tools used by Super Skill"},
@@ -980,6 +1085,11 @@ def build_parser() -> argparse.ArgumentParser:
     harness_p.add_argument("--project", default=".")
     harness_p.add_argument("--json", action="store_true")
     harness_p.set_defaults(func=cmd_harness)
+
+    hermes_p = sub.add_parser("hermes", help="assess Hermes-inspired self-improving agent system readiness")
+    hermes_p.add_argument("--project", default=".")
+    hermes_p.add_argument("--json", action="store_true")
+    hermes_p.set_defaults(func=cmd_hermes)
 
     vendor_p = sub.add_parser("vendor", help="summarize vendored domain ecosystem")
     vendor_p.add_argument("--json", action="store_true")
