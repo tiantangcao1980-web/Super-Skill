@@ -71,6 +71,9 @@ bin/super-skill install --profile dev --target ~/.codex/skills
 # 安装到 Claude Code
 bin/super-skill install --profile core --target ~/.claude/skills
 
+# 安装到 Hermes Agent，自动排除 Hermes 原生能力镜像，避免重复
+bin/super-skill install --profile hermes
+
 # 生成索引
 bin/super-skill catalog
 ```
@@ -80,6 +83,7 @@ Profiles:
 - `core`: 从调研到交付的主流程，不强调具体开发栈扩展
 - `dev`: 接口、前后端、数据库、测试、交付、运维
 - `design`: DesignDNA、设计系统、UI 库与质量约束
+- `hermes`: 面向 Hermes Agent 的完整生命周期集合，默认目标 `~/.hermes/skills`，排除 Hermes 原生能力镜像
 - `all`: 所有可安装技能
 
 ## 目录结构
@@ -119,6 +123,7 @@ DesignDNA 被保留为主技能和资源库：主技能在 `skills/04-design-sys
 bin/super-skill doctor
 bin/super-skill validate
 bin/super-skill plan --profile core --json
+bin/super-skill plan --profile hermes --json
 bin/super-skill audit --json
 bin/super-skill harness --json
 bin/super-skill hermes --json
@@ -127,7 +132,7 @@ python3 -m unittest discover -s tests
 npm --prefix packages/designdna-cli test
 ```
 
-CI 会运行 `doctor`、`validate`、`plan`、`audit`、`harness`、`hermes`、Python CLI 测试，以及 DesignDNA CLI 测试，确保结构、兼容、安全、harness readiness、self-improving agent readiness 和基础工具链可用。
+CI 会运行 `doctor`、`validate`、`plan`、Hermes profile plan、`audit`、`harness`、`hermes`、Python CLI 测试，以及 DesignDNA CLI 测试，确保结构、兼容、安全、harness readiness、self-improving agent readiness 和基础工具链可用。
 
 ## 文档
 

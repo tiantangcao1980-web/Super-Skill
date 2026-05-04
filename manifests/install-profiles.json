@@ -58,6 +58,43 @@
         "stage:quality"
       ]
     },
+    "hermes": {
+      "description": "Hermes Agent target profile. Installs the broad Super Skill lifecycle while excluding Hermes-native mirrors that would duplicate built-in memory, skill evolution, prompt layering, toolset routing, Kanban, and checkpoint features.",
+      "stages": [
+        "00-orchestration",
+        "01-research",
+        "02-analysis",
+        "03-product",
+        "04-design-system",
+        "05-interface-and-cli",
+        "06-development",
+        "07-testing-and-quality",
+        "08-delivery-and-growth",
+        "09-operations-and-knowledge",
+        "90-codex-patterns"
+      ],
+      "components": [
+        "stage:orchestration",
+        "stage:research",
+        "stage:analysis",
+        "stage:product",
+        "stage:design-system",
+        "stage:interface-cli",
+        "stage:development",
+        "stage:quality",
+        "stage:delivery-growth",
+        "stage:operations-knowledge",
+        "stage:codex-patterns"
+      ],
+      "excludes": [
+        "checkpoint-rollback-safety",
+        "durable-agent-board",
+        "persistent-memory-curation",
+        "prompt-cache-layering",
+        "skill-evolution-loop",
+        "toolset-sandbox-routing"
+      ]
+    },
     "all": {
       "description": "Complete Super Skill installable namespace.",
       "stages": [

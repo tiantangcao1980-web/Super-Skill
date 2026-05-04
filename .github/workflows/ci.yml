@@ -18,6 +18,7 @@ jobs:
       - run: bin/super-skill doctor --json
       - run: bin/super-skill validate --json
       - run: bin/super-skill plan --profile core --json
+      - run: bin/super-skill plan --profile hermes --json
       - run: bin/super-skill audit --json
       - run: bin/super-skill harness --json
       - run: bin/super-skill hermes --json

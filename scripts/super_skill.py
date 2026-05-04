@@ -74,7 +74,22 @@ PROFILE_STAGE_PREFIXES = {
         "90-codex-patterns",
     },
     "design": {"04-design-system", "07-testing-and-quality"},
+    "hermes": set(STAGES),
     "all": set(STAGES),
+}
+
+PROFILE_SKILL_EXCLUDES = {
+    "hermes": {
+        # Hermes Agent already ships these as runtime primitives or tightly
+        # integrated workflows. Keep Super Skill's adaptations for other
+        # runtimes, but do not install them into Hermes by default.
+        "checkpoint-rollback-safety",
+        "durable-agent-board",
+        "persistent-memory-curation",
+        "prompt-cache-layering",
+        "skill-evolution-loop",
+        "toolset-sandbox-routing",
+    },
 }
 
 COMPATIBILITY_LINKS = {
@@ -336,14 +351,18 @@ def discover_skills(profile: str = "all") -> list[Skill]:
     allowed = PROFILE_STAGE_PREFIXES.get(profile)
     if allowed is None:
         raise ValueError(f"unknown profile: {profile}")
+    excluded = PROFILE_SKILL_EXCLUDES.get(profile, set())
     items = []
     for skill_md in iter_skill_files():
         try:
             stage = skill_md.parent.relative_to(SKILLS_ROOT).parts[0]
         except (IndexError, ValueError):
             continue
-        if stage in allowed:
-            items.append(skill_from_path(skill_md))
+        if stage not in allowed:
+            continue
+        skill = skill_from_path(skill_md)
+        if skill.name not in excluded:
+            items.append(skill)
     return sorted(items, key=lambda s: (s.stage, s.name, s.relative_path))
 
 
@@ -381,6 +400,17 @@ def tracked_repo_files() -> list[Path]:
 
 def read_json_file(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def default_target_for_profile(profile: str) -> str:
+    if profile == "hermes":
+        return os.environ.get("HERMES_SKILLS_HOME", "~/.hermes/skills")
+    return os.environ.get("CODEX_SKILLS_HOME", "~/.codex/skills")
+
+
+def profile_excluded_skills(profile: str) -> list[str]:
+    all_names = {skill.name for skill in discover_skills("all")}
+    return sorted(name for name in PROFILE_SKILL_EXCLUDES.get(profile, set()) if name in all_names)
 
 
 def iter_project_files(project: Path) -> Iterable[Path]:
@@ -559,31 +589,37 @@ def cmd_validate(args: argparse.Namespace) -> int:
     return EXIT_RUNTIME if failures else EXIT_OK
 
 
-def build_install_plan(profile: str, target: str, mode: str) -> dict:
+def build_install_plan(profile: str, target: str | None, mode: str) -> dict:
     skills = discover_skills(profile)
     dups = duplicate_names(skills)
     if dups:
         raise ValueError(f"duplicate installable skill names: {', '.join(sorted(dups))}")
 
-    target_path = Path(target).expanduser()
+    resolved_target = target or default_target_for_profile(profile)
+    target_path = Path(resolved_target).expanduser()
     action = "symlink" if mode == "symlink" else "copy"
-    operations = [
-        {
-            "name": skill.name,
-            "stage": skill.stage,
-            "stage_label": STAGES.get(skill.stage, skill.stage),
-            "source": skill.relative_path,
-            "target": str(target_path / skill.name),
-            "action": action,
-        }
-        for skill in skills
-    ]
+    operations = []
+    for skill in skills:
+        dest = target_path / skill.name
+        operations.append(
+            {
+                "name": skill.name,
+                "stage": skill.stage,
+                "stage_label": STAGES.get(skill.stage, skill.stage),
+                "source": skill.relative_path,
+                "target": str(dest),
+                "action": action,
+                "target_exists": dest.exists() or dest.is_symlink(),
+            }
+        )
     return {
         "profile": profile,
         "mode": mode,
         "target": str(target_path),
         "skills_total": len(skills),
         "stages": sorted({s.stage for s in skills}),
+        "excluded_skills": profile_excluded_skills(profile),
+        "target_conflicts": [op for op in operations if op["target_exists"]],
         "operations": operations,
     }
 
@@ -635,11 +671,20 @@ def cmd_install(args: argparse.Namespace) -> int:
         )
         return EXIT_RUNTIME
 
-    target = Path(args.target).expanduser()
+    target = Path(args.target or default_target_for_profile(args.profile)).expanduser()
     results = [install_one(skill, target, args.mode, args.force, args.dry_run) for skill in skills]
 
     if args.json:
-        emit_json(True, {"profile": args.profile, "mode": args.mode, "target": str(target), "results": results})
+        emit_json(
+            True,
+            {
+                "profile": args.profile,
+                "mode": args.mode,
+                "target": str(target),
+                "excluded_skills": profile_excluded_skills(args.profile),
+                "results": results,
+            },
+        )
     else:
         print(f"Install profile '{args.profile}' to {target} ({args.mode})")
         for result in results:
@@ -668,6 +713,7 @@ def profile_manifest_report() -> tuple[list[dict], list[dict]]:
         return errors, warnings
 
     component_ids = {item.get("id") for item in components.get("components", [])}
+    installable_names = {skill.name for skill in discover_skills("all")}
     for profile_name, expected_stages in sorted(PROFILE_STAGE_PREFIXES.items()):
         profile = profiles.get("profiles", {}).get(profile_name)
         if not profile:
@@ -691,6 +737,26 @@ def profile_manifest_report() -> tuple[list[dict], list[dict]]:
                         "message": f"profile references unknown component: {profile_name} -> {component_id}",
                     }
                 )
+        manifest_excludes = set(profile.get("excludes", []))
+        expected_excludes = PROFILE_SKILL_EXCLUDES.get(profile_name, set())
+        if manifest_excludes != expected_excludes:
+            errors.append(
+                {
+                    "check": "manifest",
+                    "message": f"profile exclude drift: {profile_name}",
+                    "expected": sorted(expected_excludes),
+                    "actual": sorted(manifest_excludes),
+                }
+            )
+        unknown_excludes = manifest_excludes - installable_names
+        if unknown_excludes:
+            errors.append(
+                {
+                    "check": "manifest",
+                    "message": f"profile excludes unknown skill: {profile_name}",
+                    "items": sorted(unknown_excludes),
+                }
+            )
 
     manifest_profiles = set(profiles.get("profiles", {}))
     extra = manifest_profiles - set(PROFILE_STAGE_PREFIXES)
@@ -981,6 +1047,7 @@ def cmd_catalog(args: argparse.Namespace) -> int:
         "installable_skills": [skill_dict(s) for s in skills],
         "vendor_skills": [skill_dict(s) for s in vendor_skills],
         "profiles": {k: sorted(v) for k, v in PROFILE_STAGE_PREFIXES.items()},
+        "profile_excludes": {k: sorted(v) for k, v in PROFILE_SKILL_EXCLUDES.items()},
     }
 
     CATALOG_ROOT.mkdir(parents=True, exist_ok=True)
@@ -1021,6 +1088,19 @@ def render_catalog_md(skills: list[Skill], vendor_skills: list[Skill]) -> str:
 
     dups = duplicate_names(vendor_skills)
     lines.extend([
+        "## Install Profiles",
+        "",
+        "Profiles can include stage sets and, for runtime-specific targets, explicit skill exclusions.",
+        "",
+    ])
+    for profile in sorted(PROFILE_STAGE_PREFIXES):
+        excluded = profile_excluded_skills(profile)
+        if excluded:
+            lines.append(f"- `{profile}` excludes: {', '.join(f'`{name}`' for name in excluded)}")
+        else:
+            lines.append(f"- `{profile}` excludes: none")
+    lines.extend([
+        "",
         "## Vendor Ecosystem",
         "",
         "Cowork vendor skills are preserved as domain plugin source material because several domains intentionally reuse generic names.",
@@ -1063,7 +1143,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     ins_p = sub.add_parser("install", help="install skills into a flat agent skill directory")
     ins_p.add_argument("--profile", choices=sorted(PROFILE_STAGE_PREFIXES), default="all")
-    ins_p.add_argument("--target", default=os.environ.get("CODEX_SKILLS_HOME", "~/.codex/skills"))
+    ins_p.add_argument("--target", default=None)
     ins_p.add_argument("--mode", choices=["symlink", "copy"], default="symlink")
     ins_p.add_argument("--force", action="store_true")
     ins_p.add_argument("--dry-run", action="store_true")
@@ -1072,7 +1152,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     plan_p = sub.add_parser("plan", help="preview install operations without mutating files")
     plan_p.add_argument("--profile", choices=sorted(PROFILE_STAGE_PREFIXES), default="all")
-    plan_p.add_argument("--target", default=os.environ.get("CODEX_SKILLS_HOME", "~/.codex/skills"))
+    plan_p.add_argument("--target", default=None)
     plan_p.add_argument("--mode", choices=["symlink", "copy"], default="symlink")
     plan_p.add_argument("--json", action="store_true")
     plan_p.set_defaults(func=cmd_plan)

@@ -1,5 +1,5 @@
 {
-  "generated_at": 1777899538,
+  "generated_at": 1777900159,
   "installable_skills": [
     {
       "name": "auto-flow",
@@ -1437,6 +1437,19 @@
       "04-design-system",
       "07-testing-and-quality"
     ],
+    "hermes": [
+      "00-orchestration",
+      "01-research",
+      "02-analysis",
+      "03-product",
+      "04-design-system",
+      "05-interface-and-cli",
+      "06-development",
+      "07-testing-and-quality",
+      "08-delivery-and-growth",
+      "09-operations-and-knowledge",
+      "90-codex-patterns"
+    ],
     "all": [
       "00-orchestration",
       "01-research",
@@ -1449,6 +1462,16 @@
       "08-delivery-and-growth",
       "09-operations-and-knowledge",
       "90-codex-patterns"
+    ]
+  },
+  "profile_excludes": {
+    "hermes": [
+      "checkpoint-rollback-safety",
+      "durable-agent-board",
+      "persistent-memory-curation",
+      "prompt-cache-layering",
+      "skill-evolution-loop",
+      "toolset-sandbox-routing"
     ]
   }
 }

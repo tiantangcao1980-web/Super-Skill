@@ -51,6 +51,7 @@ Hermes 的关键价值不是某一个模型、某一个 UI 或某个工具清单
 
 - Added six installable skills for memory curation, skill evolution, prompt layering, tool routing, durable boards, and rollback safety.
 - Added `bin/super-skill hermes --json` to assess Hermes-inspired agent-system readiness.
+- Added a `hermes` install profile that excludes those Hermes-native mirror skills when installing into Hermes Agent, avoiding duplicate procedural guidance.
 - Added a Hermes engineering workflow for turning task experience into memory, skills, tools, queues, and verification.
 - Kept the adaptation vendor-neutral: no dependency on Hermes runtime, Honcho, specific providers, or any one messaging platform.
 

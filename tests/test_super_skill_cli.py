@@ -42,6 +42,19 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertIn("00-orchestration", data["stages"])
         self.assertNotIn("06-development", data["stages"])
 
+    def test_hermes_profile_excludes_native_mirror_skills(self) -> None:
+        data = run_cli("plan", "--profile", "hermes")
+        names = {item["name"] for item in data["operations"]}
+        excluded = set(data["excluded_skills"])
+        self.assertGreaterEqual(len(excluded), 6)
+        self.assertEqual(data["target"], str(Path.home() / ".hermes" / "skills"))
+        self.assertIn("target_conflicts", data)
+        self.assertNotIn("durable-agent-board", names)
+        self.assertNotIn("persistent-memory-curation", names)
+        self.assertNotIn("skill-evolution-loop", names)
+        self.assertIn("harness-engineering", names)
+        self.assertTrue(excluded.isdisjoint(names))
+
     def test_audit_has_no_blocking_failures(self) -> None:
         data = run_cli("audit")
         self.assertEqual(data["failures"], [])

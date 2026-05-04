@@ -12,6 +12,7 @@
     "harness": "bin/super-skill harness",
     "hermes": "bin/super-skill hermes",
     "plan": "bin/super-skill plan --profile core",
+    "plan:hermes": "bin/super-skill plan --profile hermes",
     "doctor": "bin/super-skill doctor",
     "catalog": "bin/super-skill catalog",
     "list": "bin/super-skill list",
