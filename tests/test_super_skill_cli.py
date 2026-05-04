@@ -48,6 +48,14 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertEqual(data["secret_findings"], [])
         self.assertGreaterEqual(len(data["compatibility_links"]), 6)
 
+    def test_harness_assessment_reports_capabilities(self) -> None:
+        data = run_cli("harness", "--project", ".")
+        self.assertGreaterEqual(data["score"], 70)
+        self.assertEqual(data["total"], len(data["capabilities"]))
+        ids = {item["id"] for item in data["capabilities"]}
+        self.assertIn("deterministic-ci", ids)
+        self.assertIn("observability-triage", ids)
+
 
 if __name__ == "__main__":
     unittest.main()

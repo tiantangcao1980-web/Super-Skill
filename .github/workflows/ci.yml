@@ -19,5 +19,6 @@ jobs:
       - run: bin/super-skill validate --json
       - run: bin/super-skill plan --profile core --json
       - run: bin/super-skill audit --json
+      - run: bin/super-skill harness --json
       - run: bin/super-skill install --profile core --dry-run --json
       - run: python3 -m unittest discover -s tests

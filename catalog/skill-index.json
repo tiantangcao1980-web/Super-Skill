@@ -1,5 +1,5 @@
 {
-  "generated_at": 1777896898,
+  "generated_at": 1777898658,
   "installable_skills": [
     {
       "name": "auto-flow",
@@ -72,6 +72,14 @@
       "stage_label": "Analysis",
       "source": "core",
       "path": "skills/02-analysis/requirement-analysis"
+    },
+    {
+      "name": "agentic-product-iteration",
+      "description": "Use when product planning, PM work, or feature discovery needs to move at AI-agent implementation speed through rapid prototype, ship, measure, and iterate loops.",
+      "stage": "03-product",
+      "stage_label": "Product",
+      "source": "core",
+      "path": "skills/03-product/agentic-product-iteration"
     },
     {
       "name": "product-spec",
@@ -522,6 +530,14 @@
       "path": "skills/05-interface-and-cli/create-cli"
     },
     {
+      "name": "agent-legible-architecture",
+      "description": "Use when restructuring, documenting, or assessing architecture so AI agents can understand cross-system impact, run local checks, and make safe changes.",
+      "stage": "06-development",
+      "stage_label": "Development",
+      "source": "core",
+      "path": "skills/06-development/agent-legible-architecture"
+    },
+    {
       "name": "ai-agent-frameworks",
       "description": "设计、实现、重构或排查 AI Agent 框架应用。Use when the task involves OpenClaw, LangGraph, AutoGen, AgentScope, CrewAI, Spring AI Alibaba, or similar tool-calling / multi-agent workflows.",
       "stage": "06-development",
@@ -568,6 +584,14 @@
       "stage_label": "Development",
       "source": "core",
       "path": "skills/06-development/frontend-patterns"
+    },
+    {
+      "name": "ai-review-gates",
+      "description": "Use when designing or running AI-assisted pull request review gates for code quality, security, dependency, license, or regression risk before merge.",
+      "stage": "07-testing-and-quality",
+      "stage_label": "Quality",
+      "source": "core",
+      "path": "skills/07-testing-and-quality/ai-review-gates"
     },
     {
       "name": "browser-automation",
@@ -674,6 +698,14 @@
       "path": "skills/08-delivery-and-growth/docker"
     },
     {
+      "name": "experiment-driven-delivery",
+      "description": "Use when shipping features behind flags, running A/B tests, gradual rollouts, kill switches, metric guardrails, or fast product iteration loops.",
+      "stage": "08-delivery-and-growth",
+      "stage_label": "Delivery",
+      "source": "core",
+      "path": "skills/08-delivery-and-growth/experiment-driven-delivery"
+    },
+    {
       "name": "git",
       "description": "Git commits, branches, rebases, merges, conflict resolution, history recovery, team workflows, and the commands needed for safe day-to-day version control. Use when (1) the task touches Git, a repository, commits, branches, merges, rebases, or pull requests; (2) history safety, collaboration, or recovery matter; (3) the agent should automatically apply Git discipline instead of improvising.",
       "stage": "08-delivery-and-growth",
@@ -730,6 +762,14 @@
       "path": "skills/09-operations-and-knowledge/file-curation"
     },
     {
+      "name": "observability-triage-loop",
+      "description": "Use when designing production health reports, error clustering, incident triage, self-healing workflows, Sentry/CloudWatch style analysis, or auto-created investigation tickets.",
+      "stage": "09-operations-and-knowledge",
+      "stage_label": "Operations",
+      "source": "core",
+      "path": "skills/09-operations-and-knowledge/observability-triage-loop"
+    },
+    {
       "name": "agent-routing",
       "description": "Use when a task can be handled by direct editing, shell tools, browser tools, MCP connectors, or subagents and the agent needs to choose the lightest reliable execution path.",
       "stage": "90-codex-patterns",
@@ -744,6 +784,14 @@
       "stage_label": "Codex Patterns",
       "source": "core",
       "path": "skills/90-codex-patterns/cross-tool-packaging"
+    },
+    {
+      "name": "harness-engineering",
+      "description": "Use when redesigning a project, team workflow, or engineering system so AI agents can plan, implement, test, deploy, observe, and repair production software reliably.",
+      "stage": "90-codex-patterns",
+      "stage_label": "Codex Patterns",
+      "source": "core",
+      "path": "skills/90-codex-patterns/harness-engineering"
     },
     {
       "name": "selective-install-planning",

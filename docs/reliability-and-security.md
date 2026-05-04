@@ -38,6 +38,16 @@ This checks:
 
 The audit fails on broken contracts and hardcoded secret-like values. Risky command patterns are reported for review because they can be legitimate when documented as warnings, examples, or cleanup scripts.
 
+## Harness Readiness
+
+Run:
+
+```bash
+bin/super-skill harness --json
+```
+
+This checks whether a project exposes the capabilities agents need for production work: intent/context contracts, agent-legible architecture, deterministic CI, AI review gates, progressive delivery, observability triage, output gates, and learning loops.
+
 ## Install Safety
 
 Preview before mutation:

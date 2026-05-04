@@ -121,6 +121,67 @@ RISKY_PATTERNS = {
     "chmod-777": re.compile(r"\bchmod\s+777\b"),
 }
 
+HARNESS_IGNORES = {".git", ".omx", "node_modules", "dist", "coverage", "__pycache__"}
+
+HARNESS_CAPABILITIES = [
+    {
+        "id": "intent-context",
+        "label": "Intent and context contracts",
+        "patterns": [r"intent-contract", r"context-engineering", r"acceptance checks?", r"context pack"],
+        "paths": ["AGENTS.md", "docs", "workflows", "skills"],
+        "recommendation": "Add intent-contract and context-engineering guidance before agent execution.",
+    },
+    {
+        "id": "agent-legibility",
+        "label": "Agent-legible architecture",
+        "patterns": [r"monorepo", r"workspace", r"architecture", r"local integration", r"environment parity"],
+        "paths": ["AGENTS.md", "docs", "package.json", "pnpm-workspace.yaml", "turbo.json", "nx.json"],
+        "recommendation": "Document service boundaries, local run commands, and integration checks agents can execute.",
+    },
+    {
+        "id": "deterministic-ci",
+        "label": "Deterministic CI validation",
+        "patterns": [r"typecheck", r"lint", r"unit", r"integration", r"e2e", r"docker", r"audit"],
+        "paths": [".github/workflows", "package.json", "Makefile"],
+        "recommendation": "Make typecheck, lint, tests, builds, e2e, and parity checks repeatable in CI.",
+    },
+    {
+        "id": "ai-review-gates",
+        "label": "AI review gates",
+        "patterns": [r"ai-review-gates", r"claude", r"coderabbit", r"security review", r"dependency scan", r"license"],
+        "paths": [".github", "docs", "skills", "AGENTS.md"],
+        "recommendation": "Split PR review into code quality, security, dependency, and product-risk passes.",
+    },
+    {
+        "id": "progressive-delivery",
+        "label": "Progressive delivery and experiments",
+        "patterns": [r"feature flag", r"statsig", r"launchdarkly", r"rollout", r"kill switch", r"A/B", r"rollback"],
+        "paths": ["docs", "workflows", "skills", ".github/workflows"],
+        "recommendation": "Ship risky changes behind flags with rollout metrics, guardrails, and a kill decision rule.",
+    },
+    {
+        "id": "observability-triage",
+        "label": "Observability and triage loop",
+        "patterns": [r"sentry", r"cloudwatch", r"datadog", r"opentelemetry", r"structured logs?", r"metrics", r"triage"],
+        "paths": ["docs", "workflows", "skills", ".github/workflows"],
+        "recommendation": "Expose structured logs, metrics, errors, deploy events, and auto-created investigation tickets.",
+    },
+    {
+        "id": "output-quality",
+        "label": "Output quality gate",
+        "patterns": [r"output-quality-gate", r"verification-loop", r"evidence before claims", r"known gaps"],
+        "paths": ["docs", "workflows", "skills", "AGENTS.md"],
+        "recommendation": "Require final outputs to map delivered artifacts back to user intent and verification evidence.",
+    },
+    {
+        "id": "learning-loop",
+        "label": "Learning and harness evolution",
+        "patterns": [r"continuous-learning", r"skill-authoring-system", r"postmortem", r"lessons learned", r"runbook"],
+        "paths": ["docs", "workflows", "skills", "AGENTS.md"],
+        "recommendation": "Convert repeated failures into tests, skills, docs, runbooks, or automation.",
+    },
+]
+
 
 @dataclass(frozen=True)
 class Skill:
@@ -247,6 +308,36 @@ def tracked_repo_files() -> list[Path]:
 
 def read_json_file(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def iter_project_files(project: Path) -> Iterable[Path]:
+    if not project.exists():
+        return []
+    return sorted(
+        path
+        for path in project.rglob("*")
+        if path.is_file() and not any(part in HARNESS_IGNORES for part in path.relative_to(project).parts)
+    )
+
+
+def project_text_for_paths(project: Path, path_hints: list[str]) -> tuple[str, list[str]]:
+    chunks: list[str] = []
+    evidence: list[str] = []
+    for hint in path_hints:
+        target = project / hint
+        candidates = [target] if target.is_file() else []
+        if target.is_dir():
+            candidates = [p for p in iter_project_files(target) if p.suffix.lower() in TEXT_SUFFIXES]
+        for path in candidates[:80]:
+            if path.suffix.lower() not in TEXT_SUFFIXES and path.name not in {"Makefile", "AGENTS.md"}:
+                continue
+            try:
+                text = path.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            chunks.append(text[:12000])
+            evidence.append(path.relative_to(project).as_posix())
+    return "\n".join(chunks), sorted(set(evidence))
 
 
 def group_by_stage(skills: list[Skill]) -> dict[str, list[Skill]]:
@@ -681,6 +772,63 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     return EXIT_OK if ok else EXIT_DEPENDENCY
 
 
+def assess_harness(project: Path) -> dict:
+    project = project.expanduser().resolve()
+    capabilities = []
+    present = 0
+    for capability in HARNESS_CAPABILITIES:
+        haystack, files = project_text_for_paths(project, capability["paths"])
+        matches = []
+        for pattern in capability["patterns"]:
+            if re.search(pattern, haystack, re.I):
+                matches.append(pattern)
+        status = "present" if matches else "missing"
+        if status == "present":
+            present += 1
+        capabilities.append(
+            {
+                "id": capability["id"],
+                "label": capability["label"],
+                "status": status,
+                "matches": matches[:8],
+                "evidence_files": files[:12],
+                "recommendation": capability["recommendation"],
+            }
+        )
+
+    score = round((present / len(HARNESS_CAPABILITIES)) * 100)
+    return {
+        "project": str(project),
+        "score": score,
+        "present": present,
+        "total": len(HARNESS_CAPABILITIES),
+        "capabilities": capabilities,
+    }
+
+
+def cmd_harness(args: argparse.Namespace) -> int:
+    project = Path(args.project)
+    if not project.expanduser().exists():
+        if args.json:
+            emit_json(False, {"message": f"project path not found: {project}"}, code="USAGE")
+        else:
+            print(f"error: project path not found: {project}", file=sys.stderr)
+        return EXIT_USAGE
+
+    payload = assess_harness(project)
+    if args.json:
+        emit_json(True, payload)
+    else:
+        print(f"Harness readiness: {payload['score']}% ({payload['present']}/{payload['total']})")
+        print(f"Project: {payload['project']}")
+        for item in payload["capabilities"]:
+            mark = "OK" if item["status"] == "present" else "MISS"
+            print(f"[{mark}] {item['label']}")
+            if item["status"] != "present":
+                print(f"      {item['recommendation']}")
+    return EXIT_OK
+
+
 def cmd_describe(args: argparse.Namespace) -> int:
     payload = {
         "name": "super-skill",
@@ -691,6 +839,7 @@ def cmd_describe(args: argparse.Namespace) -> int:
             {"name": "plan", "purpose": "Preview a resolved install plan without mutating the target"},
             {"name": "install", "purpose": "Install a profile into a flat agent skill directory"},
             {"name": "audit", "purpose": "Check duplicates, manifests, compatibility links, secrets, and risky patterns"},
+            {"name": "harness", "purpose": "Assess AI-first harness readiness for this or another project"},
             {"name": "vendor", "purpose": "Summarize vendored Cowork domain ecosystem skills"},
             {"name": "catalog", "purpose": "Generate catalog/skill-index.json and catalog/skill-index.md"},
             {"name": "doctor", "purpose": "Check local tools used by Super Skill"},
@@ -826,6 +975,11 @@ def build_parser() -> argparse.ArgumentParser:
     audit_p = sub.add_parser("audit", help="audit duplicate, compatibility, reliability, and security posture")
     audit_p.add_argument("--json", action="store_true")
     audit_p.set_defaults(func=cmd_audit)
+
+    harness_p = sub.add_parser("harness", help="assess AI-first harness readiness")
+    harness_p.add_argument("--project", default=".")
+    harness_p.add_argument("--json", action="store_true")
+    harness_p.set_defaults(func=cmd_harness)
 
     vendor_p = sub.add_parser("vendor", help="summarize vendored domain ecosystem")
     vendor_p.add_argument("--json", action="store_true")

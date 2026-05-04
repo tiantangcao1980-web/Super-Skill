@@ -23,7 +23,7 @@
       "id": "stage:product",
       "family": "lifecycle",
       "stage": "03-product",
-      "description": "Product specification and decision framing skills."
+      "description": "Product specification, experiment design, and agent-speed iteration skills."
     },
     {
       "id": "stage:design-system",
@@ -41,31 +41,31 @@
       "id": "stage:development",
       "family": "lifecycle",
       "stage": "06-development",
-      "description": "Frontend, backend, database, coding standard, and AI app development skills."
+      "description": "Agent-legible architecture, frontend, backend, database, coding standard, and AI app development skills."
     },
     {
       "id": "stage:quality",
       "family": "lifecycle",
       "stage": "07-testing-and-quality",
-      "description": "Testing, debugging, output quality gates, security, performance, browser automation, and review skills."
+      "description": "Testing, debugging, AI review gates, output quality gates, security, performance, browser automation, and review skills."
     },
     {
       "id": "stage:delivery-growth",
       "family": "lifecycle",
       "stage": "08-delivery-and-growth",
-      "description": "Deployment, Docker, Git, GitHub, and growth-oriented delivery skills."
+      "description": "Experiment-driven delivery, deployment, Docker, Git, GitHub, and growth-oriented delivery skills."
     },
     {
       "id": "stage:operations-knowledge",
       "family": "lifecycle",
       "stage": "09-operations-and-knowledge",
-      "description": "Documentation, curation, learning, and knowledge operations skills."
+      "description": "Observability triage, documentation, curation, learning, and knowledge operations skills."
     },
     {
       "id": "stage:codex-patterns",
       "family": "capability",
       "stage": "90-codex-patterns",
-      "description": "Codex-native packaging, token budgeting, verification, routing, and skill authoring patterns."
+      "description": "Harness engineering, Codex-native packaging, token budgeting, verification, routing, and skill authoring patterns."
     }
   ]
 }

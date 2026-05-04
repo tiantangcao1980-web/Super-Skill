@@ -34,6 +34,8 @@ Outputs:
 
 Skills:
 
+- `harness-engineering`
+- `agent-legible-architecture`
 - `auto-flow`
 - `research-to-delivery` lifecycle skills
 - `design-dev-flow`
@@ -42,6 +44,7 @@ Skills:
 Outputs:
 
 - product/design/development artifacts
+- agent-readable architecture and validation plan
 - implementation with evidence
 - changed files and decision records
 
@@ -49,6 +52,7 @@ Outputs:
 
 Skills:
 
+- `ai-review-gates`
 - `qa-strategy`
 - `verification-loop`
 - `security-review`
@@ -61,7 +65,22 @@ Outputs:
 - risk list
 - user-expectation fit check
 
-## 4. Delivery And Learning
+## 4. Progressive Delivery And Observation
+
+Skills:
+
+- `agentic-product-iteration`
+- `experiment-driven-delivery`
+- `observability-triage-loop`
+
+Outputs:
+
+- feature flag and rollout plan
+- success and guardrail metrics
+- kill/iterate/graduate decision rule
+- production signal and triage plan
+
+## 5. Delivery And Learning
 
 Skills:
 
