@@ -1,0 +1,24 @@
+{
+  "project": "incident-to-learning-loop",
+  "required_stages": [
+    "07-testing-and-quality",
+    "09-operations-and-knowledge",
+    "90-codex-patterns"
+  ],
+  "required_skills": [
+    "observability-triage-loop",
+    "debugging",
+    "security-review",
+    "agent-eval-harness",
+    "agent-memory-dream-loop",
+    "skill-evolution-loop",
+    "persistent-memory-curation",
+    "checkpoint-rollback-safety"
+  ],
+  "required_phrases": [
+    "negative",
+    "verification",
+    "archive",
+    "dedup"
+  ]
+}

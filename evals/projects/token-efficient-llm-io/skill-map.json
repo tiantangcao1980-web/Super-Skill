@@ -1,0 +1,23 @@
+{
+  "project": "token-efficient-llm-io",
+  "required_stages": [
+    "00-orchestration",
+    "07-testing-and-quality",
+    "90-codex-patterns"
+  ],
+  "required_skills": [
+    "intent-contract",
+    "context-engineering",
+    "token-budgeting",
+    "prompt-cache-layering",
+    "model-adaptation-contract",
+    "output-quality-gate",
+    "verification-loop"
+  ],
+  "required_phrases": [
+    "token",
+    "context",
+    "structured output",
+    "evidence"
+  ]
+}

@@ -47,6 +47,18 @@ Super Skill now satisfies the core design and development needs for LLM- and age
 
 The important caveat: it is a portable skill and workflow harness, not a production platform by itself. For a live product team, the skills must still be connected to concrete systems: CI, feature flags, logs, metrics, Sentry/CloudWatch-style error sources, issue trackers, deployment pipelines, and real eval datasets.
 
+## Validation Projects
+
+`bin/super-skill evals --json` adds deterministic validation projects that act like capability evals for this skill collection:
+
+- `ai-first-saas-launch`: end-to-end research, product, design, development, QA, delivery, operations, and memory.
+- `cross-runtime-memory`: Codex hook plugin plus fallback triggers for developer tools without plugin support.
+- `design-to-frontend-quality`: DesignDNA, UI frameworks, frontend patterns, browser/quality checks, and brand sync.
+- `incident-to-learning-loop`: observability, debugging, security review, evals, memory, and skill lifecycle gates.
+- `token-efficient-llm-io`: intent, context, token budgeting, prompt cache, model contracts, and output quality.
+
+These projects prove the repository exposes the right skills, policies, and validation surfaces. They do not replace live agent runs against a real product backlog.
+
 ## Remaining Validation Gaps
 
 - Live production observability is described but not connected to a real telemetry backend in this repository.
@@ -63,6 +75,7 @@ bin/super-skill harness --json
 bin/super-skill hermes --json
 bin/super-skill memory --json
 bin/super-skill triggers --json
+bin/super-skill evals --json
 bin/super-skill memory-plugin --dry-run --json
 bin/super-skill validate --json
 bin/super-skill audit --json

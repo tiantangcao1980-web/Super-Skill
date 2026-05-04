@@ -1,0 +1,23 @@
+{
+  "project": "design-to-frontend-quality",
+  "required_stages": [
+    "04-design-system",
+    "06-development",
+    "07-testing-and-quality"
+  ],
+  "required_skills": [
+    "designdna",
+    "design-templates",
+    "anti-slop",
+    "shadcn-ui",
+    "mui-material",
+    "frontend-patterns",
+    "browser-automation",
+    "output-quality-gate"
+  ],
+  "required_phrases": [
+    "DesignDNA",
+    "brand",
+    "quality"
+  ]
+}

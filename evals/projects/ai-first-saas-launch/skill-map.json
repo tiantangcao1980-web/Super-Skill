@@ -1,0 +1,40 @@
+{
+  "project": "ai-first-saas-launch",
+  "required_stages": [
+    "00-orchestration",
+    "01-research",
+    "02-analysis",
+    "03-product",
+    "04-design-system",
+    "05-interface-and-cli",
+    "06-development",
+    "07-testing-and-quality",
+    "08-delivery-and-growth",
+    "09-operations-and-knowledge",
+    "90-codex-patterns"
+  ],
+  "required_skills": [
+    "intent-contract",
+    "context-engineering",
+    "market-research",
+    "user-research",
+    "requirement-analysis",
+    "product-spec",
+    "designdna",
+    "api-design",
+    "agent-legible-architecture",
+    "agent-eval-harness",
+    "output-quality-gate",
+    "experiment-driven-delivery",
+    "observability-triage-loop",
+    "agent-memory-dream-loop",
+    "model-adaptation-contract",
+    "token-budgeting"
+  ],
+  "required_phrases": [
+    "feature flag",
+    "rollback",
+    "metrics",
+    "memory"
+  ]
+}

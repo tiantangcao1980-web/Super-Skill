@@ -1,0 +1,24 @@
+{
+  "project": "cross-runtime-memory",
+  "required_stages": [
+    "00-orchestration",
+    "09-operations-and-knowledge",
+    "90-codex-patterns"
+  ],
+  "required_skills": [
+    "dev-tool-adapter",
+    "selective-install-planning",
+    "agent-memory-dream-loop",
+    "skill-evolution-loop",
+    "toolset-sandbox-routing",
+    "cross-tool-packaging"
+  ],
+  "required_phrases": [
+    "Codex",
+    "Cursor",
+    "Trae",
+    "OpenCode",
+    "OpenClaw",
+    "Claude Code"
+  ]
+}

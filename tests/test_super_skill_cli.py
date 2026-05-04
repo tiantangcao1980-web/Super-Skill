@@ -189,6 +189,30 @@ class SuperSkillCliTests(unittest.TestCase):
             self.assertIn("review whether any verified lesson should become memory", body)
             self.assertNotIn("do not store this user prompt", body)
 
+    def test_capability_evals_validate_projects_and_global_checks(self) -> None:
+        data = run_cli("evals")
+        self.assertEqual(data["failures"], [])
+        self.assertGreaterEqual(data["projects_total"], 5)
+        self.assertEqual(data["projects_passed"], data["projects_total"])
+        self.assertEqual(data["global_checks_passed"], data["global_checks_total"])
+        project_names = {item["project"] for item in data["projects"]}
+        self.assertIn("ai-first-saas-launch", project_names)
+        self.assertIn("cross-runtime-memory", project_names)
+
+    def test_capability_evals_reject_unknown_project(self) -> None:
+        proc = subprocess.run(
+            [sys.executable, str(CLI), "evals", "--project", "missing-project", "--json"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+        self.assertNotEqual(proc.returncode, 0)
+        payload = json.loads(proc.stdout)
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["error"]["code"], "EVALS_FAILED")
+
 
 if __name__ == "__main__":
     unittest.main()

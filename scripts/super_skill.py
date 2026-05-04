@@ -16,6 +16,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import tempfile
 import textwrap
 import time
 import uuid
@@ -30,6 +31,7 @@ VENDOR_ROOT = ROOT / "vendor" / "cowork"
 CATALOG_ROOT = ROOT / "catalog"
 MANIFEST_ROOT = ROOT / "manifests"
 PLUGIN_ROOT = ROOT / "plugins"
+EVALS_ROOT = ROOT / "evals"
 MEMORY_PLUGIN_NAME = "super-skill-memory-harness"
 AUTO_TRIGGER_POLICY_PATH = MANIFEST_ROOT / "auto-trigger-policy.json"
 SKILL_LIFECYCLE_POLICY_PATH = MANIFEST_ROOT / "skill-lifecycle-policy.json"
@@ -1426,6 +1428,230 @@ def cmd_triggers(args: argparse.Namespace) -> int:
     return EXIT_RUNTIME if failures else EXIT_OK
 
 
+def eval_project_dirs() -> list[Path]:
+    root = EVALS_ROOT / "projects"
+    if not root.exists():
+        return []
+    return sorted(path for path in root.iterdir() if path.is_dir())
+
+
+def evaluate_project_fixture(project_dir: Path, skills_by_name: dict[str, Skill]) -> dict:
+    skill_map_path = project_dir / "skill-map.json"
+    brief_path = project_dir / "project.md"
+    checks: list[dict] = []
+
+    if not skill_map_path.exists() or not brief_path.exists():
+        return {
+            "project": project_dir.name,
+            "ok": False,
+            "checks": [
+                {
+                    "id": "fixture-files",
+                    "ok": False,
+                    "message": "missing project.md or skill-map.json",
+                }
+            ],
+        }
+
+    spec = read_json_file(skill_map_path)
+    brief = brief_path.read_text(encoding="utf-8", errors="replace")
+    required_skills = spec.get("required_skills", [])
+    required_stages = spec.get("required_stages", [])
+    required_phrases = spec.get("required_phrases", [])
+
+    missing_skills = sorted(name for name in required_skills if name not in skills_by_name)
+    checks.append(
+        {
+            "id": "required-skills",
+            "ok": not missing_skills,
+            "expected": len(required_skills),
+            "missing": missing_skills,
+        }
+    )
+
+    present_stages = sorted({skills_by_name[name].stage for name in required_skills if name in skills_by_name})
+    missing_stages = sorted(set(required_stages) - set(present_stages))
+    checks.append(
+        {
+            "id": "lifecycle-stage-coverage",
+            "ok": not missing_stages,
+            "expected": required_stages,
+            "present": present_stages,
+            "missing": missing_stages,
+        }
+    )
+
+    text = brief.lower()
+    missing_phrases = sorted(phrase for phrase in required_phrases if phrase.lower() not in text)
+    checks.append(
+        {
+            "id": "acceptance-language",
+            "ok": not missing_phrases,
+            "expected": required_phrases,
+            "missing": missing_phrases,
+        }
+    )
+
+    return {
+        "project": spec.get("project", project_dir.name),
+        "ok": all(check["ok"] for check in checks),
+        "checks": checks,
+    }
+
+
+def simulate_memory_hook_eval() -> dict:
+    script = PLUGIN_ROOT / MEMORY_PLUGIN_NAME / "scripts" / "memory_dream_hook.py"
+    if not script.exists():
+        return {"id": "memory-hook-simulation", "ok": False, "message": "hook script missing"}
+
+    secret_prompt = "do not store this raw prompt"
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        payload = {
+            "hook_event_name": "Stop",
+            "cwd": str(root),
+            "model": "eval-model",
+            "session_id": "eval-session",
+            "transcript_path": str(root / "transcript.jsonl"),
+            "prompt": secret_prompt,
+        }
+        proc = subprocess.run(
+            [sys.executable, str(script), "--event", "stop"],
+            cwd=root,
+            input=json.dumps(payload),
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+        if proc.returncode != 0:
+            return {
+                "id": "memory-hook-simulation",
+                "ok": False,
+                "message": "hook exited non-zero",
+                "stderr": proc.stderr[:500],
+            }
+        candidates = sorted((root / ".super-skill" / "memory" / "inbox").glob("*.md"))
+        traces = sorted((root / ".super-skill" / "memory" / "traces").glob("*.jsonl"))
+        candidate_text = candidates[0].read_text(encoding="utf-8") if candidates else ""
+        return {
+            "id": "memory-hook-simulation",
+            "ok": bool(candidates) and bool(traces) and secret_prompt not in candidate_text,
+            "candidates": len(candidates),
+            "traces": len(traces),
+            "raw_prompt_stored": secret_prompt in candidate_text,
+        }
+
+
+def evaluate_capability_suite(project_filter: str | None = None) -> dict:
+    skills = discover_skills("all")
+    skills_by_name = {skill.name: skill for skill in skills}
+    projects = []
+    for project_dir in eval_project_dirs():
+        if project_filter and project_dir.name != project_filter:
+            continue
+        projects.append(evaluate_project_fixture(project_dir, skills_by_name))
+
+    install_dups = duplicate_names(skills)
+    trigger_errors, _, trigger_policy = auto_trigger_policy_report()
+    lifecycle_errors, _, lifecycle_policy = skill_lifecycle_policy_report()
+    plugin_errors, plugin_warnings = plugin_manifest_report()
+    plugins = discover_plugins()
+    memory_plugin = next((plugin for plugin in plugins if plugin.name == MEMORY_PLUGIN_NAME), None)
+    harness_report = assess_harness(ROOT)
+    hermes_report = assess_hermes(ROOT)
+    memory_report = assess_memory(ROOT)
+
+    global_checks = [
+        {
+            "id": "project-filter",
+            "ok": not project_filter or bool(projects),
+            "project": project_filter,
+        },
+        {
+            "id": "installable-skill-uniqueness",
+            "ok": not install_dups,
+            "duplicates": sorted(install_dups),
+        },
+        {
+            "id": "harness-readiness",
+            "ok": harness_report["score"] >= 100,
+            "score": harness_report["score"],
+        },
+        {
+            "id": "hermes-readiness",
+            "ok": hermes_report["score"] >= 100,
+            "score": hermes_report["score"],
+        },
+        {
+            "id": "memory-readiness",
+            "ok": memory_report["score"] >= 100,
+            "score": memory_report["score"],
+        },
+        {
+            "id": "trigger-policy",
+            "ok": not trigger_errors
+            and trigger_policy.get("fallback_skill") == "agent-memory-dream-loop"
+            and not trigger_policy.get("controls", {}).get("capture_raw_prompt")
+            and not trigger_policy.get("controls", {}).get("capture_raw_response")
+            and not trigger_policy.get("controls", {}).get("auto_promote"),
+            "triggers": len(trigger_policy.get("triggers", [])) if trigger_policy else 0,
+        },
+        {
+            "id": "skill-lifecycle-policy",
+            "ok": not lifecycle_errors
+            and lifecycle_policy.get("curation", {}).get("require_dedup_before_create") is True
+            and lifecycle_policy.get("curation", {}).get("archive_is_reversible") is True
+            and lifecycle_policy.get("curation", {}).get("auto_delete") is False,
+            "protected_skills": len(lifecycle_policy.get("protected_skills", [])) if lifecycle_policy else 0,
+        },
+        {
+            "id": "codex-plugin-hook-only",
+            "ok": bool(memory_plugin)
+            and not plugin_errors
+            and not plugin_warnings
+            and memory_plugin.manifest.get("hooks")
+            and "skills" not in memory_plugin.manifest,
+            "plugin": MEMORY_PLUGIN_NAME if memory_plugin else None,
+        },
+        simulate_memory_hook_eval(),
+    ]
+
+    failures = [
+        {"scope": "project", "project": project["project"], "checks": [c for c in project["checks"] if not c["ok"]]}
+        for project in projects
+        if not project["ok"]
+    ]
+    failed_global = [check for check in global_checks if not check["ok"]]
+    if failed_global:
+        failures.append({"scope": "global", "checks": failed_global})
+
+    return {
+        "projects_total": len(projects),
+        "projects_passed": sum(1 for project in projects if project["ok"]),
+        "global_checks_total": len(global_checks),
+        "global_checks_passed": sum(1 for check in global_checks if check["ok"]),
+        "projects": projects,
+        "global_checks": global_checks,
+        "failures": failures,
+    }
+
+
+def cmd_evals(args: argparse.Namespace) -> int:
+    payload = evaluate_capability_suite(args.project)
+    ok = not payload["failures"]
+    if args.json:
+        emit_json(ok, payload, code="EVALS_FAILED" if not ok else None)
+    else:
+        print(f"Capability eval projects: {payload['projects_passed']}/{payload['projects_total']} passed")
+        print(f"Global checks: {payload['global_checks_passed']}/{payload['global_checks_total']} passed")
+        if payload["failures"]:
+            print("Failures:")
+            for failure in payload["failures"]:
+                print(f"  {failure['scope']}: {failure.get('project', '<global>')}")
+    return EXIT_OK if ok else EXIT_RUNTIME
+
+
 def profile_manifest_report() -> tuple[list[dict], list[dict]]:
     errors: list[dict] = []
     warnings: list[dict] = []
@@ -1929,6 +2155,7 @@ def cmd_describe(args: argparse.Namespace) -> int:
             {"name": "memory", "purpose": "Assess agent memory, experience reuse, and dream replay readiness"},
             {"name": "memory-plugin", "purpose": "Install or preview the automatic memory/dream Codex plugin"},
             {"name": "triggers", "purpose": "Validate automatic trigger and skill lifecycle controls"},
+            {"name": "evals", "purpose": "Run validation projects that prove lifecycle, harness, memory, and runtime coverage"},
             {"name": "vendor", "purpose": "Summarize vendored Cowork domain ecosystem skills"},
             {"name": "catalog", "purpose": "Generate catalog/skill-index.json and catalog/skill-index.md"},
             {"name": "doctor", "purpose": "Check local tools used by Super Skill"},
@@ -2138,6 +2365,11 @@ def build_parser() -> argparse.ArgumentParser:
     triggers_p = sub.add_parser("triggers", help="validate automatic trigger and skill lifecycle controls")
     triggers_p.add_argument("--json", action="store_true")
     triggers_p.set_defaults(func=cmd_triggers)
+
+    evals_p = sub.add_parser("evals", help="run capability validation projects")
+    evals_p.add_argument("--project", default=None)
+    evals_p.add_argument("--json", action="store_true")
+    evals_p.set_defaults(func=cmd_evals)
 
     vendor_p = sub.add_parser("vendor", help="summarize vendored domain ecosystem")
     vendor_p.add_argument("--json", action="store_true")
