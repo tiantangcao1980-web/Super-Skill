@@ -5,7 +5,7 @@
       "id": "stage:orchestration",
       "family": "lifecycle",
       "stage": "00-orchestration",
-      "description": "Autonomous workflow routing, design-to-dev flow, and persistence loops."
+      "description": "Intent contracts, context engineering, autonomous workflow routing, design-to-dev flow, and persistence loops."
     },
     {
       "id": "stage:research",
@@ -47,7 +47,7 @@
       "id": "stage:quality",
       "family": "lifecycle",
       "stage": "07-testing-and-quality",
-      "description": "Testing, debugging, security, performance, browser automation, and review skills."
+      "description": "Testing, debugging, output quality gates, security, performance, browser automation, and review skills."
     },
     {
       "id": "stage:delivery-growth",
@@ -65,7 +65,7 @@
       "id": "stage:codex-patterns",
       "family": "capability",
       "stage": "90-codex-patterns",
-      "description": "Codex-native packaging, verification, routing, and skill authoring patterns."
+      "description": "Codex-native packaging, token budgeting, verification, routing, and skill authoring patterns."
     }
   ]
 }

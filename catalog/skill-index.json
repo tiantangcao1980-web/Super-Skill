@@ -1,5 +1,5 @@
 {
-  "generated_at": 1777896469,
+  "generated_at": 1777896898,
   "installable_skills": [
     {
       "name": "auto-flow",
@@ -10,12 +10,28 @@
       "path": "skills/00-orchestration/auto-flow"
     },
     {
+      "name": "context-engineering",
+      "description": "Use when preparing LLM or AI agent context for large codebases, long documents, multi-step work, multi-session handoffs, or token-constrained tasks.",
+      "stage": "00-orchestration",
+      "stage_label": "Orchestration",
+      "source": "core",
+      "path": "skills/00-orchestration/context-engineering"
+    },
+    {
       "name": "design-dev-flow",
       "description": "项目级\"设计 → 开发 → 验证 → 交付\"全流程编排器。从需求澄清开始,串联设计规范(taste + 文案 + UI 库)、CLI/接口设计、前后端 Ralph Loop 实现、浏览器自动验证、代码简化、Demo 录制。 本 skill 只做编排,具体环节调用:spec-workflow / ui-design / designdna / ralph-loop / code-simplifier 以及 frontend-patterns / backend-patterns 等已有 skill。 触发词:「全流程开发」「设计到交付」「从 0 做项目」「项目编排」「设计 + 开发 + 验证」「端到端开发」「端到端交付」。",
       "stage": "00-orchestration",
       "stage_label": "Orchestration",
       "source": "core",
       "path": "skills/00-orchestration/design-dev-flow"
+    },
+    {
+      "name": "intent-contract",
+      "description": "Use when a user request is broad, ambiguous, high-impact, or expectation-sensitive and the agent needs to turn it into a clear delivery contract before research, design, coding, or final output.",
+      "stage": "00-orchestration",
+      "stage_label": "Orchestration",
+      "source": "core",
+      "path": "skills/00-orchestration/intent-contract"
     },
     {
       "name": "ralph-loop",
@@ -594,6 +610,14 @@
       "path": "skills/07-testing-and-quality/e2e-testing"
     },
     {
+      "name": "output-quality-gate",
+      "description": "Use before delivering LLM-generated code, plans, designs, reports, docs, analyses, or agent work products to verify they satisfy the user's intent and include evidence.",
+      "stage": "07-testing-and-quality",
+      "stage_label": "Quality",
+      "source": "core",
+      "path": "skills/07-testing-and-quality/output-quality-gate"
+    },
+    {
       "name": "performance",
       "description": "性能优化专家。当用户遇到性能问题、程序慢、内存使用高、需要优化时触发。Use when user has performance issues, slow code, high memory usage, or needs optimization. Keywords: performance, slow, optimize, memory, CPU, profiling, bottleneck, 性能, 慢, 优化",
       "stage": "07-testing-and-quality",
@@ -736,6 +760,14 @@
       "stage_label": "Codex Patterns",
       "source": "core",
       "path": "skills/90-codex-patterns/skill-authoring-system"
+    },
+    {
+      "name": "token-budgeting",
+      "description": "Use when context is large, token cost matters, the conversation is long, or an agent workflow needs better recall without dumping full source material.",
+      "stage": "90-codex-patterns",
+      "stage_label": "Codex Patterns",
+      "source": "core",
+      "path": "skills/90-codex-patterns/token-budgeting"
     },
     {
       "name": "verification-loop",

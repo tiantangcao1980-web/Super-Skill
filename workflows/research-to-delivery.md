@@ -4,12 +4,24 @@ Use this flow when a project starts from an idea, rough requirement, product bet
 
 ## 0. Intake
 
+Skills:
+
+- `intent-contract`
+- `context-engineering`
+- `token-budgeting`
+
 Clarify:
 
 - User, buyer, operator, and stakeholder
 - Core problem and current workaround
 - Business goal and risk
 - Constraints: budget, time, stack, data, compliance, launch channel
+
+Outputs:
+
+- Intent contract
+- Context pack
+- Token budget and ignored-source list
 
 ## 1. Research
 
@@ -112,6 +124,7 @@ Skills:
 - `code-review`
 - `security-review`
 - `verification-loop`
+- `output-quality-gate`
 
 Outputs:
 
@@ -119,6 +132,7 @@ Outputs:
 - Browser or workflow evidence
 - Review findings addressed
 - Known risk list
+- User-expectation fit check
 
 ## 8. Delivery
 

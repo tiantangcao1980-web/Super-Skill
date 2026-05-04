@@ -5,7 +5,7 @@ This pass studied:
 - `affaan-m/everything-claude-code`
 - `obra/superpowers`
 
-The goal was not to import them wholesale. The useful pattern is to turn their engineering lessons into Super Skill native surfaces.
+The goal was not to import them wholesale. The useful pattern is to turn their engineering lessons into Super Skill native surfaces that improve LLM input quality, context quality, output quality, and verification quality.
 
 ## What Was Learned
 
@@ -43,6 +43,23 @@ Applied in Super Skill:
 - Strengthened `debugging` with root-cause phases.
 - Strengthened `skill-authoring-system` with a skill evolution loop.
 - Kept `verification-loop` as the completion gate.
+
+## Reinterpreted For LLM I/O Quality
+
+The combined lesson is that AI-agent work needs an explicit I/O contract:
+
+- input starts with user expectation, not prompt text alone
+- context is curated into a compact working set instead of dumped wholesale
+- execution is staged and evidence-driven
+- output is judged against the user's desired outcome
+- long sessions preserve decisions, risks, and current state rather than raw chronology
+
+Applied in Super Skill:
+
+- Added `intent-contract`.
+- Added `context-engineering`.
+- Added `output-quality-gate`.
+- Added `token-budgeting`.
 
 ## De-Duplication Decisions
 

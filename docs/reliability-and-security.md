@@ -34,7 +34,7 @@ This checks:
 - DesignDNA compatibility symlinks
 - executable CLI entrypoints
 - hardcoded secret-like values
-- risky command patterns such as `rm -rf`, `git reset --hard`, and `curl | sh`
+- risky destructive, hard-reset, and pipe-to-shell command patterns
 
 The audit fails on broken contracts and hardcoded secret-like values. Risky command patterns are reported for review because they can be legitimate when documented as warnings, examples, or cleanup scripts.
 
