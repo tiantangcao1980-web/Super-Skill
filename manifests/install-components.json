@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "components": [
+    {
+      "id": "stage:orchestration",
+      "family": "lifecycle",
+      "stage": "00-orchestration",
+      "description": "Autonomous workflow routing, design-to-dev flow, and persistence loops."
+    },
+    {
+      "id": "stage:research",
+      "family": "lifecycle",
+      "stage": "01-research",
+      "description": "User, market, and opportunity research skills."
+    },
+    {
+      "id": "stage:analysis",
+      "family": "lifecycle",
+      "stage": "02-analysis",
+      "description": "Requirement, data, and evidence analysis skills."
+    },
+    {
+      "id": "stage:product",
+      "family": "lifecycle",
+      "stage": "03-product",
+      "description": "Product specification and decision framing skills."
+    },
+    {
+      "id": "stage:design-system",
+      "family": "lifecycle",
+      "stage": "04-design-system",
+      "description": "DesignDNA, brand systems, copy, templates, and UI library skills."
+    },
+    {
+      "id": "stage:interface-cli",
+      "family": "lifecycle",
+      "stage": "05-interface-and-cli",
+      "description": "API, gateway, command-line, and tool interface skills."
+    },
+    {
+      "id": "stage:development",
+      "family": "lifecycle",
+      "stage": "06-development",
+      "description": "Frontend, backend, database, coding standard, and AI app development skills."
+    },
+    {
+      "id": "stage:quality",
+      "family": "lifecycle",
+      "stage": "07-testing-and-quality",
+      "description": "Testing, debugging, security, performance, browser automation, and review skills."
+    },
+    {
+      "id": "stage:delivery-growth",
+      "family": "lifecycle",
+      "stage": "08-delivery-and-growth",
+      "description": "Deployment, Docker, Git, GitHub, and growth-oriented delivery skills."
+    },
+    {
+      "id": "stage:operations-knowledge",
+      "family": "lifecycle",
+      "stage": "09-operations-and-knowledge",
+      "description": "Documentation, curation, learning, and knowledge operations skills."
+    },
+    {
+      "id": "stage:codex-patterns",
+      "family": "capability",
+      "stage": "90-codex-patterns",
+      "description": "Codex-native packaging, verification, routing, and skill authoring patterns."
+    }
+  ]
+}

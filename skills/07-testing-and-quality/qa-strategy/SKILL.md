@@ -1,7 +1,7 @@
 ---
 name: qa-strategy
 description: |
-  QA 测试策略 skill:把已有的 tdd-workflow / e2e-testing / code-review / security-review / browser-automation / verification-loop **编排**成一份"项目级测试金字塔",并产出测试用例清单 + 缺陷管理流程 + 上线 quality gate。
+  QA 测试策略 skill:把已有的 test-driven-development / e2e-testing / code-review / security-review / browser-automation / verification-loop **编排**成一份"项目级测试金字塔",并产出测试用例清单 + 缺陷管理流程 + 上线 quality gate。
   本 skill 不重做底层测试 skill,只是整合调度 + 测试覆盖率 baseline。
   触发词:「测试策略」「QA」「测试金字塔」「测试用例」「缺陷管理」「质量门」「quality gate」「测试覆盖率」「test plan」。
   适用阶段:auto-flow ⑧ 测试幕(在 ⑦ 后端实现之后,⑨ 交付之前)。
@@ -15,7 +15,7 @@ description: |
 > - `engineering/testing-strategy` —— 测试策略与计划(更深入的层级 / 工具选型 / 覆盖率)
 > - `engineering/code-review`、`engineering/incident-response`、`engineering/tech-debt` —— 配套
 >
-> 本 skill 是**通用 fallback + 编排器** —— 把已装的 `tdd-workflow / e2e-testing / browser-automation / code-review / security-review / verification-loop` 串成一条 Quality Gate。
+> 本 skill 是**通用 fallback + 编排器** —— 把已装的 `test-driven-development / e2e-testing / browser-automation / code-review / security-review / verification-loop` 串成一条 Quality Gate。
 
 ## 测试金字塔 · 经典 70/20/10
 
@@ -39,8 +39,8 @@ description: |
 
 | 测试层 | 调用 skill | 何时跑 |
 |-------|-----------|--------|
-| 单元测试 | `tdd-workflow` | 写代码同时(red-green-refactor) |
-| 集成测试 | `tdd-workflow` + `verification-loop` | 单元绿后,合并前 |
+| 单元测试 | `test-driven-development` | 写代码同时(red-green-refactor) |
+| 集成测试 | `test-driven-development` + `verification-loop` | 单元绿后,合并前 |
 | 组件视觉 | `browser-automation`(Playwright trace) | PR 阶段 |
 | E2E 关键路径 | `e2e-testing` + `browser-automation` | 合并到 main 之后 |
 | 代码评审 | `code-review` | 每个 PR |
@@ -147,7 +147,7 @@ TC-002: <story> 空输入边界
 按项目类查表,落到 README + CI 配置。
 
 ### Step 4 · 编排测试 skill
-- 单元层 → 调 `tdd-workflow`
+- 单元层 → 调 `test-driven-development`
 - E2E → 调 `e2e-testing` + `browser-automation`
 - 安全 → 调 `security-review`
 - 收尾 → 调 `verification-loop`
@@ -177,7 +177,7 @@ TC-002: <story> 空输入边界
 本 skill 是**编排器**,真正的测试动作交给:
 | skill | 角色 |
 |-------|------|
-| `tdd-workflow` | 单元 + 集成 |
+| `test-driven-development` | 单元 + 集成 |
 | `e2e-testing` | E2E 工程实践 |
 | `browser-automation` | LLM 探索 + Playwright 固化 |
 | `verification-loop` | 多语言 verify 命令 |

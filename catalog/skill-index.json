@@ -1,5 +1,5 @@
 {
-  "generated_at": 1777895550,
+  "generated_at": 1777896469,
   "installable_skills": [
     {
       "name": "auto-flow",
@@ -603,7 +603,7 @@
     },
     {
       "name": "qa-strategy",
-      "description": "QA 测试策略 skill:把已有的 tdd-workflow / e2e-testing / code-review / security-review / browser-automation / verification-loop **编排**成一份\"项目级测试金字塔\",并产出测试用例清单 + 缺陷管理流程 + 上线 quality gate。 本 skill 不重做底层测试 skill,只是整合调度 + 测试覆盖率 baseline。 触发词:「测试策略」「QA」「测试金字塔」「测试用例」「缺陷管理」「质量门」「quality gate」「测试覆盖率」「test plan」。 适用阶段:auto-flow ⑧ 测试幕(在 ⑦ 后端实现之后,⑨ 交付之前)。",
+      "description": "QA 测试策略 skill:把已有的 test-driven-development / e2e-testing / code-review / security-review / browser-automation / verification-loop **编排**成一份\"项目级测试金字塔\",并产出测试用例清单 + 缺陷管理流程 + 上线 quality gate。 本 skill 不重做底层测试 skill,只是整合调度 + 测试覆盖率 baseline。 触发词:「测试策略」「QA」「测试金字塔」「测试用例」「缺陷管理」「质量门」「quality gate」「测试覆盖率」「test plan」。 适用阶段:auto-flow ⑧ 测试幕(在 ⑦ 后端实现之后,⑨ 交付之前)。",
       "stage": "07-testing-and-quality",
       "stage_label": "Quality",
       "source": "core",
@@ -618,8 +618,16 @@
       "path": "skills/07-testing-and-quality/security-review"
     },
     {
+      "name": "test-driven-development",
+      "description": "Use when implementing a feature, bug fix, refactor, or behavior change where automated tests can protect the result before production code changes.",
+      "stage": "07-testing-and-quality",
+      "stage_label": "Quality",
+      "source": "core",
+      "path": "skills/07-testing-and-quality/test-driven-development"
+    },
+    {
       "name": "test-generation",
-      "description": "生成单元测试和集成测试，包括 mock、fixture、边界条件和覆盖率补全。Use when asked to write or extend tests around specific code paths; use e2e-testing for full browser/user-flow suites and tdd-workflow for explicit test-first development.",
+      "description": "生成单元测试和集成测试，包括 mock、fixture、边界条件和覆盖率补全。Use when asked to write or extend tests around specific code paths; use e2e-testing for full browser/user-flow suites and test-driven-development for explicit test-first development.",
       "stage": "07-testing-and-quality",
       "stage_label": "Quality",
       "source": "core",
@@ -712,6 +720,14 @@
       "stage_label": "Codex Patterns",
       "source": "core",
       "path": "skills/90-codex-patterns/cross-tool-packaging"
+    },
+    {
+      "name": "selective-install-planning",
+      "description": "Use when packaging, installing, publishing, or auditing Super Skill profiles across Codex, Claude, or other agent skill directories.",
+      "stage": "90-codex-patterns",
+      "stage_label": "Codex Patterns",
+      "source": "core",
+      "path": "skills/90-codex-patterns/selective-install-planning"
     },
     {
       "name": "skill-authoring-system",

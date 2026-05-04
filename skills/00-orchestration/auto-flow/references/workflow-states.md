@@ -118,7 +118,7 @@
 | enter | Phase 7 artifact 落盘(后端可访问) |
 | exit | Quality Gate 全 ✅ 或用户明确接受降级 |
 | artifact | `docs/8-test-plan.md`(测试金字塔 + 用例清单)+ `.github/workflows/quality.yml` + 7 层验证报告 |
-| 使用 skill | **`qa-strategy`** 编排 → `tdd-workflow` / `e2e-testing` / `browser-automation` / `code-review` / `security-review` / `verification-loop` |
+| 使用 skill | **`qa-strategy`** 编排 → `test-driven-development` / `e2e-testing` / `browser-automation` / `code-review` / `security-review` / `verification-loop` |
 | Ralph? | 否 |
 | 触发干预 | 任一 Gate ❌ → 等用户决定 |
 

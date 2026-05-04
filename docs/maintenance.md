@@ -10,6 +10,7 @@
 
 ```bash
 bin/super-skill validate
+bin/super-skill audit
 bin/super-skill catalog
 ```
 
@@ -31,7 +32,10 @@ Then update NOTICE and run validation.
 ## Release Checklist
 
 - `bin/super-skill validate` exits 0.
+- `bin/super-skill audit` exits 0 with no blocking failures.
+- `bin/super-skill plan --profile core --json` emits a deterministic read-only plan.
 - `bin/super-skill install --profile all --dry-run` exits 0.
+- `python3 -m unittest discover -s tests` passes.
 - `bin/super-skill catalog` has been regenerated.
 - DesignDNA CLI tests pass when package dependencies are installed.
 - Git status is clean before tagging or publishing.

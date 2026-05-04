@@ -8,6 +8,8 @@ Super Skill 是一个面向 AI coding agent 的全流程技能集合：从市场
 - `DesignDNA-Skills` 的 DesignDNA 主技能、47 个设计/组件库子技能、58 套品牌设计系统和 CLI
 - 本机 Codex 技能体系中的工程能力层：API、前端、后端、数据库、调试、安全、部署、GitHub、Docker、文档等
 - Codex/插件经验沉淀：技能编写、验证闭环、工具路由、跨工具打包
+- `everything-claude-code` 的选择性安装、能力面划分、适配政策、安全审计思路
+- `obra/superpowers` 的 TDD、系统化调试、技能演进、完成前验证方法
 - Cowork 领域生态作为 `vendor/cowork/` 保留：法律、财务、销售、营销、客服、数据、HR/ops 等领域插件素材
 
 ## 能力闭环
@@ -28,7 +30,8 @@ Super Skill 是一个面向 AI coding agent 的全流程技能集合：从市场
 
 当前清单：
 
-- 91 个可安装生命周期技能
+- 93 个可安装生命周期技能
+- profile/component manifest 支持只读安装预案
 - 58 套 DesignDNA 品牌系统，位于 `resources/design-md/`
 - 67 个 Cowork 领域技能文件，位于 `vendor/cowork/`
 - 0 个 installable skill 命名冲突
@@ -41,6 +44,12 @@ bin/super-skill list
 
 # 校验结构、命名、链接、资源计数
 bin/super-skill validate
+
+# 预览安装计划，不修改目标目录
+bin/super-skill plan --profile core --json
+
+# 审计去重、manifest、兼容软链、入口文件、疑似密钥和风险命令
+bin/super-skill audit --json
 
 # 安装完整集合到 Codex skills 目录，默认软链
 bin/super-skill install --profile all --target ~/.codex/skills
@@ -98,17 +107,23 @@ DesignDNA 被保留为主技能和资源库：主技能在 `skills/04-design-sys
 ```bash
 bin/super-skill doctor
 bin/super-skill validate
-bin/super-skill install --profile core --dry-run
+bin/super-skill plan --profile core --json
+bin/super-skill audit --json
+bin/super-skill install --profile core --dry-run --json
+python3 -m unittest discover -s tests
 npm --prefix packages/designdna-cli test
 ```
 
-CI 会运行 `bin/super-skill validate --json` 和 `bin/super-skill doctor --json`，确保技能结构和基础工具链可用。
+CI 会运行 `doctor`、`validate`、`plan`、`audit`、Python CLI 测试，以及 DesignDNA CLI 测试，确保结构、兼容、安全和基础工具链可用。
 
 ## 文档
 
 - [生命周期地图](catalog/lifecycle-map.md)
 - [技能索引](catalog/skill-index.md)
 - [研究与编排分析](catalog/source-audit.md)
+- [ECC/Superpowers 深度分析](catalog/ecc-superpowers-analysis.md)
 - [端到端工作流](workflows/research-to-delivery.md)
 - [兼容性说明](docs/compatibility.md)
+- [选择性安装](docs/selective-install.md)
+- [可靠性与安全](docs/reliability-and-security.md)
 - [维护指南](docs/maintenance.md)

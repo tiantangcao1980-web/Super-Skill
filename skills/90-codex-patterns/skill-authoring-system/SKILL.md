@@ -30,6 +30,16 @@ skill-name/
 - Add scripts only for fragile, repeated, or mechanical operations.
 - Validate with a realistic prompt before publishing.
 
+## Skill Evolution Loop
+
+Use test-driven thinking for important skill changes:
+
+1. Capture a realistic pressure prompt where the current skill fails, overfires, or stays silent.
+2. Identify the exact behavior the skill should change.
+3. Update the smallest trigger text or body section that addresses that behavior.
+4. Re-run validation: frontmatter, links, duplicate names, and a realistic manual prompt if possible.
+5. Record the source idea and adaptation decision in the project docs when the skill came from another repo.
+
 ## Progressive Disclosure
 
 1. Frontmatter: discovery and trigger routing.
@@ -43,3 +53,4 @@ skill-name/
 - Descriptions that summarize the process so the agent skips the body.
 - Orphaned references nobody knows to load.
 - Mixed responsibilities that should be separate skills.
+- Direct upstream ports that preserve branding but do not fit the local lifecycle namespace.

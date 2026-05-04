@@ -16,6 +16,7 @@ Agent runtimes usually use a flat directory:
 ```
 
 Use `bin/super-skill install` to bridge the layouts.
+Use `bin/super-skill plan` first when you need a read-only preview for CI, review, or dry-run reports.
 
 ## Supported Targets
 
@@ -33,11 +34,14 @@ Use `bin/super-skill install` to bridge the layouts.
 - Some copied skills reference external tools such as Docker, GitHub CLI, Node, browsers, or package managers. `doctor` checks the common baseline only.
 - DesignDNA CLI keeps its own Node package under `packages/designdna-cli/`.
 - Compatibility symlinks preserve the original DesignDNA layout expected by its CLI and tests: `design-md`, `designdna`, `assets`, `playground`, `showcase`, and `packages/cli`.
+- `bin/super-skill audit` treats these compatibility symlinks as a release contract.
 
 ## Verification Baseline
 
 ```bash
 bin/super-skill validate
+bin/super-skill plan --profile all --json
+bin/super-skill audit
 bin/super-skill install --profile all --dry-run
 bin/super-skill doctor
 ```

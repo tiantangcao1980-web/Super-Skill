@@ -1,6 +1,6 @@
 ---
 name: test-generation
-description: 生成单元测试和集成测试，包括 mock、fixture、边界条件和覆盖率补全。Use when asked to write or extend tests around specific code paths; use e2e-testing for full browser/user-flow suites and tdd-workflow for explicit test-first development.
+description: 生成单元测试和集成测试，包括 mock、fixture、边界条件和覆盖率补全。Use when asked to write or extend tests around specific code paths; use e2e-testing for full browser/user-flow suites and test-driven-development for explicit test-first development.
 ---
 
 # 测试生成

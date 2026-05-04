@@ -8,9 +8,12 @@
   },
   "scripts": {
     "validate": "bin/super-skill validate",
+    "audit": "bin/super-skill audit",
+    "plan": "bin/super-skill plan --profile core",
     "doctor": "bin/super-skill doctor",
     "catalog": "bin/super-skill catalog",
     "list": "bin/super-skill list",
+    "test:python": "python3 -m unittest discover -s tests",
     "test:designdna": "npm --prefix packages/designdna-cli test"
   },
   "keywords": [

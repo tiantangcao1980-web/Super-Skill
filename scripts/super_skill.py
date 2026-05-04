@@ -27,6 +27,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILLS_ROOT = ROOT / "skills"
 VENDOR_ROOT = ROOT / "vendor" / "cowork"
 CATALOG_ROOT = ROOT / "catalog"
+MANIFEST_ROOT = ROOT / "manifests"
 
 EXIT_OK = 0
 EXIT_RUNTIME = 1
@@ -74,6 +75,50 @@ PROFILE_STAGE_PREFIXES = {
     },
     "design": {"04-design-system", "07-testing-and-quality"},
     "all": set(STAGES),
+}
+
+COMPATIBILITY_LINKS = {
+    "design-md": "resources/design-md",
+    "designdna": "skills/04-design-system/designdna",
+    "assets": "resources/designdna-assets",
+    "playground": "resources/designdna-playground",
+    "showcase": "resources/designdna-showcase",
+    "packages/cli": "packages/designdna-cli",
+}
+
+TEXT_SUFFIXES = {
+    ".css",
+    ".html",
+    ".js",
+    ".json",
+    ".jsx",
+    ".md",
+    ".mjs",
+    ".py",
+    ".sh",
+    ".ts",
+    ".tsx",
+    ".txt",
+    ".yml",
+    ".yaml",
+}
+
+SECRET_PATTERNS = {
+    "private-key-block": re.compile(r"-----BEGIN (?:RSA |DSA |EC |OPENSSH )?PRIVATE KEY-----"),
+    "github-token": re.compile(r"\bgh[pousr]_[A-Za-z0-9_]{36,}\b"),
+    "aws-access-key": re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
+    "openai-api-key": re.compile(r"\bsk-[A-Za-z0-9_-]{32,}\b"),
+    "hardcoded-secret-assignment": re.compile(
+        r"(?i)\b(?:api[_-]?key|secret|token|password|passwd|private[_-]?key)\b"
+        r"\s*[:=]\s*[\"']?([A-Za-z0-9_./+=-]{24,})[\"']?"
+    ),
+}
+
+RISKY_PATTERNS = {
+    "rm-rf": re.compile(r"\brm\s+-rf\b"),
+    "git-reset-hard": re.compile(r"\bgit\s+reset\s+--hard\b"),
+    "curl-pipe-shell": re.compile(r"\bcurl\b[^\n|]*\|\s*(?:sh|bash)\b"),
+    "chmod-777": re.compile(r"\bchmod\s+777\b"),
 }
 
 
@@ -175,6 +220,33 @@ def discover_vendor_skills() -> list[Skill]:
         skill_from_path(path, source="vendor")
         for path in sorted(VENDOR_ROOT.rglob("SKILL.md"))
     ]
+
+
+def tracked_repo_files() -> list[Path]:
+    try:
+        proc = subprocess.run(
+            ["git", "ls-files"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        proc = None
+
+    if proc and proc.returncode == 0:
+        return [ROOT / line for line in proc.stdout.splitlines() if line]
+
+    return [
+        path
+        for path in ROOT.rglob("*")
+        if path.is_file() and not any(part in {".git", ".omx", "node_modules"} for part in path.parts)
+    ]
+
+
+def read_json_file(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def group_by_stage(skills: list[Skill]) -> dict[str, list[Skill]]:
@@ -323,6 +395,47 @@ def cmd_validate(args: argparse.Namespace) -> int:
     return EXIT_RUNTIME if failures else EXIT_OK
 
 
+def build_install_plan(profile: str, target: str, mode: str) -> dict:
+    skills = discover_skills(profile)
+    dups = duplicate_names(skills)
+    if dups:
+        raise ValueError(f"duplicate installable skill names: {', '.join(sorted(dups))}")
+
+    target_path = Path(target).expanduser()
+    action = "symlink" if mode == "symlink" else "copy"
+    operations = [
+        {
+            "name": skill.name,
+            "stage": skill.stage,
+            "stage_label": STAGES.get(skill.stage, skill.stage),
+            "source": skill.relative_path,
+            "target": str(target_path / skill.name),
+            "action": action,
+        }
+        for skill in skills
+    ]
+    return {
+        "profile": profile,
+        "mode": mode,
+        "target": str(target_path),
+        "skills_total": len(skills),
+        "stages": sorted({s.stage for s in skills}),
+        "operations": operations,
+    }
+
+
+def cmd_plan(args: argparse.Namespace) -> int:
+    plan = build_install_plan(args.profile, args.target, args.mode)
+    if args.json:
+        emit_json(True, plan)
+    else:
+        print(f"Install plan '{args.profile}' to {plan['target']} ({args.mode})")
+        print(f"Skills: {plan['skills_total']}")
+        for op in plan["operations"]:
+            print(f"  {op['action']:<8} {op['name']:<30} {op['target']}")
+    return EXIT_OK
+
+
 def install_one(skill: Skill, target: Path, mode: str, force: bool, dry_run: bool) -> dict:
     dest = target / skill.name
     action = "symlink" if mode == "symlink" else "copy"
@@ -370,6 +483,176 @@ def cmd_install(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def profile_manifest_report() -> tuple[list[dict], list[dict]]:
+    errors: list[dict] = []
+    warnings: list[dict] = []
+    profiles_path = MANIFEST_ROOT / "install-profiles.json"
+    components_path = MANIFEST_ROOT / "install-components.json"
+
+    if not profiles_path.exists():
+        errors.append({"check": "manifest", "message": "missing manifests/install-profiles.json"})
+    if not components_path.exists():
+        errors.append({"check": "manifest", "message": "missing manifests/install-components.json"})
+    if errors:
+        return errors, warnings
+
+    try:
+        profiles = read_json_file(profiles_path)
+        components = read_json_file(components_path)
+    except json.JSONDecodeError as exc:
+        errors.append({"check": "manifest", "message": f"invalid manifest JSON: {exc}"})
+        return errors, warnings
+
+    component_ids = {item.get("id") for item in components.get("components", [])}
+    for profile_name, expected_stages in sorted(PROFILE_STAGE_PREFIXES.items()):
+        profile = profiles.get("profiles", {}).get(profile_name)
+        if not profile:
+            errors.append({"check": "manifest", "message": f"profile missing from manifest: {profile_name}"})
+            continue
+        stages = set(profile.get("stages", []))
+        if stages != expected_stages:
+            errors.append(
+                {
+                    "check": "manifest",
+                    "message": f"profile stage drift: {profile_name}",
+                    "expected": sorted(expected_stages),
+                    "actual": sorted(stages),
+                }
+            )
+        for component_id in profile.get("components", []):
+            if component_id not in component_ids:
+                errors.append(
+                    {
+                        "check": "manifest",
+                        "message": f"profile references unknown component: {profile_name} -> {component_id}",
+                    }
+                )
+
+    manifest_profiles = set(profiles.get("profiles", {}))
+    extra = manifest_profiles - set(PROFILE_STAGE_PREFIXES)
+    if extra:
+        warnings.append({"check": "manifest", "message": f"manifest-only profiles: {', '.join(sorted(extra))}"})
+    return errors, warnings
+
+
+def compatibility_report() -> list[dict]:
+    results = []
+    for link_rel, target_rel in sorted(COMPATIBILITY_LINKS.items()):
+        link = ROOT / link_rel
+        target = ROOT / target_rel
+        ok = link.is_symlink() and link.exists() and target.exists() and link.resolve() == target.resolve()
+        results.append(
+            {
+                "path": link_rel,
+                "expected_target": target_rel,
+                "exists": link.exists(),
+                "is_symlink": link.is_symlink(),
+                "ok": ok,
+            }
+        )
+    return results
+
+
+def looks_like_placeholder(value: str) -> bool:
+    lowered = value.lower()
+    if value.startswith("$") or "{" in value or "}" in value:
+        return True
+    return any(part in lowered for part in ("example", "placeholder", "changeme", "your", "test", "xxx", "token"))
+
+
+def scan_text_file(path: Path) -> tuple[list[dict], list[dict]]:
+    secrets: list[dict] = []
+    risks: list[dict] = []
+    if path.suffix.lower() not in TEXT_SUFFIXES:
+        return secrets, risks
+    try:
+        text = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        return secrets, risks
+
+    rel = path.relative_to(ROOT).as_posix()
+    for lineno, line in enumerate(text.splitlines(), start=1):
+        for name, pattern in SECRET_PATTERNS.items():
+            match = pattern.search(line)
+            if not match:
+                continue
+            value = match.group(1) if match.groups() else match.group(0)
+            if name == "hardcoded-secret-assignment" and looks_like_placeholder(value):
+                continue
+            secrets.append({"file": rel, "line": lineno, "pattern": name})
+
+        for name, pattern in RISKY_PATTERNS.items():
+            if pattern.search(line):
+                risks.append({"file": rel, "line": lineno, "pattern": name})
+    return secrets, risks
+
+
+def cmd_audit(args: argparse.Namespace) -> int:
+    skills = discover_skills("all")
+    vendor_skills = discover_vendor_skills()
+    install_dups = duplicate_names(skills)
+    vendor_dups = duplicate_names(vendor_skills)
+    manifest_errors, manifest_warnings = profile_manifest_report()
+    compatibility = compatibility_report()
+
+    secret_findings: list[dict] = []
+    risky_findings: list[dict] = []
+    for path in tracked_repo_files():
+        secrets, risks = scan_text_file(path)
+        secret_findings.extend(secrets)
+        risky_findings.extend(risks)
+
+    executable_checks = []
+    for rel in ("bin/super-skill", "scripts/super_skill.py"):
+        path = ROOT / rel
+        executable_checks.append({"path": rel, "exists": path.exists(), "executable": os.access(path, os.X_OK)})
+
+    failures = []
+    if install_dups:
+        failures.append({"check": "installable-duplicates", "items": sorted(install_dups)})
+    broken_links = [item for item in compatibility if not item["ok"]]
+    if broken_links:
+        failures.append({"check": "compatibility-links", "items": broken_links})
+    if manifest_errors:
+        failures.append({"check": "manifests", "items": manifest_errors})
+    missing_exec = [item for item in executable_checks if not (item["exists"] and item["executable"])]
+    if missing_exec:
+        failures.append({"check": "executables", "items": missing_exec})
+    if secret_findings:
+        failures.append({"check": "secrets", "items": secret_findings})
+
+    payload = {
+        "skills_total": len(skills),
+        "vendor_skill_files": len(vendor_skills),
+        "installable_duplicate_names": {k: [s.relative_path for s in v] for k, v in install_dups.items()},
+        "vendor_duplicate_names": {k: [s.relative_path for s in v] for k, v in vendor_dups.items()},
+        "compatibility_links": compatibility,
+        "manifest_warnings": manifest_warnings,
+        "secret_findings": secret_findings,
+        "risky_pattern_findings": risky_findings,
+        "executable_checks": executable_checks,
+        "failures": failures,
+    }
+
+    if args.json:
+        emit_json(not failures, payload, code="AUDIT_FAILED" if failures else None)
+    else:
+        print(f"Installable skills: {len(skills)}")
+        print(f"Vendor skill files: {len(vendor_skills)}")
+        print(f"Installable duplicate names: {len(install_dups)}")
+        print(f"Vendor duplicate names: {len(vendor_dups)}")
+        print(f"Compatibility links: {len(compatibility) - len(broken_links)}/{len(compatibility)} ok")
+        print(f"Secret findings: {len(secret_findings)}")
+        print(f"Risky pattern findings: {len(risky_findings)}")
+        if failures:
+            print("\nFailures:")
+            for failure in failures:
+                print(f"  {failure['check']}: {len(failure['items'])}")
+        else:
+            print("Audit passed.")
+    return EXIT_RUNTIME if failures else EXIT_OK
+
+
 def cmd_doctor(args: argparse.Namespace) -> int:
     checks = []
     for name, command in {
@@ -405,12 +688,18 @@ def cmd_describe(args: argparse.Namespace) -> int:
         "commands": [
             {"name": "list", "purpose": "List lifecycle-organized installable skills"},
             {"name": "validate", "purpose": "Check skill frontmatter, duplicate names, links, and resource counts"},
+            {"name": "plan", "purpose": "Preview a resolved install plan without mutating the target"},
             {"name": "install", "purpose": "Install a profile into a flat agent skill directory"},
+            {"name": "audit", "purpose": "Check duplicates, manifests, compatibility links, secrets, and risky patterns"},
             {"name": "vendor", "purpose": "Summarize vendored Cowork domain ecosystem skills"},
             {"name": "catalog", "purpose": "Generate catalog/skill-index.json and catalog/skill-index.md"},
             {"name": "doctor", "purpose": "Check local tools used by Super Skill"},
         ],
         "profiles": sorted(PROFILE_STAGE_PREFIXES),
+        "manifests": {
+            "profiles": "manifests/install-profiles.json",
+            "components": "manifests/install-components.json",
+        },
     }
     if args.json:
         emit_json(True, payload)
@@ -526,6 +815,17 @@ def build_parser() -> argparse.ArgumentParser:
     ins_p.add_argument("--dry-run", action="store_true")
     ins_p.add_argument("--json", action="store_true")
     ins_p.set_defaults(func=cmd_install)
+
+    plan_p = sub.add_parser("plan", help="preview install operations without mutating files")
+    plan_p.add_argument("--profile", choices=sorted(PROFILE_STAGE_PREFIXES), default="all")
+    plan_p.add_argument("--target", default=os.environ.get("CODEX_SKILLS_HOME", "~/.codex/skills"))
+    plan_p.add_argument("--mode", choices=["symlink", "copy"], default="symlink")
+    plan_p.add_argument("--json", action="store_true")
+    plan_p.set_defaults(func=cmd_plan)
+
+    audit_p = sub.add_parser("audit", help="audit duplicate, compatibility, reliability, and security posture")
+    audit_p.add_argument("--json", action="store_true")
+    audit_p.set_defaults(func=cmd_audit)
 
     vendor_p = sub.add_parser("vendor", help="summarize vendored domain ecosystem")
     vendor_p.add_argument("--json", action="store_true")

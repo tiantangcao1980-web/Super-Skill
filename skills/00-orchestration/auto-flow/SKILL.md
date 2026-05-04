@@ -93,7 +93,7 @@ description: |
 | **⑤** 接口契约 | cli-design / api-design | `docs/5-INTERFACE.md` | 否 |
 | **⑥** 前端实现 | frontend-patterns + 平台 skill(web-development / miniprogram-development / 各 UI 库) | 可运行前端 | ✅ |
 | **⑦** 后端实现 | backend-patterns + cloud-functions / cloudrun-development | 可运行后端 | ✅ |
-| **⑧** 测试 | **qa-strategy** 编排 → tdd-workflow / e2e-testing / browser-automation / code-review / security-review / verification-loop | `docs/8-test-plan.md` + Quality Gate config + 7 层验证报告 | 否 |
+| **⑧** 测试 | **qa-strategy** 编排 → test-driven-development / e2e-testing / browser-automation / code-review / security-review / verification-loop | `docs/8-test-plan.md` + Quality Gate config + 7 层验证报告 | 否 |
 | **⑨** 交付 | **code-simplifier** 全量 + deployment-patterns + Cowork(`pptx`/`docx`/`pdf`)+ programmatic-video(可选) | 简化代码 + README + 部署链接 + 汇报材料 + 30s demo(可选) | 否 |
 
 每一幕**进下一幕前**必须有显式产出落盘 —— 没文件 = 没做完。

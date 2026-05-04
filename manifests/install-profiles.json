@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "profiles": {
+    "core": {
+      "description": "Full product lifecycle baseline from orchestration, research, analysis, product, design, interface, quality, delivery, operations, and Codex patterns. Excludes stack-specific development packs.",
+      "stages": [
+        "00-orchestration",
+        "01-research",
+        "02-analysis",
+        "03-product",
+        "04-design-system",
+        "05-interface-and-cli",
+        "07-testing-and-quality",
+        "08-delivery-and-growth",
+        "09-operations-and-knowledge",
+        "90-codex-patterns"
+      ],
+      "components": [
+        "stage:orchestration",
+        "stage:research",
+        "stage:analysis",
+        "stage:product",
+        "stage:design-system",
+        "stage:interface-cli",
+        "stage:quality",
+        "stage:delivery-growth",
+        "stage:operations-knowledge",
+        "stage:codex-patterns"
+      ]
+    },
+    "dev": {
+      "description": "Software engineering profile for interface, application development, quality, delivery, operations, and Codex packaging patterns.",
+      "stages": [
+        "05-interface-and-cli",
+        "06-development",
+        "07-testing-and-quality",
+        "08-delivery-and-growth",
+        "09-operations-and-knowledge",
+        "90-codex-patterns"
+      ],
+      "components": [
+        "stage:interface-cli",
+        "stage:development",
+        "stage:quality",
+        "stage:delivery-growth",
+        "stage:operations-knowledge",
+        "stage:codex-patterns"
+      ]
+    },
+    "design": {
+      "description": "DesignDNA, component-library, and quality profile for design-system-heavy work.",
+      "stages": [
+        "04-design-system",
+        "07-testing-and-quality"
+      ],
+      "components": [
+        "stage:design-system",
+        "stage:quality"
+      ]
+    },
+    "all": {
+      "description": "Complete Super Skill installable namespace.",
+      "stages": [
+        "00-orchestration",
+        "01-research",
+        "02-analysis",
+        "03-product",
+        "04-design-system",
+        "05-interface-and-cli",
+        "06-development",
+        "07-testing-and-quality",
+        "08-delivery-and-growth",
+        "09-operations-and-knowledge",
+        "90-codex-patterns"
+      ],
+      "components": [
+        "stage:orchestration",
+        "stage:research",
+        "stage:analysis",
+        "stage:product",
+        "stage:design-system",
+        "stage:interface-cli",
+        "stage:development",
+        "stage:quality",
+        "stage:delivery-growth",
+        "stage:operations-knowledge",
+        "stage:codex-patterns"
+      ]
+    }
+  }
+}
