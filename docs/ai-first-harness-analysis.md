@@ -2,6 +2,8 @@
 
 Based on the user-provided excerpt from the X post at <https://x.com/intuitiveml/status/2043545596699750791>.
 
+Also cross-checked against <https://github.com/walkinglabs/awesome-harness-engineering>, which frames harness engineering around context, memory, safe autonomy, specs, evals, observability, benchmarks, and runtime control.
+
 ## Core Thesis
 
 The article is not mainly about AI writing code. It is about redesigning the company around a harness where agents can do useful production work:
@@ -27,6 +29,7 @@ Super Skill implementation:
 - `harness-engineering`
 - `context-engineering`
 - `token-budgeting`
+- `agent-eval-harness`
 - `bin/super-skill harness`
 
 ### 2. Agent-Legible Architecture
@@ -55,6 +58,7 @@ Fast AI without fast validation creates fast-moving technical debt.
 Super Skill implementation:
 
 - `ai-review-gates`
+- `agent-eval-harness`
 - `qa-strategy`
 - `verification-loop`
 - `output-quality-gate`
@@ -78,6 +82,7 @@ Super Skill implementation:
 | Structured task prompt | `intent-contract`, `context-engineering` |
 | Monorepo / inspectable system | `agent-legible-architecture` |
 | Six-phase CI/CD | `qa-strategy`, `deployment-patterns`, `verification-loop` |
+| Agent evals and traces | `agent-eval-harness`, `browser-automation`, `verification-loop` |
 | Parallel AI review passes | `ai-review-gates`, `code-review`, `security-review` |
 | Feature flags and A/B tests | `agentic-product-iteration`, `experiment-driven-delivery` |
 | CloudWatch/Sentry triage | `observability-triage-loop`, `debugging` |
@@ -89,16 +94,18 @@ Super Skill implementation:
 
 1. Run `bin/super-skill harness --json`.
 2. Fix deterministic validation before increasing agent autonomy.
-3. Make context and architecture legible.
-4. Add AI review gates.
-5. Add feature flags and experiment rules.
-6. Add observability and triage loops.
-7. Convert recurring failures into skills, tools, or CI gates.
+3. Add agent evals with traces, deterministic verifiers, and no-skill baselines.
+4. Make context, working state, and architecture legible.
+5. Add tool, sandbox, and approval gates.
+6. Add AI review gates.
+7. Add feature flags and experiment rules.
+8. Add observability and triage loops.
+9. Convert recurring failures into skills, tools, or CI gates.
 
 ## Warning
 
 The article's throughput claims only make sense after the harness exists. Copying the speed without the gates creates production risk. The safe order is:
 
 ```text
-legibility -> validation -> review gates -> progressive delivery -> observability -> self-healing
+legibility -> tool/sandbox policy -> validation/evals -> review gates -> progressive delivery -> observability -> self-healing
 ```

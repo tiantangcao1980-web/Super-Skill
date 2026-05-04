@@ -67,7 +67,9 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertEqual(data["total"], len(data["capabilities"]))
         ids = {item["id"] for item in data["capabilities"]}
         self.assertIn("deterministic-ci", ids)
+        self.assertIn("eval-trace-benchmark", ids)
         self.assertIn("observability-triage", ids)
+        self.assertIn("tool-sandbox-policy", ids)
 
     def test_hermes_assessment_reports_self_improving_capabilities(self) -> None:
         data = run_cli("hermes", "--project", ".")

@@ -25,6 +25,7 @@ Skills:
 - `context-engineering`
 - `prompt-cache-layering`
 - `token-budgeting`
+- `durable-agent-board`
 
 Outputs:
 
@@ -33,8 +34,25 @@ Outputs:
 - service boundaries and contracts
 - context pack template
 - stable and ephemeral prompt layer map
+- resumable working-state and handoff contract
 
-## 2. Make Validation Deterministic
+## 2. Make Tooling Safe And Bounded
+
+Skills:
+
+- `toolset-sandbox-routing`
+- `checkpoint-rollback-safety`
+- `security-review`
+
+Outputs:
+
+- tool permission map
+- sandbox/worktree/container policy
+- destructive-action approval gates
+- prompt-injection and secret-handling rules
+- checkpoint and rollback contract for risky changes
+
+## 3. Make Validation Deterministic
 
 Skills:
 
@@ -42,19 +60,20 @@ Skills:
 - `test-driven-development`
 - `e2e-testing`
 - `verification-loop`
+- `agent-eval-harness`
 
 Outputs:
 
 - CI quality gates
 - unit/integration/e2e coverage map
 - environment parity checks
+- agent eval task set, traces, deterministic verifiers, and no-skill baseline
 
-## 3. Add Review Gates
+## 4. Add Review Gates
 
 Skills:
 
 - `ai-review-gates`
-- `checkpoint-rollback-safety`
 - `code-review`
 - `security-review`
 
@@ -64,9 +83,8 @@ Outputs:
 - security review pass
 - dependency/license review pass
 - product-risk review pass
-- checkpoint and rollback contract for risky changes
 
-## 4. Add Progressive Delivery
+## 5. Add Progressive Delivery
 
 Skills:
 
@@ -80,7 +98,7 @@ Outputs:
 - rollout/kill decision rules
 - A/B or cohort experiment plan
 
-## 5. Add Observability And Triage
+## 6. Add Observability And Triage
 
 Skills:
 
@@ -95,7 +113,7 @@ Outputs:
 - clustered triage ticket format
 - post-fix re-verification signal
 
-## 6. Close The Learning Loop
+## 7. Close The Learning Loop
 
 Skills:
 

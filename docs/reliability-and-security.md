@@ -46,7 +46,9 @@ Run:
 bin/super-skill harness --json
 ```
 
-This checks whether a project exposes the capabilities agents need for production work: intent/context contracts, agent-legible architecture, deterministic CI, AI review gates, progressive delivery, observability triage, output gates, and learning loops.
+This checks whether a project exposes the capabilities agents need for production work: intent/context contracts, spec workflows, agent-legible architecture, resumable working state, tool/sandbox policy, deterministic CI, agent evals and traces, AI review gates, progressive delivery, observability triage, token/cost control, output gates, human risk governance, and learning loops.
+
+The scan is static. Treat a high score as evidence that the project exposes the right harness surfaces, then prove runtime quality with project-specific eval tasks, traces, deterministic verifiers, and production signals.
 
 ## Hermes Engineering Readiness
 

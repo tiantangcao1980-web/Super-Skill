@@ -28,14 +28,14 @@ Super Skill 是一个面向 AI coding agent 的全流程技能集合：从用户
 | 设计 | `skills/04-design-system` | `designdna`, `design-templates`, 47 个 UI/组件库技能 |
 | 接口/CLI | `skills/05-interface-and-cli` | `api-design`, `api-gateway`, `cli-design`, `create-cli` |
 | 开发 | `skills/06-development` | `agent-legible-architecture`, `frontend-patterns`, `backend-patterns`, `database-patterns`, `ai-agent-frameworks` |
-| 测试/输出质量 | `skills/07-testing-and-quality` | `ai-review-gates`, `checkpoint-rollback-safety`, `qa-strategy`, `output-quality-gate`, `browser-automation`, `security-review` |
+| 测试/输出质量 | `skills/07-testing-and-quality` | `agent-eval-harness`, `ai-review-gates`, `checkpoint-rollback-safety`, `qa-strategy`, `output-quality-gate`, `browser-automation`, `security-review` |
 | 交付/增长 | `skills/08-delivery-and-growth` | `experiment-driven-delivery`, `deployment-patterns`, `docker`, `git`, `github` |
 | 运维/知识 | `skills/09-operations-and-knowledge` | `observability-triage-loop`, `persistent-memory-curation`, `file-curation`, `documentation`, `continuous-learning` |
 | Codex/Hermes/上下文模式 | `skills/90-codex-patterns` | `harness-engineering`, `skill-evolution-loop`, `token-budgeting`, `skill-authoring-system`, `verification-loop`, `agent-routing` |
 
 当前清单：
 
-- 109 个可安装生命周期技能
+- 110 个可安装生命周期技能
 - profile/component manifest 支持只读安装预案
 - 58 套 DesignDNA 品牌系统，位于 `resources/design-md/`
 - 67 个 Cowork 领域技能文件，位于 `vendor/cowork/`
@@ -141,6 +141,7 @@ CI 会运行 `doctor`、`validate`、`plan`、Hermes profile plan、`audit`、`h
 - [研究与编排分析](catalog/source-audit.md)
 - [ECC/Superpowers 深度分析](catalog/ecc-superpowers-analysis.md)
 - [AI-first Harness Analysis](docs/ai-first-harness-analysis.md)
+- [Harness Engineering Validation](docs/harness-engineering-validation.md)
 - [Hermes Engineering Analysis](docs/hermes-engineering-analysis.md)
 - [端到端工作流](workflows/research-to-delivery.md)
 - [Agentic 上下文到交付工作流](workflows/agentic-context-to-delivery.md)

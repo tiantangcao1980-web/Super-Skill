@@ -1,5 +1,5 @@
 {
-  "generated_at": 1777900159,
+  "generated_at": 1777900641,
   "installable_skills": [
     {
       "name": "auto-flow",
@@ -608,6 +608,14 @@
       "stage_label": "Development",
       "source": "core",
       "path": "skills/06-development/frontend-patterns"
+    },
+    {
+      "name": "agent-eval-harness",
+      "description": "Use when validating whether an AI agent skill, workflow, prompt, toolset, or autonomous coding loop actually improves results across repeatable tasks.",
+      "stage": "07-testing-and-quality",
+      "stage_label": "Quality",
+      "source": "core",
+      "path": "skills/07-testing-and-quality/agent-eval-harness"
     },
     {
       "name": "ai-review-gates",
