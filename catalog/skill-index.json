@@ -1,0 +1,1310 @@
+{
+  "generated_at": 1777895550,
+  "installable_skills": [
+    {
+      "name": "auto-flow",
+      "description": "端到端工作流自动化:用户给一句需求,本 skill 串联 9 个 skill + 2 个 plugin,从需求澄清一直跑到交付。 Phase 0 强制做需求\"完整性 + 可行性\" gate(11 项必填,缺一项就回问用户,**不放行**);通过后自动进 7 幕,每个开发幕用 ralph-loop(默认 20 轮)+ code-simplifier 配合;最终交付。 中间默认不打扰用户,**仅在 6 个预设触发点停下来**:需求不全 / Ralph 超 20 轮 / 卡住 / 付费决策 / 破坏性操作 / 验证 ❌。 触发词:「全自动开发」「auto-flow」「从需求到交付」「自动化全流程」「我只想提需求」「auto pilot」「自动跑」「全流程自动」「一条龙」「端到端开发」。 本 skill 是 design-dev-flow 的**驱动器**:design-dev-flow 是声明式 7 幕,auto-flow 让它真的跑起来。",
+      "stage": "00-orchestration",
+      "stage_label": "Orchestration",
+      "source": "core",
+      "path": "skills/00-orchestration/auto-flow"
+    },
+    {
+      "name": "design-dev-flow",
+      "description": "项目级\"设计 → 开发 → 验证 → 交付\"全流程编排器。从需求澄清开始,串联设计规范(taste + 文案 + UI 库)、CLI/接口设计、前后端 Ralph Loop 实现、浏览器自动验证、代码简化、Demo 录制。 本 skill 只做编排,具体环节调用:spec-workflow / ui-design / designdna / ralph-loop / code-simplifier 以及 frontend-patterns / backend-patterns 等已有 skill。 触发词:「全流程开发」「设计到交付」「从 0 做项目」「项目编排」「设计 + 开发 + 验证」「端到端开发」「端到端交付」。",
+      "stage": "00-orchestration",
+      "stage_label": "Orchestration",
+      "source": "core",
+      "path": "skills/00-orchestration/design-dev-flow"
+    },
+    {
+      "name": "ralph-loop",
+      "description": "Ralph Wiggum 迭代循环引擎:明确退出条件 → 小步执行 → 自动验证 → 决定继续或停止。 适用场景:长任务自动迭代、构建/测试反复跑、PR 反复打磨、批量修复、任何\"做完一遍还要再做一遍\"的工作。 触发词:「Ralph」「循环」「迭代」「跑直到」「自动重试」「持续做 X 直到 Y」「loop」「until」。 与 /loop 命令的区别:/loop 是节奏调度(跨会话);本 skill 是一次会话内的循环工作模式 + 退出判定 + 单步质量门。",
+      "stage": "00-orchestration",
+      "stage_label": "Orchestration",
+      "source": "core",
+      "path": "skills/00-orchestration/ralph-loop"
+    },
+    {
+      "name": "market-research",
+      "description": "Research markets with sizing, segmentation, competitor mapping, pricing checks, and demand validation that turn fuzzy ideas into decision-ready evidence. Use when (1) you need TAM, SAM, SOM, whitespace, or category sizing; (2) you must compare competitors, pricing, positioning, or customer segments before acting; (3) the user asks whether a niche, launch, expansion, or go-to-market bet is actually worth pursuing.",
+      "stage": "01-research",
+      "stage_label": "Research",
+      "source": "core",
+      "path": "skills/01-research/market-research"
+    },
+    {
+      "name": "user-research",
+      "description": "用户调研 skill:把\"我感觉用户想要 X\"变成\"我访谈了 5 个用户,他们在 Y 场景下做 Z\"。 覆盖 4 种调研模式:用户访谈(深访 / 焦点组)、问卷调研(量化)、竞品分析(对标 / 错位)、桌面研究(趋势 / 数据 / 报告)。 产出 `research-report.md`,被 requirement-analysis 消费。 触发词:「用户调研」「访谈」「问卷」「竞品分析」「user research」「JTBD 调研」「desk research」「市场调研」「竞品对标」。 适用阶段:auto-flow ① 调研幕(项目最上游)。",
+      "stage": "01-research",
+      "stage_label": "Research",
+      "source": "core",
+      "path": "skills/01-research/user-research"
+    },
+    {
+      "name": "data-analysis",
+      "description": "Data analysis and visualization. Query databases, generate reports, automate spreadsheets, and turn raw data into clear, actionable insights. Use when (1) you need to analyze, visualize, or explain data; (2) the user wants reports, dashboards, or metrics turned into a decision; (3) the work involves SQL, Python, spreadsheets, BI tools, or notebooks; (4) you need to compare segments, cohorts, funnels, experiments, or time periods; (5) the user explicitly installs or references the skill for the current task.",
+      "stage": "02-analysis",
+      "stage_label": "Analysis",
+      "source": "core",
+      "path": "skills/02-analysis/data-analysis"
+    },
+    {
+      "name": "requirement-analysis",
+      "description": "需求分析 skill:把 research-report.md 的\"洞察\"转成可执行的\"需求\"。覆盖 JTBD(Jobs To Be Done)、User Story、用户旅程、优先级矩阵(MoSCoW + RICE)。 与 spec-workflow 协作:本 skill 输出\"做什么 + 为什么\",spec-workflow 把\"做什么\"展开成工程 spec。 触发词:「需求分析」「JTBD」「User Story」「用户故事」「用户旅程」「优先级」「MoSCoW」「RICE」「需求拆分」「需求评审」。 适用阶段:auto-flow ② 分析幕(在 user-research 之后,product-spec 之前)。",
+      "stage": "02-analysis",
+      "stage_label": "Analysis",
+      "source": "core",
+      "path": "skills/02-analysis/requirement-analysis"
+    },
+    {
+      "name": "product-spec",
+      "description": "产品规格(PRD)skill:把 requirement-analysis 的 User Story 矩阵展开成完整 PRD,含 MVP 切片、roadmap、成功指标(North Star + 输入 / 输出指标)、上线 / 回滚预案。 与 spec-workflow 协作:本 skill 偏\"产品视角\",spec-workflow 偏\"工程 spec\";二者都要写,不重叠。 触发词:「PRD」「产品规格」「产品文档」「product spec」「MVP」「roadmap」「North Star」「成功指标」「上线计划」「回滚」。 适用阶段:auto-flow ③ 产品幕(在 requirement-analysis 之后,设计幕之前)。",
+      "stage": "03-product",
+      "stage_label": "Product",
+      "source": "core",
+      "path": "skills/03-product/product-spec"
+    },
+    {
+      "name": "ant-design",
+      "description": "Ant Design (antd) React component library skill — Alibaba's flagship enterprise React UI (97k+ stars, v6.x, active). The de-facto standard for B2B admin/dashboard in China and widely used globally. Covers 60+ components with Form/Table patterns, v6 CSS-variable theming, App/ConfigProvider usage, @ant-design/cli, and v5 → v6 migration notes.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/ant-design"
+    },
+    {
+      "name": "ant-design-mobile",
+      "description": "Ant Design Mobile (antd-mobile) — Alibaba's React mobile H5 component library (11k stars, v5.x, active). Mobile-optimized components (Tabs, List, Form, Swiper, Popup, SafeArea) with iOS/Android adaptive styling. Includes install, catalog, theme tokens, and RN/H5 target distinctions.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/ant-design-mobile"
+    },
+    {
+      "name": "ant-design-pro",
+      "description": "Ant Design Pro — enterprise React admin scaffold + pro-components library. Scaffold (37k stars) gives a full B2B admin starter with layouts, routes, authentication, i18n. Pro-components (4k stars) provides high-level business components (ProTable, ProForm, ProLayout, ProDescriptions). Both active through 2026.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/ant-design-pro"
+    },
+    {
+      "name": "ant-design-vue",
+      "description": "Ant Design Vue (antdv) — community Vue 3 port of Ant Design (20k stars, v4.x, active). Visual and API parity with React antd. For Vue 3 B2B admin apps wanting antd's design language. Covers installation, component catalog, v3 → v4 migration, on-demand imports, and theme tokens.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/ant-design-vue"
+    },
+    {
+      "name": "ant-design-x",
+      "description": "Ant Design X — Alibaba's React AI/LLM conversation UI library (active v2.x). Purpose-built for AI copilot / chatbot interfaces with streaming, message bubbles, sender input, suggestions, prompts, and thought processes. The React equivalent of TDesign Chat.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/ant-design-x"
+    },
+    {
+      "name": "anti-slop",
+      "description": "Bias correction layer that prevents AI coding agents from generating the generic, lookalike \"AI slop\" UI (centered heroes, Inter font, 3-card grids, John Doe avatars, 99.99% metrics, purple gradients). Combine with any brand DNA for taste-corrected output.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/anti-slop"
+    },
+    {
+      "name": "antv",
+      "description": "AntV (G2 / G6 / X6) — Alibaba's framework-agnostic data visualization stack. G2 (25k+ combined stars) for statistical charts, G6 for graph/network viz, X6 for flowchart/diagram editor. Plus @ant-design/charts as the React wrapper. Active through 2026. Includes use-case guide and typical chart/graph patterns.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/antv"
+    },
+    {
+      "name": "apple-hig",
+      "description": "Apple Human Interface Guidelines skill — spec (not code library) for iOS / iPadOS / macOS / visionOS / watchOS / tvOS native apps. Use as design token source for SwiftUI or as visual reference when replicating Apple aesthetics on the web. Includes SF Pro typography, spacing scale, corner radius tokens, dynamic system colors, Liquid Glass materials (WWDC 2025), and HIG principles.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/apple-hig"
+    },
+    {
+      "name": "arco-design-vue",
+      "description": "Arco Design Vue — ByteDance's Vue 3 enterprise component library (4k stars, active). Paired Vue sibling of Arco Design React. Used extensively inside ByteDance products (Lark, Feishu) — polished, commercial visual aesthetics. 60+ components, tree-shakeable, TypeScript-friendly.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/arco-design-vue"
+    },
+    {
+      "name": "bootstrap",
+      "description": "Bootstrap 5 — classic CSS + JS component framework (174k stars, v5.3+, active). Mature, battle-tested for enterprise admin, internal tools, marketing sites. Ships with Bootstrap Icons. Vanilla-JS (no React/Vue dep). Best for projects wanting \"install a theme and ship\" speed. v4 is security-only. Includes install, grid, components, SASS customization.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/bootstrap"
+    },
+    {
+      "name": "chakra-ui",
+      "description": "Chakra UI v3 — accessible React component library rebuilt on Panda CSS for zero-runtime styles (40k stars, active 2026). v3 is a breaking rewrite from v2 with new API (Field vs FormControl, style props via recipe). Covers install, v2 vs v3 differences, component patterns, and theme customization.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/chakra-ui"
+    },
+    {
+      "name": "copywriting-design",
+      "description": "产品文案设计 skill:把\"翻译需求\"变成\"人格表达\"。覆盖语气维度、5 句关键文案规则(主标题/CTA/空态/错态/成态)、文案反模式。 灵感:alchaincyf/huashu-design 文案话术设计哲学。 触发词:「文案」「话术」「slogan」「产品文案」「CTA」「按钮文案」「错误提示」「空态文案」「主标题」「写一段产品介绍」「文案优化」。 适用阶段:产品起名、首页主标题、按钮文案、错误提示、登录页文案、邮件 / 推送通知、营销素材。",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/copywriting-design"
+    },
+    {
+      "name": "design-templates",
+      "description": "设计规范文档 skill:产出标准化的 DESIGN.md / Design Tokens / 配色卡 / 字体表 / 间距规范。 灵感:tiantangcao1980-web/awesome-design-md —— 设计规范模板集。 触发词:「DESIGN.md」「设计规范」「设计 token」「色板」「字体规范」「布局规范」「设计系统文档」「style guide」「设计文档模板」。 适用阶段:项目立项后的设计规范文档化、design system 初始化、新人 onboarding、设计稿 → 代码 token 同步。",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/design-templates"
+    },
+    {
+      "name": "designdna",
+      "description": "Based on Google Stitch DESIGN.md methodology and 58 world-class brand design systems (Apple, Tesla, Stripe, Vercel, Linear, Airbnb, Spotify, Notion, etc.), this skill provides a complete framework for AI agents to generate production-grade UI with distinctive aesthetic quality. Covers design analysis, DESIGN.md creation, and pixel-perfect implementation across all frontend platforms.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna"
+    },
+    {
+      "name": "element-plus",
+      "description": "Element Plus — Vue 3 flagship desktop component library from Eleme/Ele.me (26k stars, active). Chinese-localized, mature, most-used Vue 3 B2B admin library in China. Covers 60+ components with full Vue 3 Composition API, theme tokens, and SFC-optimized imports.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/element-plus"
+    },
+    {
+      "name": "fluent-ui",
+      "description": "Microsoft Fluent UI — Fluent 2 design language implementation. `@fluentui/react-components` v9 (React, active, used by Teams/Copilot) + `@fluentui/web-components` v3 RC (framework-agnostic). Use for Microsoft 365 plugin integration, Teams apps, enterprise apps wanting Fluent aesthetic. ⚠️ v8 (`@fluentui/react` / Fabric) is maintenance-only.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/fluent-ui"
+    },
+    {
+      "name": "flutter-material",
+      "description": "Flutter Material 3 — Google's cross-platform UI toolkit with built-in Material 3 components (`package:flutter/material`, bundled with Flutter SDK). Recommended path since `material-components-flutter` was archived in 2023. Covers widget catalog, ThemeData tokens, dynamic color, and Material 3 migration notes.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/flutter-material"
+    },
+    {
+      "name": "gpt-image-2",
+      "description": "OpenAI GPT Image 2 skill for production visual asset generation and editing. Covers Image API vs Responses API selection, prompt-to-asset workflows, high-fidelity edits, output sizing, compression, moderation, cost controls, and DesignDNA-ready asset handoff.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/gpt-image-2"
+    },
+    {
+      "name": "material-components-android",
+      "description": "Material Components for Android (MDC-Android) — Google's Material Design implementation for the View / XML UI system on Android (17k stars, v1.14-beta with M3 Expressive, 🟢 active 2026). Use for legacy View-system Android apps. ⚠️ New Compose projects should use `androidx.compose.material3` instead.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/material-components-android"
+    },
+    {
+      "name": "material-components-flutter",
+      "description": "Material Components for Flutter — historically a standalone repo, now consolidated into the Flutter SDK itself. The `package:flutter/material` bundled with Flutter is the continuation of this work. See `flutter-material` skill for the current path.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/material-components-flutter"
+    },
+    {
+      "name": "material-components-ios",
+      "description": "Material Components for iOS (MDC-iOS) — Google's Material Design library for UIKit. Archived 2025-12 but still usable for existing projects. Covers installation, component reference, theming, and migration guidance to SwiftUI/Apple HIG for new projects.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/material-components-ios"
+    },
+    {
+      "name": "material-web",
+      "description": "Material Web — Google's framework-agnostic Lit-based Web Components implementation of Material 3 (~9k stars, currently in maintenance mode). Safe for existing projects. For new React projects, MUI is usually the stronger path (see `mui-material` skill).",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/material-web"
+    },
+    {
+      "name": "mui-base",
+      "description": "MUI Base UI (`@base-ui-components/react`) — MUI's headless React primitives library (9.1k stars, v1.1 stable, active). Alternative to Radix Primitives. Unstyled, accessible components (Dialog, Popover, Select, Menu, etc.) to build your own design system.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/mui-base"
+    },
+    {
+      "name": "mui-material",
+      "description": "MUI material-ui — React's biggest Material Design component library (98k stars, v7.3+, active). Google Material Design's de-facto carrier on the web. Covers 100+ components with Emotion/styled CSS-in-JS, theme provider, Material 2/3 styling, dark mode, and Figma kits. For advanced components (DataGrid/Charts/DatePicker Pro), pair with `mui-x` skill.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/mui-material"
+    },
+    {
+      "name": "mui-x",
+      "description": "MUI X — enterprise React components for MUI (v9, active, MIT + Pro/Premium tiers). DataGrid (most capable React table), Charts, DatePicker Pro (range, multi-input), TreeView. Pair with `mui-material` skill. Community tier covers 80% of needs; Pro unlocks column pinning, row grouping, Excel export; Premium adds aggregation, clipboard, row reordering.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/mui-x"
+    },
+    {
+      "name": "naive-ui",
+      "description": "Naive UI — modern TypeScript-first Vue 3 component library (17k stars, active, endorsed by Evan You). No CSS file to import (CSS-in-JS), full TS types, flexible theming via JS config. 80+ components. Best for Vue 3 teams wanting typed API and modern-flexible theming without CSS overhead.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/naive-ui"
+    },
+    {
+      "name": "nutui-biz",
+      "description": "NutUI Biz business components skill — e-commerce domain components for NutUI React (address, SKU, coupon, invoice, order list). ⚠️ MAINTENANCE MODE — last major release 2023-03, minor fixes through 2025-01. Still usable but not actively developed. For new projects, copy components out as starting points rather than npm-depending on them.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/nutui-biz"
+    },
+    {
+      "name": "nutui-icons",
+      "description": "NutUI official icon library skill — 500+ mobile-first glyphs for both Vue and React (two sibling packages, tree-shakeable). Covers install, on-demand import, custom sizing/color, SVG output, and alternatives (Lucide, Tabler) when NutUI doesn't have a glyph.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/nutui-icons"
+    },
+    {
+      "name": "nutui-react",
+      "description": "NutUI React v3 component library skill — JD's mobile-first React component library (1.2k stars, active). Covers 70+ components across basics, forms, feedback, layout, e-commerce. Works with plain React, Next.js, and Taro + React. Includes installation, component reference, theme tokens, on-demand imports, and Taro integration patterns.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/nutui-react"
+    },
+    {
+      "name": "nutui-templates",
+      "description": "NutUI official page templates skill — JD-style Vue 3 and React page/layout templates for mobile H5 and Taro MiniProgram (152 stars, active). Covers template taxonomy (home / product / order / checkout / me), how to scaffold from a template, and integration with NutUI Vue / React.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/nutui-templates"
+    },
+    {
+      "name": "nutui-uniapp",
+      "description": "NutUI UniApp v1 component library skill — community-maintained port of NutUI for UniApp + Vue 3 projects (553 stars, 2026-04 active). Compiles to H5, all 9 MiniProgram vendors, iOS/Android via UniApp. Includes installation for Vite and Vue CLI setups, component reference, easycom auto-import, theme tokens.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/nutui-uniapp"
+    },
+    {
+      "name": "nutui-vue",
+      "description": "NutUI 4 Vue 3 component library skill — JD's flagship mobile-first component library (6.5k stars, actively maintained). Covers 70+ components across basics, forms, navigation, feedback, layout, and business patterns. Optimized for mobile H5 + Taro MiniPrograms. Includes installation, component reference, theme tokens, and on-demand imports.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/nutui-vue"
+    },
+    {
+      "name": "radix-ui",
+      "description": "Radix UI — two sibling libraries. Radix Primitives (18.8k stars) is unstyled, accessible React primitives (Dialog, Popover, Tooltip, Select, etc.) used by shadcn/ui and thousands of custom design systems. Radix Themes (8.3k stars, v3.3) is an opinionated styled layer on Primitives with 12-step color scales. Both active 2026.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/radix-ui"
+    },
+    {
+      "name": "react-bits",
+      "description": "React Bits — \"the largest, most creative\" React animated component library by David Haz (38.3k stars, active). 110+ animated components across text animations, UI elements, and backgrounds (including Three.js 3D effects). Distributed via shadcn CLI / jsrepo / manual copy. 4 technology variants per component (JS-CSS, JS-Tailwind, TS-CSS, TS-Tailwind). Perfect for memorable landing pages and marketing sites.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/react-bits"
+    },
+    {
+      "name": "react-native-paper",
+      "description": "React Native Paper — Material Design for React Native (13k+ stars, v5.x, active). Cross-platform native iOS/Android Material 3 components. Use when building RN apps wanting Material aesthetics. Covers installation, component catalog, theme tokens, adaptive theme (light/dark/auto), and MD3 migration.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/react-native-paper"
+    },
+    {
+      "name": "remotion",
+      "description": "Remotion — \"Make videos programmatically with React\" (43.6k stars, active). A React-based framework that lets developers create videos using React components, props, CSS, Canvas, and SVG. Use for programmatic video generation (explainer videos, personalized ads, data-driven videos, GitHub Unwrapped-style content). Covers install, core concepts (Composition, frames, useCurrentFrame), Remotion Player for embedding, and Lambda for cloud rendering.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/remotion"
+    },
+    {
+      "name": "shadcn-ui",
+      "description": "shadcn/ui — copy-paste React component library built on Radix Primitives + Tailwind CSS (80k+ stars, de-facto modern React standard 2024-2026). Not a traditional npm library — you own the code after CLI adds it. Includes setup, CLI commands, 40+ components, theming via CSS variables, dark mode.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/shadcn-ui"
+    },
+    {
+      "name": "tailwindcss",
+      "description": "Tailwind CSS v4 — utility-first CSS framework (87k+ stars, active). The dominant CSS choice for modern React/Vue/Svelte projects. v4 uses Oxide engine (much faster) and native CSS `@theme` directive. Covers install, v3 → v4 migration, design token customization, and common UI patterns.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/tailwindcss"
+    },
+    {
+      "name": "tamagui",
+      "description": "Tamagui — universal React UI library that compiles to React Native + web from the same source (10k+ stars, active). Zero-runtime styles via compile-time optimization. Best for shared React + React Native codebases. Covers install, core components, theme tokens, and the compiler setup.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/tamagui"
+    },
+    {
+      "name": "taro",
+      "description": "Taro cross-platform framework skill — compile React/Vue/Nerv to 7+ MiniProgram vendors (WeChat, Alipay, ByteDance, Baidu, QQ, JD, Kuaishou) + H5 + React Native + HarmonyOS from one codebase. Includes project setup, config, compilation targets, and common pitfalls. For UI components, pair with `nutui-react` or `nutui-vue` skill.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/taro"
+    },
+    {
+      "name": "taro-ui",
+      "description": "Taro UI component library skill for Taro 2.x/3.x React projects. Covers 50+ components (Button, Modal, Form, Tabs, SwipeAction, etc.) with usage snippets and props reference. ⚠️ MAINTENANCE MODE — last meaningful release 2024-08; Taro 4.x support lags. New projects on Taro 4+ should use `nutui-react` skill instead.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/taro-ui"
+    },
+    {
+      "name": "tdesign-chat",
+      "description": "TDesign Vue Next Chat — Tencent's official AI/LLM conversation UI component package for Vue 3 (part of tdesign-vue-next monorepo, active v0.5.x). Covers Chatbot/Chat primitives, streaming message rendering, Markdown + code-block support, AG-UI or custom SSE service protocols, tool-call/thinking UI, and AI copilot interface patterns.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/tdesign-chat"
+    },
+    {
+      "name": "tdesign-flutter",
+      "description": "TDesign Flutter — Tencent's Flutter component library (1.1k stars, active 2026). Alternative visual flavor to Flutter SDK's built-in Material. Use when you want Tencent's cross-platform design language on Flutter iOS/Android/Web. Includes install, component catalog, and theme customization.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/tdesign-flutter"
+    },
+    {
+      "name": "tdesign-miniprogram",
+      "description": "TDesign WeChat MiniProgram component library skill — Tencent's official native WeChat MP component library (v1.14.x, active). Covers 60+ components matching TDesign's cross-platform visual DNA. Includes npm install, component catalog, theme tokens, retail starter template, and WeChat Developer Tools integration.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/tdesign-miniprogram"
+    },
+    {
+      "name": "tdesign-mobile",
+      "description": "TDesign Mobile component libraries for Vue 3 and React — Tencent's mobile H5 component libraries (tdesign-mobile-vue v1.13.x + tdesign-mobile-react v0.22.x, active). Covers mobile-optimized components (Tabbar, NavBar, ActionSheet, SwipeCell, etc.) with responsive sizing, safe-area behavior, and TDesign token parity.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/tdesign-mobile"
+    },
+    {
+      "name": "tdesign-react",
+      "description": "TDesign React desktop component library skill — Tencent's React enterprise library (v1.16.x, active). Covers 60+ desktop components for B2B admin/dashboard. Includes installation, component catalog, theme customization via CSS variables, Starter templates, and Next.js setup.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/tdesign-react"
+    },
+    {
+      "name": "tdesign-vue-next",
+      "description": "TDesign Vue 3 desktop component library skill — Tencent's flagship Vue 3 enterprise library (2.1k stars, active, v1.19.x). Covers 60+ desktop components for B2B admin/dashboard. Includes installation with on-demand imports, component catalog, TDesign design tokens/CSS variables, Starter templates, dark mode, and Tencent-ecosystem integration patterns.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/tdesign-vue-next"
+    },
+    {
+      "name": "uniapp",
+      "description": "UniApp — DCloud's cross-platform framework (41.5k stars, v5.07, active). Compile Vue 3 to 9 MiniProgram vendors + H5 + iOS/Android + HarmonyOS. UniApp X variant (UTS-based, near-native) recommended for WeChat + HarmonyOS + native iOS/Android. Covers install, uni-ui components, pages.json, easycom, platform-conditional compilation.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/uniapp"
+    },
+    {
+      "name": "vant-weapp",
+      "description": "Vant Weapp — Youzan's native WeChat MiniProgram component library (18.4k stars, v1.11+, active 2026). The most popular native MP library with 50+ mobile-optimized components. Use for WeChat-only MiniPrograms — for multi-vendor use Taro + NutUI instead.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/vant-weapp"
+    },
+    {
+      "name": "vuetify",
+      "description": "Vuetify — Vue 3 Material Design component library (40k stars, v3.x, active). Largest Material-flavor Vue library. 80+ components, theme-configurable, SSR-friendly. Use when building Vue app with Material Design aesthetic.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/vuetify"
+    },
+    {
+      "name": "weui",
+      "description": "WeUI — Tencent's CSS-only style library for WeChat H5 pages and WeChat MiniProgram (27.4k + 15.3k stars, maintenance mode 2026). Demoted from \"MiniProgram default\" to \"lightweight WeChat H5 webview styling\". Use only for legacy WeChat H5 embedded pages. For MiniProgram component libraries, use Vant Weapp or TDesign MiniProgram.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/designdna/skills/weui"
+    },
+    {
+      "name": "api-design",
+      "description": "设计或修订 REST, GraphQL, gRPC, or WebSocket 接口契约，包括资源建模、分页、错误响应、版本控制和 OpenAPI。Use when defining API shapes or specs, not routine endpoint implementation.",
+      "stage": "05-interface-and-cli",
+      "stage_label": "Interface",
+      "source": "core",
+      "path": "skills/05-interface-and-cli/api-design"
+    },
+    {
+      "name": "api-gateway",
+      "description": "Connect to 100+ APIs (Google Workspace, Microsoft 365, GitHub, Notion, Slack, Airtable, HubSpot, etc.) with managed OAuth. Use this skill when users want to interact with external services. Security: The MATON_API_KEY authenticates with Maton.ai but grants NO access to third-party services by itself. Each service requires explicit OAuth authorization by the user through Maton's connect flow. Access is strictly scoped to connections the user has authorized. Provided by Maton (https://maton.ai).",
+      "stage": "05-interface-and-cli",
+      "stage_label": "Interface",
+      "source": "core",
+      "path": "skills/05-interface-and-cli/api-gateway"
+    },
+    {
+      "name": "cli-design",
+      "description": "CLI 设计规范 skill:对齐 opencli + CLI-Anything,把\"做命令行工具\"这件事工业化。 覆盖命令树结构、flag 命名、输入输出、退出码、错误码、JSON schema 暴露,以及\"任意能力 CLI 化\"的 5 步法。 触发词:「设计 CLI」「命令行接口」「opencli」「CLI-Anything」「命令树」「子命令」「CLI 规范」「scaffold CLI」「CLI 化」。 适用阶段:开发者工具立项、给 LLM/agent 暴露能力、把已有逻辑封装为可调用 CLI。",
+      "stage": "05-interface-and-cli",
+      "stage_label": "Interface",
+      "source": "core",
+      "path": "skills/05-interface-and-cli/cli-design"
+    },
+    {
+      "name": "create-cli",
+      "description": "Design command-line interface parameters and UX: arguments, flags, subcommands, help text, output formats, error messages, exit codes, prompts, config/env precedence, and safe/dry-run behavior. Use when you’re designing a CLI spec (before implementation) or refactoring an existing CLI’s surface area for consistency, composability, and discoverability.",
+      "stage": "05-interface-and-cli",
+      "stage_label": "Interface",
+      "source": "core",
+      "path": "skills/05-interface-and-cli/create-cli"
+    },
+    {
+      "name": "ai-agent-frameworks",
+      "description": "设计、实现、重构或排查 AI Agent 框架应用。Use when the task involves OpenClaw, LangGraph, AutoGen, AgentScope, CrewAI, Spring AI Alibaba, or similar tool-calling / multi-agent workflows.",
+      "stage": "06-development",
+      "stage_label": "Development",
+      "source": "core",
+      "path": "skills/06-development/ai-agent-frameworks"
+    },
+    {
+      "name": "backend-patterns",
+      "description": "规划或重构后端服务结构，涵盖 Node.js/Python/Go/Java 的服务边界、缓存、消息队列、后台任务、微服务和数据访问模式。Use when the task is about backend architecture or structural changes, not simple CRUD edits.",
+      "stage": "06-development",
+      "stage_label": "Development",
+      "source": "core",
+      "path": "skills/06-development/backend-patterns"
+    },
+    {
+      "name": "chatgpt-apps",
+      "description": "Build, scaffold, refactor, and troubleshoot ChatGPT Apps SDK applications that combine an MCP server and widget UI. Use when implementing or changing Apps SDK code, tool wiring, UI resources, metadata, CSP, or app scaffolding; use openai-docs for documentation lookup, quotes, limits, or API guidance without code changes.",
+      "stage": "06-development",
+      "stage_label": "Development",
+      "source": "core",
+      "path": "skills/06-development/chatgpt-apps"
+    },
+    {
+      "name": "coding-standards",
+      "description": "定义或应用多语言编码规范，包括命名、文件组织、类型安全和错误处理。Use when establishing standards, enforcing consistency, or doing broad cleanup/refactors; not for ordinary implementation tasks.",
+      "stage": "06-development",
+      "stage_label": "Development",
+      "source": "core",
+      "path": "skills/06-development/coding-standards"
+    },
+    {
+      "name": "database-patterns",
+      "description": "设计或重构数据库层，涵盖 SQL/NoSQL、ORM、迁移策略、索引和数据模型演进。Use when the task is about schema design, persistence patterns, migration planning, or DB performance beyond a single raw query.",
+      "stage": "06-development",
+      "stage_label": "Development",
+      "source": "core",
+      "path": "skills/06-development/database-patterns"
+    },
+    {
+      "name": "frontend-patterns",
+      "description": "规划或重构前端架构，涵盖 React/Vue/Angular/Svelte、Next.js/Nuxt、移动端状态管理和渲染性能。Use when the task is about frontend structure, cross-component behavior, or framework patterns, not pixel-perfect design translation.",
+      "stage": "06-development",
+      "stage_label": "Development",
+      "source": "core",
+      "path": "skills/06-development/frontend-patterns"
+    },
+    {
+      "name": "browser-automation",
+      "description": "浏览器自动化 skill:LLM 探索 + Playwright 稳定回归 + Chrome MCP 真实交互三档,按场景选最轻量的。 覆盖 browser-use(Python LLM 驱动)、agent-browser(Vercel agent + 浏览器)、Playwright(工业级 E2E)、claude-in-chrome MCP(用户真实会话)。 触发词:「浏览器自动化」「E2E 测试」「agent 操作浏览器」「browser-use」「agent-browser」「Playwright」「视觉回归」「网页自动化」「填表机器人」。 适用阶段:design-dev-flow ⑥ 验证幕、写爬虫、做 E2E 回归、需要登录态的真实交互。",
+      "stage": "07-testing-and-quality",
+      "stage_label": "Quality",
+      "source": "core",
+      "path": "skills/07-testing-and-quality/browser-automation"
+    },
+    {
+      "name": "code-review",
+      "description": "Run a comprehensive code review",
+      "stage": "07-testing-and-quality",
+      "stage_label": "Quality",
+      "source": "core",
+      "path": "skills/07-testing-and-quality/code-review"
+    },
+    {
+      "name": "code-simplifier",
+      "description": "代码精简收尾:在功能已工作、测试通过后,删除过度抽象、重复代码、死码、未来兼容垫片、冗余注释和过度防御。 不引入新功能,不改变可观察行为,不删测试覆盖。 触发词:「简化」「精简」「删冗余」「重构精简」「合并重复」「死码」「过度抽象」「YAGNI」「KISS」。 适合阶段:feature 完成且测试绿之后、PR 提交前、Ralph Loop 退出后、code review 整理。",
+      "stage": "07-testing-and-quality",
+      "stage_label": "Quality",
+      "source": "core",
+      "path": "skills/07-testing-and-quality/code-simplifier"
+    },
+    {
+      "name": "debugging",
+      "description": "调试分析专家。当用户遇到 bug、报错、程序崩溃、异常行为时触发。Use when user has a bug, error, crash, or unexpected behavior. Keywords: debug, bug, error, exception, crash, not working, fix, 调试, 报错, 不工作",
+      "stage": "07-testing-and-quality",
+      "stage_label": "Quality",
+      "source": "core",
+      "path": "skills/07-testing-and-quality/debugging"
+    },
+    {
+      "name": "e2e-testing",
+      "description": "设计和实现 Playwright/Cypress 端到端测试套件，包括 Page Object、fixture、测试组织和关键用户流程覆盖。Use when building maintainable E2E tests; use the playwright skills for ad hoc browser automation/debugging.",
+      "stage": "07-testing-and-quality",
+      "stage_label": "Quality",
+      "source": "core",
+      "path": "skills/07-testing-and-quality/e2e-testing"
+    },
+    {
+      "name": "performance",
+      "description": "性能优化专家。当用户遇到性能问题、程序慢、内存使用高、需要优化时触发。Use when user has performance issues, slow code, high memory usage, or needs optimization. Keywords: performance, slow, optimize, memory, CPU, profiling, bottleneck, 性能, 慢, 优化",
+      "stage": "07-testing-and-quality",
+      "stage_label": "Quality",
+      "source": "core",
+      "path": "skills/07-testing-and-quality/performance"
+    },
+    {
+      "name": "qa-strategy",
+      "description": "QA 测试策略 skill:把已有的 tdd-workflow / e2e-testing / code-review / security-review / browser-automation / verification-loop **编排**成一份\"项目级测试金字塔\",并产出测试用例清单 + 缺陷管理流程 + 上线 quality gate。 本 skill 不重做底层测试 skill,只是整合调度 + 测试覆盖率 baseline。 触发词:「测试策略」「QA」「测试金字塔」「测试用例」「缺陷管理」「质量门」「quality gate」「测试覆盖率」「test plan」。 适用阶段:auto-flow ⑧ 测试幕(在 ⑦ 后端实现之后,⑨ 交付之前)。",
+      "stage": "07-testing-and-quality",
+      "stage_label": "Quality",
+      "source": "core",
+      "path": "skills/07-testing-and-quality/qa-strategy"
+    },
+    {
+      "name": "security-review",
+      "description": "Run a comprehensive security review on code",
+      "stage": "07-testing-and-quality",
+      "stage_label": "Quality",
+      "source": "core",
+      "path": "skills/07-testing-and-quality/security-review"
+    },
+    {
+      "name": "test-generation",
+      "description": "生成单元测试和集成测试，包括 mock、fixture、边界条件和覆盖率补全。Use when asked to write or extend tests around specific code paths; use e2e-testing for full browser/user-flow suites and tdd-workflow for explicit test-first development.",
+      "stage": "07-testing-and-quality",
+      "stage_label": "Quality",
+      "source": "core",
+      "path": "skills/07-testing-and-quality/test-generation"
+    },
+    {
+      "name": "deployment-patterns",
+      "description": "设计、实现或排查通用部署与 DevOps 流程，涵盖 Docker, Kubernetes, CI/CD, serverless, observability, and IaC. Use when the platform is generic or mixed; use render-deploy specifically for Render hosting.",
+      "stage": "08-delivery-and-growth",
+      "stage_label": "Delivery",
+      "source": "core",
+      "path": "skills/08-delivery-and-growth/deployment-patterns"
+    },
+    {
+      "name": "docker",
+      "description": "Docker containers, images, Compose stacks, networking, volumes, debugging, production hardening, and the commands that keep real environments stable. Use when (1) the task touches Docker, Dockerfiles, images, containers, or Compose; (2) build reliability, runtime behavior, logs, ports, volumes, or security matter; (3) the agent needs Docker guidance and should apply it by default.",
+      "stage": "08-delivery-and-growth",
+      "stage_label": "Delivery",
+      "source": "core",
+      "path": "skills/08-delivery-and-growth/docker"
+    },
+    {
+      "name": "git",
+      "description": "Git commits, branches, rebases, merges, conflict resolution, history recovery, team workflows, and the commands needed for safe day-to-day version control. Use when (1) the task touches Git, a repository, commits, branches, merges, rebases, or pull requests; (2) history safety, collaboration, or recovery matter; (3) the agent should automatically apply Git discipline instead of improvising.",
+      "stage": "08-delivery-and-growth",
+      "stage_label": "Delivery",
+      "source": "core",
+      "path": "skills/08-delivery-and-growth/git"
+    },
+    {
+      "name": "github",
+      "description": "Interact with GitHub using the `gh` CLI. Use `gh issue`, `gh pr`, `gh run`, and `gh api` for issues, PRs, CI runs, and advanced queries.",
+      "stage": "08-delivery-and-growth",
+      "stage_label": "Delivery",
+      "source": "core",
+      "path": "skills/08-delivery-and-growth/github"
+    },
+    {
+      "name": "programmatic-video",
+      "description": "程序化视频 skill:用 React 组件写视频(Remotion),适合数据驱动 demo / 多语言版本 / CI 自动出片。 也覆盖\"什么时候用 Remotion vs 录屏 vs asciinema\",和 30-60 秒 demo 的标准结构。 触发词:「程序化视频」「自动生成 demo」「用代码做视频」「remotion」「demo 视频」「README gif」「项目演示视频」「product hunt 视频」。 适用阶段:项目交付前做 demo、PR 描述附演示、ProductHunt / 黑客松提交、营销素材生成。",
+      "stage": "08-delivery-and-growth",
+      "stage_label": "Delivery",
+      "source": "core",
+      "path": "skills/08-delivery-and-growth/programmatic-video"
+    },
+    {
+      "name": "claude-code-resources",
+      "description": "Claude Code 生态资源索引 skill:用户问\"哪里找 plugin / hook 怎么写 / awesome 列表 / 教程\"等问题时触发,给出具体推荐和导航。 包含:plugin marketplace、skill 仓库、hook 范例、社区 awesome 列表、最佳实践博客、Anthropic 官方资源。 触发词:「Claude Code 资源」「awesome claude code」「plugin 找哪里」「hook 教程」「skill 找哪里」「Claude Code 怎么入门」「Claude Code 配置」。 适用阶段:新人入门、找现成解决方案、对标他人配置。",
+      "stage": "09-operations-and-knowledge",
+      "stage_label": "Operations",
+      "source": "core",
+      "path": "skills/09-operations-and-knowledge/claude-code-resources"
+    },
+    {
+      "name": "continuous-learning",
+      "description": "从已完成的工作中提炼可复用经验、模式和团队约定。Use when summarizing lessons learned after a task or when the user asks to record reusable knowledge; not for in-progress debugging.",
+      "stage": "09-operations-and-knowledge",
+      "stage_label": "Operations",
+      "source": "core",
+      "path": "skills/09-operations-and-knowledge/continuous-learning"
+    },
+    {
+      "name": "documentation",
+      "description": "技术文档专家。当用户需要写技术文档、README、API 文档、代码注释、JSDoc 时触发。Use when asked to write docs, README, API documentation, code comments, JSDoc, or docstrings. Keywords: docs, README, documentation, comment, JSDoc, 文档, 注释",
+      "stage": "09-operations-and-knowledge",
+      "stage_label": "Operations",
+      "source": "core",
+      "path": "skills/09-operations-and-knowledge/documentation"
+    },
+    {
+      "name": "file-curation",
+      "description": "文件分析与整理 skill:用户给一堆文件(PDF / Word / Excel / 截图 / 对话记录 / 网页备份),自动按\"分类 → 摘要 → 索引 → 沉淀\"4 步法整理出可检索的知识库。 调用 Cowork 已有的 pdf / docx / xlsx / pptx skill 提取内容,与 hierarchical-memory 协作做长期沉淀。 触发词:「文件整理」「文档分析」「整理一堆文件」「knowledge curation」「file triage」「资料归档」「PDF 整理」「文档归类」「资料沉淀」。 适用阶段:任何阶段都可独立触发(工具型 skill,不属于 9 幕流程)。",
+      "stage": "09-operations-and-knowledge",
+      "stage_label": "Operations",
+      "source": "core",
+      "path": "skills/09-operations-and-knowledge/file-curation"
+    },
+    {
+      "name": "agent-routing",
+      "description": "Use when a task can be handled by direct editing, shell tools, browser tools, MCP connectors, or subagents and the agent needs to choose the lightest reliable execution path.",
+      "stage": "90-codex-patterns",
+      "stage_label": "Codex Patterns",
+      "source": "core",
+      "path": "skills/90-codex-patterns/agent-routing"
+    },
+    {
+      "name": "cross-tool-packaging",
+      "description": "Use when exporting or adapting skills for Codex, Claude Code, Cursor, Windsurf, opencode, Hermes, or other AI coding environments with different skill or rule file layouts.",
+      "stage": "90-codex-patterns",
+      "stage_label": "Codex Patterns",
+      "source": "core",
+      "path": "skills/90-codex-patterns/cross-tool-packaging"
+    },
+    {
+      "name": "skill-authoring-system",
+      "description": "Use when creating, refactoring, validating, or packaging AI agent skills, especially when deciding what belongs in SKILL.md versus references, scripts, assets, and installer metadata.",
+      "stage": "90-codex-patterns",
+      "stage_label": "Codex Patterns",
+      "source": "core",
+      "path": "skills/90-codex-patterns/skill-authoring-system"
+    },
+    {
+      "name": "verification-loop",
+      "description": "Use when work is about to be declared complete, fixed, ready to commit, ready to push, or production-ready and the claim needs fresh evidence from tests, builds, lint, manual checks, or source inspection.",
+      "stage": "90-codex-patterns",
+      "stage_label": "Codex Patterns",
+      "source": "core",
+      "path": "skills/90-codex-patterns/verification-loop"
+    }
+  ],
+  "vendor_skills": [
+    {
+      "name": "enrich-lead",
+      "description": "Instant lead enrichment. Drop a name, company, LinkedIn URL, or email and get the full contact card with email, phone, title, company intel, and next actions.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/apollo/0.1.0/skills/enrich-lead"
+    },
+    {
+      "name": "prospect",
+      "description": "Full ICP-to-leads pipeline. Describe your ideal customer in plain English and get a ranked table of enriched decision-maker leads with emails and phone numbers.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/apollo/0.1.0/skills/prospect"
+    },
+    {
+      "name": "sequence-load",
+      "description": "Find leads matching criteria and bulk-add them to an Apollo outreach sequence. Handles enrichment, contact creation, deduplication, and enrollment in one flow.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/apollo/0.1.0/skills/sequence-load"
+    },
+    {
+      "name": "instrument-data-to-allotrope",
+      "description": "Convert laboratory instrument output files (PDF, CSV, Excel, TXT) to Allotrope Simple Model (ASM) JSON format or flattened 2D CSV. Use this skill when scientists need to standardize instrument data for LIMS systems, data lakes, or downstream analysis. Supports auto-detection of instrument types. Outputs include full ASM JSON, flattened CSV for easy import, and exportable Python code for data engineers. Common triggers include converting instrument files, standardizing lab data, preparing data for upload to LIMS/ELN systems, or generating parser code for production pipelines.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/bio-research/1.0.0/skills/instrument-data-to-allotrope"
+    },
+    {
+      "name": "nextflow-development",
+      "description": "Run nf-core bioinformatics pipelines (rnaseq, sarek, atacseq) on sequencing data. Use when analyzing RNA-seq, WGS/WES, or ATAC-seq data—either local FASTQs or public datasets from GEO/SRA. Triggers on nf-core, Nextflow, FASTQ analysis, variant calling, gene expression, differential expression, GEO reanalysis, GSE/GSM/SRR accessions, or samplesheet creation.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/bio-research/1.0.0/skills/nextflow-development"
+    },
+    {
+      "name": "scientific-problem-selection",
+      "description": "This skill should be used when scientists need help with research problem selection, project ideation, troubleshooting stuck projects, or strategic scientific decisions. Use this skill when users ask to pitch a new research idea, work through a project problem, evaluate project risks, plan research strategy, navigate decision trees, or get help choosing what scientific problem to work on. Typical requests include \"I have an idea for a project\", \"I'm stuck on my research\", \"help me evaluate this project\", \"what should I work on\", or \"I need strategic advice about my research\".",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/bio-research/1.0.0/skills/scientific-problem-selection"
+    },
+    {
+      "name": "scvi-tools",
+      "description": "Deep learning for single-cell analysis using scvi-tools. This skill should be used when users need (1) data integration and batch correction with scVI/scANVI, (2) ATAC-seq analysis with PeakVI, (3) CITE-seq multi-modal analysis with totalVI, (4) multiome RNA+ATAC analysis with MultiVI, (5) spatial transcriptomics deconvolution with DestVI, (6) label transfer and reference mapping with scANVI/scArches, (7) RNA velocity with veloVI, or (8) any deep learning-based single-cell method. Triggers include mentions of scVI, scANVI, totalVI, PeakVI, MultiVI, DestVI, veloVI, sysVI, scArches, variational autoencoder, VAE, batch correction, data integration, multi-modal, CITE-seq, multiome, reference mapping, latent space.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/bio-research/1.0.0/skills/scvi-tools"
+    },
+    {
+      "name": "single-cell-rna-qc",
+      "description": "Performs quality control on single-cell RNA-seq data (.h5ad or .h5 files) using scverse best practices with MAD-based filtering and comprehensive visualizations. Use when users request QC analysis, filtering low-quality cells, assessing data quality, or following scverse/scanpy best practices for single-cell analysis.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/bio-research/1.0.0/skills/single-cell-rna-qc"
+    },
+    {
+      "name": "brand-voice-enforcement",
+      "description": "This skill applies brand guidelines to content creation. It should be used when the user asks to \"write an email\", \"draft a proposal\", \"create a pitch deck\", \"write a LinkedIn post\", \"draft a presentation\", \"write a Slack message\", \"draft sales content\", or any content creation request where brand voice should be applied. Also triggers on \"on-brand\", \"brand voice\", \"enforce voice\", \"apply brand guidelines\", \"brand-aligned content\", \"write in our voice\", \"use our brand tone\", \"make this sound like us\", \"rewrite this in our tone\", or \"this doesn't sound on-brand\". Not for generating guidelines from scratch (use guideline-generation) or discovering brand materials (use discover-brand).",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/brand-voice/1.0.0/skills/brand-voice-enforcement"
+    },
+    {
+      "name": "discover-brand",
+      "description": "This skill orchestrates autonomous discovery of brand materials across enterprise platforms (Notion, Confluence, Google Drive, Box, SharePoint, Figma, Gong, Granola, Slack). It should be used when the user asks to \"discover brand materials\", \"find brand documents\", \"search for brand guidelines\", \"audit brand content\", \"what brand materials do we have\", \"find our style guide\", \"where are our brand docs\", \"do we have a style guide\", \"discover brand voice\", \"brand content audit\", or \"find brand assets\".",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/brand-voice/1.0.0/skills/discover-brand"
+    },
+    {
+      "name": "guideline-generation",
+      "description": "This skill generates, creates, or builds brand voice guidelines from source materials. It should be used when the user asks to \"generate brand guidelines\", \"create a style guide\", \"extract brand voice\", \"create guidelines from calls\", \"consolidate brand materials\", \"analyze my sales calls for brand voice\", \"build a brand playbook from documents\", \"synthesize a voice and tone guide\", or uploads brand documents, transcripts, or meeting recordings for brand analysis. Also triggers when the user has a discovery report and wants to convert it into actionable guidelines.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/brand-voice/1.0.0/skills/guideline-generation"
+    },
+    {
+      "name": "account-research",
+      "description": "Research a company using Common Room data. Triggers on 'research [company]', 'tell me about [domain]', 'pull up signals for [account]', 'what's going on with [company]', or any account-level question.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/common-room/1.0.0/skills/account-research"
+    },
+    {
+      "name": "call-prep",
+      "description": "Prepare for a customer or prospect call using Common Room signals. Triggers on 'prep me for my call with [company]', 'prepare for a meeting with [company]', 'what should I know before talking to [company]', or any call preparation request.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/common-room/1.0.0/skills/call-prep"
+    },
+    {
+      "name": "compose-outreach",
+      "description": "Generate personalized outreach messages using Common Room signals. Triggers on 'draft outreach to [person]', 'write an email to [name]', 'compose a message for [contact]', or any outreach drafting request.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/common-room/1.0.0/skills/compose-outreach"
+    },
+    {
+      "name": "contact-research",
+      "description": "Research a specific person using Common Room data. Triggers on 'who is [name]', 'look up [email]', 'research [contact]', 'is [name] a warm lead', or any contact-level question.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/common-room/1.0.0/skills/contact-research"
+    },
+    {
+      "name": "prospect",
+      "description": "Build targeted account or contact lists using Common Room's Prospector. Triggers on 'find companies that match [criteria]', 'build a prospect list', 'find contacts at [type of company]', 'show me companies hiring [role]', or any list-building request.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/common-room/1.0.0/skills/prospect"
+    },
+    {
+      "name": "weekly-prep-brief",
+      "description": "Generate a comprehensive weekly briefing for all external calls in the next 7 days. Triggers on 'weekly prep brief', 'prepare my week', 'what calls do I have this week', 'Monday prep', or any weekly planning request.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/common-room/1.0.0/skills/weekly-prep-brief"
+    },
+    {
+      "name": "cowork-plugin-customizer",
+      "description": "Customize a Claude Code plugin for a specific organization's tools and workflows. Use when: customize plugin, set up plugin, configure plugin, tailor plugin, adjust plugin settings, customize plugin connectors, customize plugin skill, customize plugin command, tweak plugin, modify plugin configuration.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/cowork-plugin-management/0.2.2/skills/cowork-plugin-customizer"
+    },
+    {
+      "name": "create-cowork-plugin",
+      "description": "Guide users through creating a new plugin from scratch in a cowork session. Use when users want to create a plugin, build a plugin, make a new plugin, develop a plugin, scaffold a plugin, start a plugin from scratch, or design a plugin. This skill requires Cowork mode with access to the outputs directory for delivering the final .plugin file.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/cowork-plugin-management/0.2.2/skills/create-cowork-plugin"
+    },
+    {
+      "name": "customer-research",
+      "description": "Research customer questions by searching across documentation, knowledge bases, and connected sources, then synthesize a confidence-scored answer. Use when a customer asks a question you need to investigate, when building background on a customer situation, or when you need account context.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/customer-support/1.1.0/skills/customer-research"
+    },
+    {
+      "name": "escalation",
+      "description": "Structure and package support escalations for engineering, product, or leadership with full context, reproduction steps, and business impact. Use when an issue needs to go beyond support, when writing an escalation brief, or when assessing whether an issue warrants escalation.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/customer-support/1.1.0/skills/escalation"
+    },
+    {
+      "name": "knowledge-management",
+      "description": "Write and maintain knowledge base articles from resolved support issues. Use when a ticket has been resolved and the solution should be documented, when updating existing KB articles, or when creating how-to guides, troubleshooting docs, or FAQ entries.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/customer-support/1.1.0/skills/knowledge-management"
+    },
+    {
+      "name": "response-drafting",
+      "description": "Draft professional, empathetic customer-facing responses adapted to the situation, urgency, and channel. Use when responding to customer tickets, escalations, outage notifications, bug reports, feature requests, or any customer-facing communication.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/customer-support/1.1.0/skills/response-drafting"
+    },
+    {
+      "name": "ticket-triage",
+      "description": "Triage incoming support tickets by categorizing issues, assigning priority (P1-P4), and recommending routing. Use when a new ticket or customer issue comes in, when assessing severity, or when deciding which team should handle an issue.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/customer-support/1.1.0/skills/ticket-triage"
+    },
+    {
+      "name": "data-context-extractor",
+      "description": "Generate or improve a company-specific data analysis skill by extracting tribal knowledge from analysts. BOOTSTRAP MODE - Triggers: \"Create a data context skill\", \"Set up data analysis for our warehouse\", \"Help me create a skill for our database\", \"Generate a data skill for [company]\" → Discovers schemas, asks key questions, generates initial skill with reference files ITERATION MODE - Triggers: \"Add context about [domain]\", \"The skill needs more info about [topic]\", \"Update the data skill with [metrics/tables/terminology]\", \"Improve the [domain] reference\" → Loads existing skill, asks targeted questions, appends/updates reference files Use when data analysts want Claude to understand their company's specific data warehouse, terminology, metrics definitions, and common query patterns.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/data/1.0.0/skills/data-context-extractor"
+    },
+    {
+      "name": "data-exploration",
+      "description": "Profile and explore datasets to understand their shape, quality, and patterns before analysis. Use when encountering a new dataset, assessing data quality, discovering column distributions, identifying nulls and outliers, or deciding which dimensions to analyze.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/data/1.0.0/skills/data-exploration"
+    },
+    {
+      "name": "data-validation",
+      "description": "QA an analysis before sharing with stakeholders — methodology checks, accuracy verification, and bias detection. Use when reviewing an analysis for errors, checking for survivorship bias, validating aggregation logic, or preparing documentation for reproducibility.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/data/1.0.0/skills/data-validation"
+    },
+    {
+      "name": "data-visualization",
+      "description": "Create effective data visualizations with Python (matplotlib, seaborn, plotly). Use when building charts, choosing the right chart type for a dataset, creating publication-quality figures, or applying design principles like accessibility and color theory.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/data/1.0.0/skills/data-visualization"
+    },
+    {
+      "name": "interactive-dashboard-builder",
+      "description": "Build self-contained interactive HTML dashboards with Chart.js, dropdown filters, and professional styling. Use when creating dashboards, building interactive reports, or generating shareable HTML files with charts and filters that work without a server.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/data/1.0.0/skills/interactive-dashboard-builder"
+    },
+    {
+      "name": "sql-queries",
+      "description": "Write correct, performant SQL across all major data warehouse dialects (Snowflake, BigQuery, Databricks, PostgreSQL, etc.). Use when writing queries, optimizing slow SQL, translating between dialects, or building complex analytical queries with CTEs, window functions, or aggregations.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/data/1.0.0/skills/sql-queries"
+    },
+    {
+      "name": "statistical-analysis",
+      "description": "Apply statistical methods including descriptive stats, trend analysis, outlier detection, and hypothesis testing. Use when analyzing distributions, testing for significance, detecting anomalies, computing correlations, or interpreting statistical results.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/data/1.0.0/skills/statistical-analysis"
+    },
+    {
+      "name": "knowledge-synthesis",
+      "description": "Combines search results from multiple sources into coherent, deduplicated answers with source attribution. Handles confidence scoring based on freshness and authority, and summarizes large result sets effectively.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/enterprise-search/1.1.0/skills/knowledge-synthesis"
+    },
+    {
+      "name": "search-strategy",
+      "description": "Query decomposition and multi-source search orchestration. Breaks natural language questions into targeted searches per source, translates queries into source-specific syntax, ranks results by relevance, and handles ambiguity and fallback strategies.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/enterprise-search/1.1.0/skills/search-strategy"
+    },
+    {
+      "name": "source-management",
+      "description": "Manages connected MCP sources for enterprise search. Detects available sources, guides users to connect new ones, handles source priority ordering, and manages rate limiting awareness.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/enterprise-search/1.1.0/skills/source-management"
+    },
+    {
+      "name": "audit-support",
+      "description": "Support SOX 404 compliance with control testing methodology, sample selection, and documentation standards. Use when generating testing workpapers, selecting audit samples, classifying control deficiencies, or preparing for internal or external audits.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/finance/1.1.0/skills/audit-support"
+    },
+    {
+      "name": "close-management",
+      "description": "Manage the month-end close process with task sequencing, dependencies, and status tracking. Use when planning the close calendar, tracking close progress, identifying blockers, or sequencing close activities by day.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/finance/1.1.0/skills/close-management"
+    },
+    {
+      "name": "financial-statements",
+      "description": "Generate income statements, balance sheets, and cash flow statements with GAAP presentation and period-over-period comparison. Use when preparing financial statements, running flux analysis, or creating P&L reports with variance commentary.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/finance/1.1.0/skills/financial-statements"
+    },
+    {
+      "name": "journal-entry-prep",
+      "description": "Prepare journal entries with proper debits, credits, and supporting documentation for month-end close. Use when booking accruals, prepaid amortization, fixed asset depreciation, payroll entries, revenue recognition, or any manual journal entry.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/finance/1.1.0/skills/journal-entry-prep"
+    },
+    {
+      "name": "reconciliation",
+      "description": "Reconcile accounts by comparing GL balances to subledgers, bank statements, or third-party data. Use when performing bank reconciliations, GL-to-subledger recs, intercompany reconciliations, or identifying and categorizing reconciling items.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/finance/1.1.0/skills/reconciliation"
+    },
+    {
+      "name": "variance-analysis",
+      "description": "Decompose financial variances into drivers with narrative explanations and waterfall analysis. Use when analyzing budget vs. actual, period-over-period changes, revenue or expense variances, or preparing variance commentary for leadership.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/finance/1.1.0/skills/variance-analysis"
+    },
+    {
+      "name": "canned-responses",
+      "description": "Generate templated responses for common legal inquiries and identify when situations require individualized attention. Use when responding to routine legal questions — data subject requests, vendor inquiries, NDA requests, discovery holds — or when managing response templates.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/legal/1.1.0/skills/canned-responses"
+    },
+    {
+      "name": "compliance",
+      "description": "Navigate privacy regulations (GDPR, CCPA), review DPAs, and handle data subject requests. Use when reviewing data processing agreements, responding to data subject access or deletion requests, assessing cross-border data transfer requirements, or evaluating privacy compliance.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/legal/1.1.0/skills/compliance"
+    },
+    {
+      "name": "contract-review",
+      "description": "Review contracts against your organization's negotiation playbook, flagging deviations and generating redline suggestions. Use when reviewing vendor contracts, customer agreements, or any commercial agreement where you need clause-by-clause analysis against standard positions.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/legal/1.1.0/skills/contract-review"
+    },
+    {
+      "name": "legal-risk-assessment",
+      "description": "Assess and classify legal risks using a severity-by-likelihood framework with escalation criteria. Use when evaluating contract risk, assessing deal exposure, classifying issues by severity, or determining whether a matter needs senior counsel or outside legal review.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/legal/1.1.0/skills/legal-risk-assessment"
+    },
+    {
+      "name": "meeting-briefing",
+      "description": "Prepare structured briefings for meetings with legal relevance and track resulting action items. Use when preparing for contract negotiations, board meetings, compliance reviews, or any meeting where legal context, background research, or action tracking is needed.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/legal/1.1.0/skills/meeting-briefing"
+    },
+    {
+      "name": "nda-triage",
+      "description": "Screen incoming NDAs and classify them as GREEN (standard), YELLOW (needs review), or RED (significant issues). Use when a new NDA comes in from sales or business development, when assessing NDA risk level, or when deciding whether an NDA needs full counsel review.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/legal/1.1.0/skills/nda-triage"
+    },
+    {
+      "name": "brand-voice",
+      "description": "Apply and enforce brand voice, style guide, and messaging pillars across content. Use when reviewing content for brand consistency, documenting a brand voice, adapting tone for different audiences, or checking terminology and style guide compliance.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/marketing/1.1.0/skills/brand-voice"
+    },
+    {
+      "name": "campaign-planning",
+      "description": "Plan marketing campaigns with objectives, audience segmentation, channel strategy, content calendars, and success metrics. Use when launching a campaign, planning a product launch, building a content calendar, allocating budget across channels, or defining campaign KPIs.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/marketing/1.1.0/skills/campaign-planning"
+    },
+    {
+      "name": "competitive-analysis",
+      "description": "Research competitors and compare positioning, messaging, content strategy, and market presence. Use when analyzing a competitor, building battlecards, identifying content gaps, comparing feature messaging, or preparing competitive positioning recommendations.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/marketing/1.1.0/skills/competitive-analysis"
+    },
+    {
+      "name": "content-creation",
+      "description": "Draft marketing content across channels — blog posts, social media, email newsletters, landing pages, press releases, and case studies. Use when writing any marketing content, when you need channel-specific formatting, SEO-optimized copy, headline options, or calls to action.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/marketing/1.1.0/skills/content-creation"
+    },
+    {
+      "name": "performance-analytics",
+      "description": "Analyze marketing performance with key metrics, trend analysis, and optimization recommendations. Use when building performance reports, reviewing campaign results, analyzing channel metrics (email, social, paid, SEO), or identifying what's working and what needs improvement.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/marketing/1.1.0/skills/performance-analytics"
+    },
+    {
+      "name": "competitive-analysis",
+      "description": "Analyze competitors with feature comparison matrices, positioning analysis, and strategic implications. Use when researching a competitor, comparing product capabilities, assessing competitive positioning, or preparing a competitive brief for product strategy.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/product-management/1.1.0/skills/competitive-analysis"
+    },
+    {
+      "name": "feature-spec",
+      "description": "Write structured product requirements documents (PRDs) with problem statements, user stories, requirements, and success metrics. Use when speccing a new feature, writing a PRD, defining acceptance criteria, prioritizing requirements, or documenting product decisions.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/product-management/1.1.0/skills/feature-spec"
+    },
+    {
+      "name": "metrics-tracking",
+      "description": "Define, track, and analyze product metrics with frameworks for goal setting and dashboard design. Use when setting up OKRs, building metrics dashboards, running weekly metrics reviews, identifying trends, or choosing the right metrics for a product area.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/product-management/1.1.0/skills/metrics-tracking"
+    },
+    {
+      "name": "roadmap-management",
+      "description": "Plan and prioritize product roadmaps using frameworks like RICE, MoSCoW, and ICE. Use when creating a roadmap, reprioritizing features, mapping dependencies, choosing between Now/Next/Later or quarterly formats, or presenting roadmap tradeoffs to stakeholders.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/product-management/1.1.0/skills/roadmap-management"
+    },
+    {
+      "name": "stakeholder-comms",
+      "description": "Draft stakeholder updates tailored to audience — executives, engineering, customers, or cross-functional partners. Use when writing weekly status updates, monthly reports, launch announcements, risk communications, or decision documentation.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/product-management/1.1.0/skills/stakeholder-comms"
+    },
+    {
+      "name": "user-research-synthesis",
+      "description": "Synthesize qualitative and quantitative user research into structured insights and opportunity areas. Use when analyzing interview notes, survey responses, support tickets, or behavioral data to identify themes, build personas, or prioritize opportunities.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/product-management/1.1.0/skills/user-research-synthesis"
+    },
+    {
+      "name": "memory-management",
+      "description": "Two-tier memory system that makes Claude a true workplace collaborator. Decodes shorthand, acronyms, nicknames, and internal language so Claude understands requests like a colleague would. CLAUDE.md for working memory, memory/ directory for the full knowledge base.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/productivity/1.1.0/skills/memory-management"
+    },
+    {
+      "name": "task-management",
+      "description": "Simple task management using a shared TASKS.md file. Reference this when the user asks about their tasks, wants to add/complete tasks, or needs help tracking commitments.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/productivity/1.1.0/skills/task-management"
+    },
+    {
+      "name": "account-research",
+      "description": "Research a company or person and get actionable sales intel. Works standalone with web search, supercharged when you connect enrichment tools or your CRM. Trigger with \"research [company]\", \"look up [person]\", \"intel on [prospect]\", \"who is [name] at [company]\", or \"tell me about [company]\".",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/sales/1.1.0/skills/account-research"
+    },
+    {
+      "name": "call-prep",
+      "description": "Prepare for a sales call with account context, attendee research, and suggested agenda. Works standalone with user input and web research, supercharged when you connect your CRM, email, chat, or transcripts. Trigger with \"prep me for my call with [company]\", \"I'm meeting with [company] prep me\", \"call prep [company]\", or \"get me ready for [meeting]\".",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/sales/1.1.0/skills/call-prep"
+    },
+    {
+      "name": "competitive-intelligence",
+      "description": "Research your competitors and build an interactive battlecard. Outputs an HTML artifact with clickable competitor cards and a comparison matrix. Trigger with \"competitive intel\", \"research competitors\", \"how do we compare to [competitor]\", \"battlecard for [competitor]\", or \"what's new with [competitor]\".",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/sales/1.1.0/skills/competitive-intelligence"
+    },
+    {
+      "name": "create-an-asset",
+      "description": "Generate tailored sales assets (landing pages, decks, one-pagers, workflow demos) from your deal context. Describe your prospect, audience, and goal — get a polished, branded asset ready to share with customers.",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/sales/1.1.0/skills/create-an-asset"
+    },
+    {
+      "name": "daily-briefing",
+      "description": "Start your day with a prioritized sales briefing. Works standalone when you tell me your meetings and priorities, supercharged when you connect your calendar, CRM, and email. Trigger with \"morning briefing\", \"daily brief\", \"what's on my plate today\", \"prep my day\", or \"start my day\".",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/sales/1.1.0/skills/daily-briefing"
+    },
+    {
+      "name": "draft-outreach",
+      "description": "Research a prospect then draft personalized outreach. Uses web research by default, supercharged with enrichment and CRM. Trigger with \"draft outreach to [person/company]\", \"write cold email to [prospect]\", \"reach out to [name]\".",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/sales/1.1.0/skills/draft-outreach"
+    },
+    {
+      "name": "slack-messaging",
+      "description": "Guidance for composing well-formatted, effective Slack messages using mrkdwn syntax",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/slack-by-salesforce/1.0.0/skills/slack-messaging"
+    },
+    {
+      "name": "slack-search",
+      "description": "Guidance for effectively searching Slack to find messages, files, channels, and people",
+      "stage": "vendor",
+      "stage_label": "vendor",
+      "source": "vendor",
+      "path": "vendor/cowork/slack-by-salesforce/1.0.0/skills/slack-search"
+    }
+  ],
+  "profiles": {
+    "core": [
+      "00-orchestration",
+      "01-research",
+      "02-analysis",
+      "03-product",
+      "04-design-system",
+      "05-interface-and-cli",
+      "07-testing-and-quality",
+      "08-delivery-and-growth",
+      "09-operations-and-knowledge",
+      "90-codex-patterns"
+    ],
+    "dev": [
+      "05-interface-and-cli",
+      "06-development",
+      "07-testing-and-quality",
+      "08-delivery-and-growth",
+      "09-operations-and-knowledge",
+      "90-codex-patterns"
+    ],
+    "design": [
+      "04-design-system",
+      "07-testing-and-quality"
+    ],
+    "all": [
+      "00-orchestration",
+      "01-research",
+      "02-analysis",
+      "03-product",
+      "04-design-system",
+      "05-interface-and-cli",
+      "06-development",
+      "07-testing-and-quality",
+      "08-delivery-and-growth",
+      "09-operations-and-knowledge",
+      "90-codex-patterns"
+    ]
+  }
+}

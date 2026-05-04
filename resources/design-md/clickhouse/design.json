@@ -1,0 +1,78 @@
+{
+  "brand": "clickhouse",
+  "version": "1.0.0",
+  "$schema": "https://designdna.dev/schemas/tokens-v1.json",
+  "colors": {
+    "neon-volt": "#faff69",
+    "forest-green": "#166534",
+    "dark-forest": "#14572f",
+    "pale-yellow": "#f4f692",
+    "border-olive": "#4f5100",
+    "olive-dark": "#161600",
+    "pure-black": "#000000",
+    "near-black": "#141414",
+    "charcoal": "#414141",
+    "deep-charcoal": "#343434",
+    "hover-gray": "#3a3a3a",
+    "pure-white": "#ffffff",
+    "silver": "#a0a0a0",
+    "mid-gray": "#585858",
+    "border-gray": "#e5e7eb"
+  },
+  "typography": {
+    "families": [
+      "Inter",
+      "Secondary Display",
+      "Basier",
+      "Arial"
+    ],
+    "sizes": {
+      "display": "96px",
+      "hero": "72px",
+      "feature-heading": "36px",
+      "sub-heading": "24px",
+      "feature-title": "20px",
+      "body": "18px",
+      "caption": "14px",
+      "label": "14px",
+      "code": "16px",
+      "small": "12px",
+      "micro": "11.2px"
+    },
+    "weights": [
+      400,
+      500,
+      600,
+      700,
+      900
+    ]
+  },
+  "spacing": {
+    "space-1": "2px",
+    "space-2": "6px",
+    "space-3": "7px",
+    "space-4": "8px",
+    "space-5": "10px",
+    "space-6": "12px",
+    "space-7": "16px",
+    "space-8": "20px",
+    "space-9": "24px",
+    "space-10": "25px"
+  },
+  "radius": {
+    "radius-1": "4px"
+  },
+  "shadows": {
+    "shadow-1": "1px solid rgba(65,65,65,0.8)",
+    "shadow-2": "0px 1px 3px rgba(0,0,0,0.1)",
+    "shadow-3": "0px 10px 15px -3px rgba(0,0,0,0.1)",
+    "shadow-4": "0px 4px 25px rgba(0,0,0,0.14) inset"
+  },
+  "dials": {
+    "formality": 8,
+    "motion": 3,
+    "density": 7,
+    "warmth": 4,
+    "contrast": 7
+  }
+}

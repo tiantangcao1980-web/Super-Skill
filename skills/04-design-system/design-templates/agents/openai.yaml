@@ -1,0 +1,5 @@
+version: 1
+interface:
+  display_name: "Design Templates"
+  short_description: "Produce versioned Markdown + JSON design specifications (DESIGN.md, design-tokens.json) covering color, typography, spacing, motion, a11y, and state rules."
+  default_prompt: "Fill the DESIGN.md template and design-tokens.json based on the project's aesthetic direction (from ui-design) and voice/tone (from copywriting-design). Keep tokens semantic and converged (8-12 spacing values, ≤8 colors). For existing projects, reverse-engineer current state and propose convergence."

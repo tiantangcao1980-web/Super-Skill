@@ -1,0 +1,37 @@
+# Maintenance
+
+## Add A Skill
+
+1. Put it under the matching lifecycle directory in `skills/`.
+2. Use lowercase hyphen-case `name`.
+3. Keep `description` focused on trigger conditions.
+4. Keep heavy details in `references/`, scripts in `scripts/`, reusable assets in `assets/`.
+5. Run:
+
+```bash
+bin/super-skill validate
+bin/super-skill catalog
+```
+
+## Move A Skill
+
+Moving a skill between lifecycle directories is safe if the skill folder remains self-contained and the `name` does not change.
+
+## Update Vendor Content
+
+Vendor content lives outside installable `skills/` unless names are explicitly namespaced. If promoting a vendor skill into lifecycle skills, rename both folder and frontmatter, for example:
+
+```text
+sales-call-prep
+marketing-competitive-analysis
+```
+
+Then update NOTICE and run validation.
+
+## Release Checklist
+
+- `bin/super-skill validate` exits 0.
+- `bin/super-skill install --profile all --dry-run` exits 0.
+- `bin/super-skill catalog` has been regenerated.
+- DesignDNA CLI tests pass when package dependencies are installed.
+- Git status is clean before tagging or publishing.

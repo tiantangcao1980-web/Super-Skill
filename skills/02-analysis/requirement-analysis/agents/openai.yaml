@@ -1,0 +1,5 @@
+version: 1
+interface:
+  display_name: "Requirement Analysis"
+  short_description: "Convert research insights into JTBD + User Stories + user journey + dual-view priority matrix (MoSCoW + RICE). Output requirements.md for product-spec to consume."
+  default_prompt: "Read research-report.md, convert commonalities into JTBD statements (situation/motivation/outcome), split each JTBD into INVEST-compliant User Stories with acceptance criteria, draw at least one user journey, and rank with MoSCoW + RICE. Cap Must-have at 5. Reject 'user needs X tool' as JTBD."

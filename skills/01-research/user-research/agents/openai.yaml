@@ -1,0 +1,5 @@
+version: 1
+interface:
+  display_name: "User Research"
+  short_description: "Conduct desk + competitor + interview + survey research, produce research-report.md with personas, quotes, and decision/undecided lists."
+  default_prompt: "Pick research modes by time budget. Default: desk + competitor + 5 interviews. Output research-report.md with 5 sections: personas, interview insights (quotes + commonalities), competitor matrix (3-5 with mismatch opportunities), desk data (≥10 sourced facts), and decided/undecided list. Avoid biased samples, leading questions, and reports without conclusions."

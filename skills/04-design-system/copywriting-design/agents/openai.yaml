@@ -1,0 +1,5 @@
+version: 1
+interface:
+  display_name: "Copywriting Design"
+  short_description: "Design product copy as personality, not translation. Define voice on 4 axes (formality / rationality / warmth / humor) and write the 5 critical lines (hero / CTA / empty / error / success)."
+  default_prompt: "Pick a coordinate on the 4 voice axes, then write the 5 critical lines following the rules. Avoid the banned words list. Audit existing copy with red/yellow/green per line."

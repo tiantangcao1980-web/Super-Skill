@@ -1,0 +1,94 @@
+{
+  "brand": "stripe",
+  "version": "1.0.0",
+  "$schema": "https://designdna.dev/schemas/tokens-v1.json",
+  "colors": {
+    "stripe-purple": "#533afd",
+    "deep-navy": "#061b31",
+    "pure-white": "#ffffff",
+    "brand-dark": "#1c1e54",
+    "dark-navy": "#0d253d",
+    "ruby": "#ea2261",
+    "magenta": "#f96bee",
+    "magenta-light": "#ffd7ef",
+    "purple-hover": "#4434d4",
+    "purple-deep": "#2e2b8c",
+    "purple-light": "#b9b9f9",
+    "purple-mid": "#665efd",
+    "label": "#273951",
+    "body": "#64748d",
+    "success-green": "#15be53",
+    "success-text": "#108c3d",
+    "lemon": "#9b6829",
+    "border-default": "#e5edf5",
+    "border-soft-purple": "#d6d9fc",
+    "border-dashed": "#362baa",
+    "shadow-blue": "rgba(50, 50, 93, 0.25)",
+    "shadow-dark-blue": "rgba(3, 3, 39, 0.25)",
+    "shadow-black": "rgba(0, 0, 0, 0.1)",
+    "shadow-ambient": "rgba(23, 23, 23, 0.08)",
+    "shadow-soft": "rgba(23, 23, 23, 0.06)"
+  },
+  "typography": {
+    "families": [
+      "sohne-var",
+      "SF Pro Display",
+      "SourceCodePro",
+      "SFMono-Regular"
+    ],
+    "sizes": {
+      "hero": "56px",
+      "display": "48px",
+      "section-heading": "32px",
+      "large": "26px",
+      "sub-heading": "22px",
+      "body": "18px",
+      "button": "16px",
+      "small": "14px",
+      "link": "14px",
+      "caption": "13px",
+      "micro": "10px",
+      "micro-tabular": "10px",
+      "nano": "8px",
+      "code-bold": "12px",
+      "label": "12px",
+      "code-micro": "9px"
+    },
+    "weights": [
+      300,
+      400,
+      500,
+      700
+    ]
+  },
+  "spacing": {
+    "space-1": "2px",
+    "space-2": "4px",
+    "space-3": "6px",
+    "space-4": "8px",
+    "space-5": "10px",
+    "space-6": "11px",
+    "space-7": "12px",
+    "space-8": "14px",
+    "space-9": "16px",
+    "space-10": "18px"
+  },
+  "radius": {
+    "radius-1": "4px",
+    "radius-2": "6px"
+  },
+  "shadows": {
+    "shadow-1": "rgba(50,50,93,0.25)",
+    "shadow-2": "rgba(3,3,39,0.25)",
+    "shadow-3": "rgba(0,0,0,0.1)",
+    "shadow-4": "rgba(23,23,23,0.08)",
+    "shadow-5": "rgba(23,23,23,0.06)"
+  },
+  "dials": {
+    "formality": 9,
+    "motion": 4,
+    "density": 3,
+    "warmth": 5,
+    "contrast": 5
+  }
+}

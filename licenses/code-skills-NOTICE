@@ -1,0 +1,72 @@
+code-skills
+
+This product redistributes work licensed under the Apache License, Version 2.0.
+Original sources, copyright holders, and modifications are listed below.
+
+================================================================================
+1. ralph-loop/plugin/
+================================================================================
+
+Original source:
+  Anthropic claude-plugins-official marketplace, plugin "ralph-loop" v1.0.0
+  Local install path on machine where this redistribution was prepared:
+    ~/.claude/plugins/cache/claude-plugins-official/ralph-loop/1.0.0
+
+Copyright:
+  Copyright (c) Anthropic, P.B.C. <support@anthropic.com>
+
+License:
+  Apache License, Version 2.0
+  See ralph-loop/plugin/LICENSE for the full text.
+
+Modifications by code-skills:
+  - None to plugin source files. Files copied verbatim.
+  - Added: ralph-loop/scripts/install-plugin.sh
+  - Added: ralph-loop/SKILL.md "Plugin integration" section,
+           which references this plugin as a runnable companion.
+
+================================================================================
+2. code-simplifier/plugin/
+================================================================================
+
+Original source:
+  Anthropic claude-plugins-official marketplace, plugin "code-simplifier" v1.0.0
+  Local install path on machine where this redistribution was prepared:
+    ~/.claude/plugins/cache/claude-plugins-official/code-simplifier/1.0.0
+
+Copyright:
+  Copyright (c) Anthropic, P.B.C. <support@anthropic.com>
+
+License:
+  Apache License, Version 2.0
+  See code-simplifier/plugin/LICENSE for the full text.
+
+Modifications by code-skills:
+  - None to plugin source files. Files copied verbatim.
+  - Added: code-simplifier/scripts/install-plugin.sh
+  - Added: code-simplifier/SKILL.md "Plugin integration" section.
+
+================================================================================
+3. Skill content (ralph-loop/, code-simplifier/, design-dev-flow/ — excluding plugin/ subdirectories)
+================================================================================
+
+Original work by the code-skills authors. License: see repository LICENSE
+(or default to MIT if a top-level LICENSE has not yet been published).
+
+================================================================================
+Inspirations (not redistributed; referenced in references/ and integrations/)
+================================================================================
+
+The following projects shaped the design but are NOT included in this distribution:
+  - obra/superpowers
+  - affaan-m/everything-claude-code
+  - jackwener/opencli
+  - HKUDS/CLI-Anything
+  - browser-use/browser-use
+  - vercel-labs/agent-browser
+  - remotion-dev/remotion
+  - Leonxlnx/taste-skill
+  - alchaincyf/huashu-design
+  - tiantangcao1980-web/awesome-design-md
+
+Each project retains its own license, which is unchanged by this work.

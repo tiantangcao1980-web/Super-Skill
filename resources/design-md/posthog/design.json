@@ -1,0 +1,78 @@
+{
+  "brand": "posthog",
+  "version": "1.0.0",
+  "$schema": "https://designdna.dev/schemas/tokens-v1.json",
+  "colors": {
+    "olive-ink": "#4d4f46",
+    "deep-olive": "#23251d",
+    "posthog-orange": "#f54e00",
+    "amber-gold": "#f7a501",
+    "gold-border": "#b17816",
+    "focus-blue": "#3b82f6",
+    "warm-parchment": "#fdfdf8",
+    "sage-cream": "#eeefe9",
+    "light-sage": "#e5e7e0",
+    "warm-tan": "#d4c9b8",
+    "hover-white": "#f4f4f4",
+    "muted-olive": "#65675e",
+    "sage-placeholder": "#9ea096",
+    "sage-border": "#bfc1b7",
+    "light-border": "#b6b7af",
+    "dark-text": "#111827"
+  },
+  "typography": {
+    "families": [
+      "IBM Plex Sans Variable",
+      "IBM Plex Sans",
+      "SFMono-Regular",
+      "Code Display"
+    ],
+    "sizes": {
+      "hero": "30px",
+      "section-heading": "36px",
+      "feature-heading": "24px",
+      "card-heading": "21.4px",
+      "sub-heading": "20px",
+      "sub-heading-uppercase": "20px",
+      "body": "19.3px",
+      "label": "18px",
+      "nav-ui": "15px",
+      "caption": "14px",
+      "small": "13px",
+      "micro": "12px",
+      "code": "14px"
+    },
+    "weights": [
+      400,
+      500,
+      600,
+      700,
+      800
+    ]
+  },
+  "spacing": {
+    "space-1": "2px",
+    "space-2": "4px",
+    "space-3": "6px",
+    "space-4": "8px",
+    "space-5": "10px",
+    "space-6": "12px",
+    "space-7": "16px",
+    "space-8": "18px",
+    "space-9": "24px",
+    "space-10": "32px"
+  },
+  "radius": {},
+  "shadows": {
+    "shadow-1": "1px solid #bfc1b7",
+    "shadow-2": "0px 25px 50px -12px rgba(0, 0, 0, 0.25)",
+    "shadow-3": "0 25px 50px -12px"
+  },
+  "dials": {
+    "formality": 5,
+    "motion": 5,
+    "density": 7,
+    "warmth": 7,
+    "contrast": 7
+  }
+}

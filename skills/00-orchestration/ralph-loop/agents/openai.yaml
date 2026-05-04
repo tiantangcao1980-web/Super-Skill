@@ -1,0 +1,5 @@
+version: 1
+interface:
+  display_name: "Ralph Loop"
+  short_description: "Iterative plan-execute-verify-decide loop with explicit exit conditions and progress reporting."
+  default_prompt: "Apply the Ralph Loop workflow: write a loop contract, run small iterations, verify via deterministic checks, and decide DONE/CONTINUE/ABORT each round until the exit condition is met."

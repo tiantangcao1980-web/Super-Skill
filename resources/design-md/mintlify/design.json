@@ -1,0 +1,81 @@
+{
+  "brand": "mintlify",
+  "version": "1.0.0",
+  "$schema": "https://designdna.dev/schemas/tokens-v1.json",
+  "colors": {
+    "near-black": "#0d0d0d",
+    "pure-white": "#ffffff",
+    "brand-green": "#18e299",
+    "brand-green-light": "#d4fae8",
+    "brand-green-deep": "#0fa76e",
+    "warm-amber": "#c37d0d",
+    "soft-blue": "#3772cf",
+    "error-red": "#d45656",
+    "gray-700": "#333333",
+    "gray-500": "#666666",
+    "gray-400": "#888888",
+    "gray-200": "#e5e5e5",
+    "gray-100": "#f5f5f5",
+    "gray-50": "#fafafa",
+    "border-subtle": "rgba(0, 0, 0, 0.05)",
+    "border-medium": "rgba(0, 0, 0, 0.08)",
+    "card-shadow": "rgba(0, 0, 0, 0.03)",
+    "button-shadow": "rgba(0, 0, 0, 0.06)"
+  },
+  "typography": {
+    "families": [
+      "Inter",
+      "Inter Fallback",
+      "Geist Mono",
+      "Geist Mono Fallback"
+    ],
+    "sizes": {
+      "hero": "64px",
+      "section-heading": "40px",
+      "sub-heading": "24px",
+      "card-title": "20px",
+      "card-title-light": "20px",
+      "body": "18px",
+      "button": "15px",
+      "link": "14px",
+      "caption": "14px",
+      "label": "13px",
+      "small": "13px",
+      "mono": "12px"
+    },
+    "weights": [
+      400,
+      500,
+      600
+    ]
+  },
+  "spacing": {
+    "space-1": "2px",
+    "space-2": "4px",
+    "space-3": "5px",
+    "space-4": "6px",
+    "space-5": "7px",
+    "space-6": "8px",
+    "space-7": "10px",
+    "space-8": "12px",
+    "space-9": "16px",
+    "space-10": "24px"
+  },
+  "radius": {
+    "radius-1": "9999px",
+    "radius-2": "8px",
+    "radius-3": "16px",
+    "radius-4": "24px"
+  },
+  "shadows": {
+    "card-shadow": "rgba(0,0,0,0.03",
+    "button-shadow": "rgba(0,0,0,0.06"
+  },
+  "dials": {
+    "formality": 7,
+    "motion": 3,
+    "density": 5,
+    "warmth": 5,
+    "contrast": 6
+  }
+}

@@ -1,0 +1,5 @@
+version: 1
+interface:
+  display_name: "Programmatic Video"
+  short_description: "Generate 30-60s product demo videos with Remotion (or QuickTime / asciinema for simpler cases) following the hook→problem→solution→result→CTA structure."
+  default_prompt: "Choose the right recording tier (QuickTime / asciinema / Remotion) for the task. Write a storyboard, produce a 30-60 second demo with the standard 5-act structure, output mp4 + gif, and place under docs/demo/ with a reproducibility note."

@@ -1,0 +1,5 @@
+version: 1
+interface:
+  display_name: "Auto Flow"
+  short_description: "End-to-end workflow orchestrator: requirement gate (11 fields) → 7 acts → delivery, with ralph-loop (≤20 iters) + code-simplifier per dev act."
+  default_prompt: "Run Auto Flow. Phase 0 first: enforce the 11-field requirement gate and feasibility check; do NOT proceed unless every field is filled and the user has explicitly said OK. Then run the 7 acts in order, gating on each act's deliverable. In acts ④/⑤ use ralph-loop with default max=20 and run code-simplifier P0 cleanup after Ralph DONE. Stop only on the 6 predefined intervention points; otherwise run silently to delivery."

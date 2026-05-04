@@ -1,0 +1,81 @@
+{
+  "brand": "cursor",
+  "version": "1.0.0",
+  "$schema": "https://designdna.dev/schemas/tokens-v1.json",
+  "colors": {
+    "cursor-dark": "#26251e",
+    "cursor-cream": "#f2f1ed",
+    "cursor-light": "#e6e5e0",
+    "pure-white": "#ffffff",
+    "true-black": "#000000",
+    "cursor-orange": "#f54e00",
+    "gold": "#c08532",
+    "error": "#cf2d56",
+    "success": "#1f8a65",
+    "thinking": "#dfa88f",
+    "grep": "#9fc9a2",
+    "read": "#9fbbe0",
+    "edit": "#c0a8dd",
+    "surface-100": "#f7f7f4",
+    "surface-300": "#ebeae5",
+    "surface-500": "#e1e0db",
+    "border-primary": "oklab(0.263084 -0.00230259 0.0124794 / 0.1)",
+    "border-medium": "oklab(0.263084 -0.00230259 0.0124794 / 0.2)",
+    "border-strong": "rgba(38, 37, 30, 0.55)",
+    "card-shadow": "rgba(0, 0, 0, 0.14)",
+    "ambient-shadow": "rgba(0, 0, 0, 0.02)"
+  },
+  "typography": {
+    "families": [
+      "CursorGothic",
+      "CursorGothic Fallback",
+      "jjannon",
+      "Iowan Old Style"
+    ],
+    "sizes": {
+      "hero": "72px",
+      "section-heading": "36px",
+      "sub-heading": "26px",
+      "small": "22px",
+      "body": "19.2px",
+      "button": "14px",
+      "caption": "14px",
+      "system-heading": "20px",
+      "system-micro": "11px",
+      "lato-heading": "16px",
+      "lato-micro": "12px"
+    },
+    "weights": [
+      400,
+      500,
+      600,
+      700
+    ]
+  },
+  "spacing": {
+    "space-1": "2px",
+    "space-2": "2.5px",
+    "space-3": "3px",
+    "space-4": "4px",
+    "space-5": "5px",
+    "space-6": "6px",
+    "space-7": "8px",
+    "space-8": "10px",
+    "space-9": "12px",
+    "space-10": "14px"
+  },
+  "radius": {
+    "radius-1": "8px"
+  },
+  "shadows": {
+    "card-shadow": "rgba(0,0,0,0.14",
+    "ambient-shadow": "rgba(0,0,0,0.02"
+  },
+  "dials": {
+    "formality": 6,
+    "motion": 6,
+    "density": 5,
+    "warmth": 4,
+    "contrast": 8
+  }
+}

@@ -1,0 +1,5 @@
+version: 1
+interface:
+  display_name: "Code Simplifier"
+  short_description: "Remove duplication, dead code, over-abstraction and compatibility shims without changing observable behavior."
+  default_prompt: "Apply the Code Simplifier workflow: scope the diff, scan candidates by P0/P1/P2 priority, apply changes in small grouped commits, run verification after each group, and report kept-vs-changed with rationale."

@@ -1,0 +1,25 @@
+{
+  "name": "super-skill",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Lifecycle-organized AI agent skills collection from research to product delivery.",
+  "bin": {
+    "super-skill": "bin/super-skill"
+  },
+  "scripts": {
+    "validate": "bin/super-skill validate",
+    "doctor": "bin/super-skill doctor",
+    "catalog": "bin/super-skill catalog",
+    "list": "bin/super-skill list",
+    "test:designdna": "npm --prefix packages/designdna-cli test"
+  },
+  "keywords": [
+    "ai-agent",
+    "skills",
+    "codex",
+    "design-system",
+    "product-development",
+    "workflow"
+  ],
+  "license": "MIT"
+}

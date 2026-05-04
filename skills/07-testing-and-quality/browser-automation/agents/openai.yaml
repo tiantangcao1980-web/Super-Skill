@@ -1,0 +1,5 @@
+version: 1
+interface:
+  display_name: "Browser Automation"
+  short_description: "Pick the lightest browser automation tier (Preview MCP / browser-use LLM / Playwright / Chrome MCP) for the task and run a 7-layer verification."
+  default_prompt: "Choose between Claude Preview MCP, browser-use, Playwright, and Chrome MCP based on the task. For exploration use LLM-driven; for CI use Playwright. Always emit a 7-layer verification report (load / console / network / visual / E2E / micro-interaction / a11y)."

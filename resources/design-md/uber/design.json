@@ -1,0 +1,69 @@
+{
+  "brand": "uber",
+  "version": "1.0.0",
+  "$schema": "https://designdna.dev/schemas/tokens-v1.json",
+  "colors": {
+    "uber-black": "#000000",
+    "pure-white": "#ffffff",
+    "hover-gray": "#e2e2e2",
+    "hover-light": "#f3f3f3",
+    "chip-gray": "#efefef",
+    "body-gray": "#4b4b4b",
+    "muted-gray": "#afafaf",
+    "shadow-light": "rgba(0, 0, 0, 0.12)",
+    "shadow-medium": "rgba(0, 0, 0, 0.16)",
+    "button-press": "rgba(0, 0, 0, 0.08)",
+    "default-link-blue": "#0000ee"
+  },
+  "typography": {
+    "families": [
+      "UberMove",
+      "UberMoveText",
+      "Helvetica Neue"
+    ],
+    "sizes": {
+      "hero": "52px",
+      "section-heading": "36px",
+      "card-title": "32px",
+      "sub-heading": "24px",
+      "small": "20px",
+      "large": "18px",
+      "body": "16px",
+      "caption": "14px",
+      "micro": "12px"
+    },
+    "weights": [
+      400,
+      500,
+      700
+    ]
+  },
+  "spacing": {
+    "space-1": "4px",
+    "space-2": "6px",
+    "space-3": "8px",
+    "space-4": "10px",
+    "space-5": "12px",
+    "space-6": "14px",
+    "space-7": "16px",
+    "space-8": "18px",
+    "space-9": "20px",
+    "space-10": "24px"
+  },
+  "radius": {
+    "radius-1": "999px",
+    "radius-2": "8px"
+  },
+  "shadows": {
+    "shadow-1": "rgba(0, 0, 0, 0.12)",
+    "shadow-2": "rgba(0, 0, 0, 0.16)",
+    "shadow-3": "rgba(0, 0, 0, 0.08)"
+  },
+  "dials": {
+    "formality": 8,
+    "motion": 4,
+    "density": 4,
+    "warmth": 3,
+    "contrast": 9
+  }
+}

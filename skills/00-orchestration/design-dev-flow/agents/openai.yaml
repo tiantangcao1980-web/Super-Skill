@@ -1,0 +1,5 @@
+version: 1
+interface:
+  display_name: "Design-Dev Flow"
+  short_description: "Seven-act orchestrator from spec to delivery: requirements, design, interface, frontend loop, backend loop, browser verification, ship."
+  default_prompt: "Run the Design-Dev Flow seven acts in order, gating progression on each act's explicit deliverable. Delegate iteration to Ralph Loop and final cleanup to Code Simplifier."

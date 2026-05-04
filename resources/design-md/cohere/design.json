@@ -1,0 +1,67 @@
+{
+  "brand": "cohere",
+  "version": "1.0.0",
+  "$schema": "https://designdna.dev/schemas/tokens-v1.json",
+  "colors": {
+    "cohere-black": "#000000",
+    "near-black": "#212121",
+    "deep-dark": "#17171c",
+    "interaction-blue": "#1863dc",
+    "ring-blue": "#4c6ee6",
+    "focus-purple": "#9b60aa",
+    "pure-white": "#ffffff",
+    "snow": "#fafafa",
+    "lightest-gray": "#f2f2f2",
+    "muted-slate": "#93939f",
+    "border-cool": "#d9d9dd",
+    "border-light": "#e5e7eb"
+  },
+  "typography": {
+    "families": [
+      "CohereText",
+      "Space Grotesk",
+      "Unica77 Cohere Web",
+      "Inter"
+    ],
+    "sizes": {
+      "hero": "72px",
+      "display": "60px",
+      "section-heading": "48px",
+      "sub-heading": "32px",
+      "feature-title": "24px",
+      "body": "18px",
+      "button": "14px",
+      "caption": "14px",
+      "label": "14px",
+      "small": "12px",
+      "code-micro": "8px"
+    },
+    "weights": [
+      400,
+      500
+    ]
+  },
+  "spacing": {
+    "space-1": "2px",
+    "space-2": "6px",
+    "space-3": "8px",
+    "space-4": "10px",
+    "space-5": "12px",
+    "space-6": "16px",
+    "space-7": "20px",
+    "space-8": "22px",
+    "space-9": "24px",
+    "space-10": "28px"
+  },
+  "radius": {},
+  "shadows": {
+    "shadow-1": "1px solid #f2f2f2"
+  },
+  "dials": {
+    "formality": 7,
+    "motion": 5,
+    "density": 6,
+    "warmth": 4,
+    "contrast": 7
+  }
+}

@@ -1,0 +1,5 @@
+version: 1
+interface:
+  display_name: "Claude Code Resources"
+  short_description: "Index Claude Code ecosystem resources (plugins, skills, hooks, tutorials, awesome lists) and recommend at most 3 relevant items per user query."
+  default_prompt: "Identify the user's scenario, then recommend at most 3 Claude Code resources (plugin / skill / hook / tutorial). Always check local ~/.claude/skills first before suggesting external repos. Cap each recommendation to: what it solves, how to start, the main caveat."

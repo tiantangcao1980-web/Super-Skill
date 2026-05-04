@@ -1,0 +1,65 @@
+{
+  "brand": "superhuman",
+  "version": "1.0.0",
+  "$schema": "https://designdna.dev/schemas/tokens-v1.json",
+  "colors": {
+    "mysteria-purple": "#1b1938",
+    "lavender-glow": "#cbb7fb",
+    "charcoal-ink": "#292827",
+    "amethyst-link": "#714cb6",
+    "pure-white": "#ffffff",
+    "warm-cream": "#e9e5dd",
+    "parchment-border": "#dcd7d3"
+  },
+  "typography": {
+    "families": [
+      "Super Sans VF",
+      "Segoe UI"
+    ],
+    "sizes": {
+      "hero": "64px",
+      "display": "48px",
+      "section-heading": "48px",
+      "feature-title": "28px",
+      "large": "26px",
+      "card-heading": "22px",
+      "body": "20px",
+      "button": "16px",
+      "nav-link": "16px",
+      "caption": "14px",
+      "label": "12px"
+    },
+    "weights": [
+      460,
+      500,
+      540,
+      600,
+      700
+    ]
+  },
+  "spacing": {
+    "space-1": "2px",
+    "space-2": "4px",
+    "space-3": "6px",
+    "space-4": "8px",
+    "space-5": "12px",
+    "space-6": "16px",
+    "space-7": "18px",
+    "space-8": "20px",
+    "space-9": "24px",
+    "space-10": "28px"
+  },
+  "radius": {},
+  "shadows": {
+    "shadow-1": "1px solid #dcd7d3",
+    "shadow-2": "1px solid #292827",
+    "shadow-3": "rgba(255, 255, 255, 0.2)"
+  },
+  "dials": {
+    "formality": 8,
+    "motion": 6,
+    "density": 5,
+    "warmth": 4,
+    "contrast": 8
+  }
+}

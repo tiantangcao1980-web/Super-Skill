@@ -1,0 +1,70 @@
+{
+  "brand": "kraken",
+  "version": "1.0.0",
+  "$schema": "https://designdna.dev/schemas/tokens-v1.json",
+  "colors": {
+    "kraken-purple": "#7132f5",
+    "purple-dark": "#5741d8",
+    "purple-deep": "#5b1ecf",
+    "purple-subtle": "rgba(133, 91, 251, 0.16)",
+    "near-black": "#101114",
+    "cool-gray": "#686b82",
+    "silver-blue": "#9497a9",
+    "white": "#ffffff",
+    "border-gray": "#dedee5",
+    "green": "#149e61",
+    "green-dark": "#026b3f"
+  },
+  "typography": {
+    "families": [
+      "Kraken-Brand",
+      "IBM Plex Sans",
+      "Kraken-Product",
+      "Helvetica Neue"
+    ],
+    "sizes": {
+      "hero": "48px",
+      "section-heading": "36px",
+      "sub-heading": "28px",
+      "feature-title": "22px",
+      "body": "16px",
+      "button": "16px",
+      "caption": "14px",
+      "small": "12px",
+      "micro": "7px"
+    },
+    "weights": [
+      400,
+      500,
+      600,
+      700
+    ]
+  },
+  "spacing": {
+    "space-1": "2px",
+    "space-2": "3px",
+    "space-3": "4px",
+    "space-4": "5px",
+    "space-5": "6px",
+    "space-6": "8px",
+    "space-7": "10px",
+    "space-8": "12px",
+    "space-9": "13px",
+    "space-10": "15px"
+  },
+  "radius": {
+    "radius-1": "12px",
+    "radius-2": "10px"
+  },
+  "shadows": {
+    "shadow-1": "rgba(0,0,0,0.03) 0px 4px 24px",
+    "shadow-2": "rgba(16,24,40,0.04) 0px 1px 4px"
+  },
+  "dials": {
+    "formality": 7,
+    "motion": 4,
+    "density": 7,
+    "warmth": 3,
+    "contrast": 8
+  }
+}

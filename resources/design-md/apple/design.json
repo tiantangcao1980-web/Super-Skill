@@ -1,0 +1,83 @@
+{
+  "brand": "apple",
+  "version": "1.0.0",
+  "$schema": "https://designdna.dev/schemas/tokens-v1.json",
+  "colors": {
+    "pure-black": "#000000",
+    "light-gray": "#f5f5f7",
+    "near-black": "#1d1d1f",
+    "apple-blue": "#0071e3",
+    "link-blue": "#0066cc",
+    "bright-blue": "#2997ff",
+    "white": "#ffffff",
+    "dark-surface-1": "#272729",
+    "dark-surface-2": "#262628",
+    "dark-surface-3": "#28282a",
+    "dark-surface-4": "#2a2a2d",
+    "dark-surface-5": "#242426",
+    "button-active": "#ededf2",
+    "button-default-light": "#fafafc",
+    "overlay": "rgba(210, 210, 215, 0.64)",
+    "card-shadow": "rgba(0, 0, 0, 0.22)"
+  },
+  "typography": {
+    "families": [
+      "SF Pro Display",
+      "SF Pro Icons",
+      "Body",
+      "SF Pro Text"
+    ],
+    "sizes": {
+      "display": "56px",
+      "hero": "56px",
+      "section-heading": "40px",
+      "tile-heading": "28px",
+      "card-title": "21px",
+      "sub-heading": "21px",
+      "nav-heading": "34px",
+      "sub-nav": "24px",
+      "body": "17px",
+      "large": "18px",
+      "button": "17px",
+      "link": "14px",
+      "caption": "14px",
+      "micro": "12px",
+      "micro-bold": "12px",
+      "nano": "10px"
+    },
+    "weights": [
+      300,
+      400,
+      600,
+      700
+    ]
+  },
+  "spacing": {
+    "space-1": "2px",
+    "space-2": "4px",
+    "space-3": "5px",
+    "space-4": "6px",
+    "space-5": "7px",
+    "space-6": "8px",
+    "space-7": "9px",
+    "space-8": "10px",
+    "space-9": "11px",
+    "space-10": "14px"
+  },
+  "radius": {
+    "radius-1": "8px",
+    "radius-2": "980px",
+    "radius-3": "11px",
+    "radius-4": "5px"
+  },
+  "shadows": {
+    "card-shadow": "rgba(0, 0, 0, 0.22"
+  },
+  "dials": {
+    "formality": 9,
+    "motion": 4,
+    "density": 2,
+    "warmth": 6,
+    "contrast": 7
+  }
+}

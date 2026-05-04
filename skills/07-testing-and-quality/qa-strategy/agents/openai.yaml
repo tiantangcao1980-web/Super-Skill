@@ -1,0 +1,5 @@
+version: 1
+interface:
+  display_name: "QA Strategy"
+  short_description: "Orchestrate testing pyramid (70/20/10) by composing tdd-workflow / e2e-testing / browser-automation / security-review / code-review / verification-loop. Output test-plan.md, bug-tracker, and Quality Gate config."
+  default_prompt: "Read PRD, derive 3+ test cases per User Story (happy/boundary/error), pick coverage baseline by project class, schedule each layer to the right skill, and define a Quality Gate that blocks merge/deploy on any failure. Reject ice-cream-cone test shapes (heavy manual, light unit)."

@@ -1,0 +1,5 @@
+version: 1
+interface:
+  display_name: "CLI Design"
+  short_description: "Design or audit CLIs aligned with the opencli specification and CLI-Anything's 5-step methodology."
+  default_prompt: "Apply the CLI Design 7 commandments + 5-step CLI-Anything method. Produce a command tree, flag table, exit codes, error code map, and an INTERFACE.md spec. Audit existing CLIs against the same checklist when asked."

@@ -1,0 +1,71 @@
+{
+  "brand": "runwayml",
+  "version": "1.0.0",
+  "$schema": "https://designdna.dev/schemas/tokens-v1.json",
+  "colors": {
+    "runway-black": "#000000",
+    "deep-black": "#030303",
+    "dark-surface": "#1a1a1a",
+    "pure-white": "#ffffff",
+    "near-white": "#fefefe",
+    "cool-cloud": "#e9ecf2",
+    "border-dark": "#27272a",
+    "charcoal": "#404040",
+    "near-charcoal": "#3f3f3f",
+    "cool-slate": "#767d88",
+    "mid-slate": "#7d848e",
+    "muted-gray": "#a7a7a7",
+    "cool-silver": "#c9ccd1",
+    "light-silver": "#d0d4d4",
+    "tailwind-gray": "#6b7280",
+    "dark-link": "#0c0c0c",
+    "footer-gray": "#999999"
+  },
+  "typography": {
+    "families": [
+      "Universal",
+      "abcNormal",
+      "abcNormal Fallback"
+    ],
+    "sizes": {
+      "hero": "48px",
+      "section-heading": "40px",
+      "sub-heading": "36px",
+      "card-title": "24px",
+      "feature-title": "20px",
+      "body": "16px",
+      "caption": "14px",
+      "small": "13px",
+      "micro-tag": "11px"
+    },
+    "weights": [
+      400,
+      450,
+      500,
+      600
+    ]
+  },
+  "spacing": {
+    "space-1": "4px",
+    "space-2": "6px",
+    "space-3": "8px",
+    "space-4": "12px",
+    "space-5": "16px",
+    "space-6": "20px",
+    "space-7": "24px",
+    "space-8": "28px",
+    "space-9": "32px",
+    "space-10": "48px"
+  },
+  "radius": {},
+  "shadows": {
+    "shadow-1": "1px solid #27272a"
+  },
+  "dials": {
+    "formality": 6,
+    "motion": 9,
+    "density": 6,
+    "warmth": 4,
+    "contrast": 9
+  }
+}

@@ -1,0 +1,5 @@
+version: 1
+interface:
+  display_name: "File Curation"
+  short_description: "Triage a heap of files (PDF/Word/Excel/screenshots/etc) via classify → summarize → index → persist 4-step. Calls Cowork pdf/docx/xlsx/pptx skills for extraction; stores long-term insight in hierarchical-memory."
+  default_prompt: "Classify files by type / topic / importance (⭐⭐⭐/⭐⭐/⭐/❌). Summarize each ⭐⭐+ in 2-3 sentences with 'why it matters'. Output _index.md with two views (by topic, by importance). Deduplicate. Persist to hierarchical-memory or project docs. End with a 'just read these 3' recommendation. Never mutate originals."

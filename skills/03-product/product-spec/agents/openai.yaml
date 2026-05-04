@@ -1,0 +1,5 @@
+version: 1
+interface:
+  display_name: "Product Spec"
+  short_description: "Expand User Story matrix into a 11-chapter PRD with MVP slicing, North Star metric, risk register, and rollout/rollback plan."
+  default_prompt: "Read requirements.md, fill the 11-chapter PRD template (value / background / journey / MVP slice / detailed stories / data+interface / metrics / non-functional / risk / rollout / FAQ). Reject 'MVP = smaller v1' framing. Cap North Star at 1, list ≥5 risks, and include kill-switch + rollback conditions."

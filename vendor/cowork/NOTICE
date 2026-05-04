@@ -1,0 +1,102 @@
+vendor/cowork/ · Third-Party Plugin Redistribution
+
+This directory redistributes 19 plugins (15 with full content, 4 as
+placeholders) originally from Anthropic's claude-plugins-official Cowork
+marketplace. Each plugin retains its original LICENSE file (where present)
+and copyright/attribution notices.
+
+================================================================================
+Snapshot
+================================================================================
+
+Source           : Anthropic claude-plugins-official marketplace
+                   (Cowork knowledge-work-plugins)
+Snapshot date    : 2026-04-29
+Snapshot machine : ~/Library/Application Support/Claude/
+                   local-agent-mode-sessions/<session>/
+                   cowork_plugins/cache/knowledge-work-plugins/
+Lock file        : vendor/cowork/VERSIONS.lock (machine-readable)
+
+================================================================================
+Vendored plugins (15) — full content redistributed
+================================================================================
+
+The following 15 plugins ship a LICENSE file and have been redistributed
+verbatim under their original terms. No content modifications.
+
+Plugin                     | Version  | Author        | License
+---------------------------|----------|---------------|---------------
+apollo                     | 0.1.0    | Apollo.io     | MIT
+bio-research               | 1.0.0    | Anthropic     | Apache-2.0
+brand-voice                | 1.0.0    | Tribe AI      | MIT
+common-room                | 1.0.0    | Common Room   | Apache-2.0
+cowork-plugin-management   | 0.2.2    | Anthropic     | Apache-2.0
+customer-support           | 1.1.0    | Anthropic     | Apache-2.0
+data                       | 1.0.0    | Anthropic     | Apache-2.0
+enterprise-search          | 1.1.0    | Anthropic     | Apache-2.0
+finance                    | 1.1.0    | Anthropic     | Apache-2.0
+legal                      | 1.1.0    | Anthropic     | Apache-2.0
+marketing                  | 1.1.0    | Anthropic     | Apache-2.0
+product-management         | 1.1.0    | Anthropic     | Apache-2.0
+productivity               | 1.1.0    | Anthropic     | Apache-2.0
+sales                      | 1.1.0    | Anthropic     | Apache-2.0
+slack-by-salesforce        | 1.0.0    | Salesforce    | MIT
+
+The original LICENSE file lives at:
+  vendor/cowork/<plugin>/<version>/LICENSE
+
+================================================================================
+Placeholder-only plugins (4) — content NOT redistributed
+================================================================================
+
+The following 4 plugins do NOT ship a LICENSE file in their upstream cache.
+Author is Anthropic, and based on neighboring plugins they are presumed
+Apache-2.0, but absent an explicit LICENSE we err on the side of caution and
+redistribute only the descriptive metadata (.claude-plugin/plugin.json) plus a
+placeholder README explaining how to obtain the actual content.
+
+  - design v1.1.0
+  - engineering v1.1.0
+  - human-resources v1.1.0
+  - operations v1.1.0
+
+To use these plugins, install Claude Desktop (Cowork) and activate them from
+the Cowork plugin panel. They load from the official Anthropic cache.
+
+If/when an official LICENSE file lands upstream, we will re-vendor full content
+in a follow-up commit.
+
+================================================================================
+Modifications by code-skills
+================================================================================
+
+For all 15 vendored plugins:
+- No source file modifications
+- We added vendor/cowork/README.md (introduction + sync workflow)
+- We added vendor/cowork/VERSIONS.lock (machine-readable snapshot record)
+- We added vendor/cowork/NOTICE (this file)
+
+For the 4 placeholder plugins:
+- We retained only `.claude-plugin/plugin.json`
+- We added a `README.md` describing how to obtain the real content
+- All other source files (skills/, references/, scripts/, etc.) were removed
+
+If we make any future modification to a vendored skill (e.g. fix a bug, adapt
+to a different runtime), we will:
+1. Mark the modified file with a header noting the change
+2. Submit the change upstream to Anthropic claude-plugins-official
+3. Update VERSIONS.lock to reflect the change
+
+================================================================================
+Reverse attribution to upstream
+================================================================================
+
+This vendoring exists so that users of code-skills can compose these skills
+with the rest of the repository even when Cowork is not installed locally.
+All quality, depth, and design credit belongs to the original authors.
+
+If you find a bug or improvement opportunity in a vendored skill, the canonical
+fix path is:
+  Anthropic / Apollo / Tribe AI / Common Room / Salesforce upstream → vendor sync
+
+We will not silently fork divergent versions.
