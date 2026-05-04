@@ -1,6 +1,6 @@
 ---
 name: agent-memory-dream-loop
-description: Connect agent experience, durable memory, negative lessons, and offline dream replay into a safe self-improving harness loop.
+description: Auto-trigger when work creates reusable experience, repeated failures, user corrections, skill changes, or memory/dream replay needs; connect durable memory, negative lessons, and offline replay into a controlled self-improving harness loop.
 ---
 
 # Agent Memory Dream Loop
@@ -8,6 +8,26 @@ description: Connect agent experience, durable memory, negative lessons, and off
 Use this skill when the project needs better agent memory, experience reuse, offline reflection, or a self-improving loop that turns past work into better future performance.
 
 Memory is not a larger prompt. Memory is a governed system for deciding what should be recalled, compressed, evaluated, forgotten, or promoted into skills and tests.
+
+## Automatic Fallback Trigger
+
+Use this as the automatic fallback in tools that do not support plugins or lifecycle hooks.
+
+Trigger this skill without waiting for explicit user invocation when any condition is true:
+
+- A substantial task completed with changed files, verification, release notes, or a reusable workflow.
+- A test, build, audit, deployment, user acceptance check, or agent plan failed more than once.
+- The user corrected a process, preference, output shape, tool choice, or quality standard that will matter again.
+- A new skill is proposed, an existing skill is patched, or overlapping skills are detected.
+- The agent needed unusual runtime, model, context, sandbox, or tool-routing knowledge to succeed.
+
+The trigger is controllable:
+
+- Honor `SUPER_SKILL_MEMORY_DISABLED=1` or an equivalent runtime rule as a hard off switch.
+- Never store raw prompt, raw assistant output, secrets, private data, customer data, credentials, or unverified claims.
+- Create at most one compact candidate per trigger unless the user explicitly asks for a broader review.
+- Default to review candidates, not automatic promotion.
+- Prefer updating the nearest existing skill, memory, eval, or runbook before creating anything new.
 
 ## Memory Tiers
 
@@ -48,6 +68,17 @@ A memory candidate can be promoted only when:
 - it improves at least one eval, test, or review rubric
 - it does not conflict with higher-priority instructions
 - it has an owner or expiry rule
+
+## Skill Evolution Constraints
+
+Use Hermes-style curation before changing the skill library:
+
+1. Grade the candidate with a rubric: quality gain, repeatability, safety, token impact, overlap, and verification evidence.
+2. Bias toward the skill that was just used or the nearest existing skill; do not create a new skill until dedup search fails.
+3. Restrict the review surface to memory, skills, catalog, and audit artifacts. Do not let a background review fork use shell, web, deployment, or broad filesystem tools.
+4. Mark core harness skills as protected or pinned. Never archive or mutate them automatically.
+5. Archive stale low-value skills reversibly instead of deleting them.
+6. Write a compact report for every curation run: candidates reviewed, accepted, rejected, archived, restored, and tests run.
 
 ## Memory Record Format
 

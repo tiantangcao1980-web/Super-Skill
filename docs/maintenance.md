@@ -14,6 +14,8 @@ bin/super-skill audit
 bin/super-skill harness
 bin/super-skill hermes
 bin/super-skill memory
+bin/super-skill triggers
+bin/super-skill memory-plugin --dry-run
 bin/super-skill plan --profile hermes
 bin/super-skill catalog
 ```
@@ -41,9 +43,12 @@ Then update NOTICE and run validation.
 - `docs/harness-engineering-validation.md` records the source-derived harness criteria, current evidence, and remaining runtime gaps.
 - `bin/super-skill hermes --json` reports the Hermes-style self-improving agent capability matrix.
 - `bin/super-skill memory --json` reports the memory, dream replay, and experience reuse capability matrix.
+- `bin/super-skill triggers --json` reports automatic trigger and skill lifecycle policy validity.
+- `bin/super-skill memory-plugin --dry-run --json` reports Codex plugin, marketplace, hook, and config operations without mutating the machine.
 - `bin/super-skill plan --profile core --json` emits a deterministic read-only plan.
 - `bin/super-skill plan --profile hermes --json` emits a Hermes-safe plan with native mirror exclusions.
 - `bin/super-skill install --profile all --dry-run` exits 0.
+- `bin/super-skill install --profile core --dry-run --with-memory-plugin --json` verifies first-install plugin bootstrap.
 - `python3 -m unittest discover -s tests` passes.
 - `bin/super-skill catalog` has been regenerated.
 - DesignDNA CLI tests pass when package dependencies are installed.

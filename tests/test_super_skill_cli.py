@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -94,6 +95,99 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertIn("negative-memory", ids)
         self.assertIn("dream-replay", ids)
         self.assertIn("memory-safety", ids)
+        self.assertIn("automatic-memory-trigger", ids)
+        self.assertIn("skill-lifecycle-curation", ids)
+
+    def test_trigger_policy_reports_controlled_automatic_triggers(self) -> None:
+        data = run_cli("triggers")
+        self.assertEqual(data["failures"], [])
+        trigger_policy = data["auto_trigger_policy"]
+        lifecycle_policy = data["skill_lifecycle_policy"]
+        self.assertEqual(trigger_policy["fallback_skill"], "agent-memory-dream-loop")
+        self.assertGreaterEqual(len(trigger_policy["triggers"]), 4)
+        self.assertFalse(trigger_policy["controls"]["capture_raw_prompt"])
+        self.assertFalse(trigger_policy["controls"]["capture_raw_response"])
+        self.assertFalse(trigger_policy["controls"]["auto_promote"])
+        self.assertIn("agent-memory-dream-loop", lifecycle_policy["protected_skills"])
+        self.assertFalse(lifecycle_policy["curation"]["auto_delete"])
+
+    def test_memory_plugin_plan_reports_codex_bootstrap(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            data = run_cli(
+                "memory-plugin",
+                "--dry-run",
+                "--target",
+                str(root / "plugins" / "super-skill-memory-harness"),
+                "--marketplace",
+                str(root / "marketplace.json"),
+                "--hooks",
+                str(root / "hooks.json"),
+                "--config",
+                str(root / "config.toml"),
+            )
+            self.assertEqual(data["plugin"], "super-skill-memory-harness")
+            self.assertEqual(data["runtime"], "codex")
+            self.assertTrue(data["dry_run"])
+            types = {item["type"] for item in data["operations"]}
+            self.assertEqual(types, {"plugin-bundle", "marketplace", "hooks", "codex-config"})
+            self.assertFalse((root / "marketplace.json").exists())
+
+    def test_install_with_memory_plugin_dry_run_includes_plugin_plan(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            data = run_cli(
+                "install",
+                "--profile",
+                "core",
+                "--target",
+                str(root / "skills"),
+                "--dry-run",
+                "--with-memory-plugin",
+                "--memory-plugin-target",
+                str(root / "plugins" / "super-skill-memory-harness"),
+                "--memory-plugin-marketplace",
+                str(root / "marketplace.json"),
+                "--memory-plugin-hooks",
+                str(root / "hooks.json"),
+                "--memory-plugin-config",
+                str(root / "config.toml"),
+            )
+            self.assertIn("memory_plugin", data)
+            self.assertEqual(data["memory_plugin"]["plugin"], "super-skill-memory-harness")
+            self.assertTrue(all(item["status"].startswith("would-") for item in data["results"]))
+
+    def test_memory_hook_writes_metadata_candidate_without_prompt_content(self) -> None:
+        script = ROOT / "plugins" / "super-skill-memory-harness" / "scripts" / "memory_dream_hook.py"
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            payload = {
+                "hook_event_name": "Stop",
+                "cwd": str(root),
+                "model": "test-model",
+                "session_id": "session-test",
+                "transcript_path": str(root / "transcript.jsonl"),
+                "prompt": "do not store this user prompt",
+            }
+            proc = subprocess.run(
+                [sys.executable, str(script), "--event", "stop"],
+                cwd=root,
+                input=json.dumps(payload),
+                capture_output=True,
+                text=True,
+                timeout=30,
+                check=False,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            out = json.loads(proc.stdout)
+            self.assertTrue(out["continue"])
+            candidates = sorted((root / ".super-skill" / "memory" / "inbox").glob("*.md"))
+            traces = sorted((root / ".super-skill" / "memory" / "traces").glob("*.jsonl"))
+            self.assertEqual(len(candidates), 1)
+            self.assertEqual(len(traces), 1)
+            body = candidates[0].read_text(encoding="utf-8")
+            self.assertIn("review whether any verified lesson should become memory", body)
+            self.assertNotIn("do not store this user prompt", body)
 
 
 if __name__ == "__main__":

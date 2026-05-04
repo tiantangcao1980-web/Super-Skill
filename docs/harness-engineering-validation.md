@@ -2,7 +2,7 @@
 
 This project treats harness engineering as the environment around the model: context, specs, tools, memory, state, validation, evals, deployment, observability, safety, and learning loops that make agent work repeatable.
 
-The 2026 extension in this repository adds three checks that are now central to agent-driven delivery: developer-tool adaptation, provider-neutral model contracts, and memory/dream replay as a governed learning loop.
+The 2026 extension in this repository adds four checks that are now central to agent-driven delivery: developer-tool adaptation, provider-neutral model contracts, memory/dream replay as a governed learning loop, and automatic trigger governance.
 
 ## Source-Derived Criteria
 
@@ -37,6 +37,7 @@ The X thread argues that AI-first engineering is a workflow redesign: product, a
 | Developer tool adaptation | `dev-tool-adapter`, adapter matrix for Cursor, Trae, OpenCode, OpenClaw, Claude Code, Codex | Covered |
 | Model adaptation | `model-adaptation-contract`, input/output schemas, routing and compatibility gates | Covered |
 | Memory and dream replay | `agent-memory-dream-loop`, `memory` assessment, promotion criteria, negative memory | Covered |
+| Automatic trigger governance | `super-skill-memory-harness`, `auto-trigger-policy.json`, `skill-lifecycle-policy.json`, `triggers` assessment | Covered |
 | Human risk governance | `harness-engineering`, `agent-routing`, review and approval rules in `AGENTS.md` | Covered |
 | Learning loop | `continuous-learning`, `skill-authoring-system`, `skill-evolution-loop`, `hermes` assessment | Covered |
 
@@ -52,7 +53,7 @@ The important caveat: it is a portable skill and workflow harness, not a product
 - Feature-flag and A/B testing are guidance-level skills unless the target project wires Statsig, LaunchDarkly, or another experimentation provider.
 - Agent eval support is now explicit, but each adopting project must supply realistic task fixtures, traces, deterministic verifiers, and no-skill baselines.
 - Runtime adapters still need smoke checks inside each target tool because Cursor, Trae, OpenCode, OpenClaw, Claude Code, and Codex evolve quickly.
-- The memory/dream loop is defined and statically checked, but downstream projects still need a real trace store, redaction process, and eval corpus before automatic promotion.
+- The memory/dream loop now has plugin/fallback auto-trigger checks, but downstream projects still need a real eval corpus before any automatic promotion.
 - `bin/super-skill harness` is a static readiness scan. It proves the repository exposes harness surfaces; it does not prove a downstream product's runtime behavior without project-specific evals and production signals.
 
 ## Verification Commands
@@ -61,6 +62,8 @@ The important caveat: it is a portable skill and workflow harness, not a product
 bin/super-skill harness --json
 bin/super-skill hermes --json
 bin/super-skill memory --json
+bin/super-skill triggers --json
+bin/super-skill memory-plugin --dry-run --json
 bin/super-skill validate --json
 bin/super-skill audit --json
 python3 -m unittest discover -s tests

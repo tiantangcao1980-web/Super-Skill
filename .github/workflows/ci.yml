@@ -23,5 +23,8 @@ jobs:
       - run: bin/super-skill harness --json
       - run: bin/super-skill hermes --json
       - run: bin/super-skill memory --json
+      - run: bin/super-skill triggers --json
+      - run: bin/super-skill memory-plugin --dry-run --json
       - run: bin/super-skill install --profile core --dry-run --json
+      - run: bin/super-skill install --profile core --dry-run --with-memory-plugin --json
       - run: python3 -m unittest discover -s tests

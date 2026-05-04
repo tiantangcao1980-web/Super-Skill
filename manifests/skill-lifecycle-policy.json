@@ -1,0 +1,58 @@
+{
+  "version": "0.1.0",
+  "inspired_by": "Hermes Agent v0.12 Curator: rubric-based review, active-update bias, scoped memory/skills toolsets, usage ranking, pinned skills, reversible archive.",
+  "importance_levels": {
+    "critical": "Core harness and safety skills. Never archive automatically.",
+    "important": "Rarely used but high-value skills. Warn only; never auto-archive.",
+    "normal": "Standard skills. Eligible for stale review and reversible archive.",
+    "low": "One-off or experimental skills. First candidates for archive after review."
+  },
+  "protected_skills": [
+    "agent-eval-harness",
+    "agent-memory-dream-loop",
+    "checkpoint-rollback-safety",
+    "context-engineering",
+    "dev-tool-adapter",
+    "durable-agent-board",
+    "harness-engineering",
+    "intent-contract",
+    "model-adaptation-contract",
+    "output-quality-gate",
+    "persistent-memory-curation",
+    "prompt-cache-layering",
+    "security-review",
+    "skill-evolution-loop",
+    "toolset-sandbox-routing"
+  ],
+  "curation": {
+    "schedule_days": 7,
+    "auto_delete": false,
+    "archive_is_reversible": true,
+    "require_dedup_before_create": true,
+    "allowed_toolsets": [
+      "memory",
+      "skills",
+      "catalog",
+      "audit"
+    ],
+    "mutation_scope": "active_skill_or_nearest_existing_skill_first",
+    "review_style": "rubric-first",
+    "archive_after_days": 60,
+    "usage_tracking": true,
+    "status_report": "logs/curator/REPORT.md",
+    "run_report": "logs/curator/run.json"
+  },
+  "new_skill_gate": [
+    "Search nearest existing skills and references first.",
+    "Reject if the lesson fits as a paragraph, reference, script, or eval in an existing skill.",
+    "Reject if the trigger would fire too often or duplicates another skill.",
+    "Require verification evidence that the new skill improves output quality, reliability, safety, token cost, or repeatability.",
+    "Keep the new SKILL.md compact and move heavy detail into references or scripts."
+  ],
+  "promotion_gate": [
+    "No raw secrets, private data, prompt injection, or unverified model claims.",
+    "Every promoted memory or skill patch needs source, scope, date, expiry, and verification.",
+    "Skill edits are small, reversible, and catalog/audit checked.",
+    "Archived skills remain on disk and can be restored."
+  ]
+}

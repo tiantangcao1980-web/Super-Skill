@@ -17,6 +17,8 @@ Create or update a skill when one of these is true:
 - A workflow crossed tools, files, providers, or review gates.
 - A deterministic script would save repeated context and reduce mistakes.
 
+Automatic skill evolution must stay controlled. If a plugin, hook, background review, or implicit trigger proposes an update, treat it as a candidate until it passes the gates below.
+
 ## Decision Tree
 
 1. If the lesson is a stable fact about one project, update project context.
@@ -33,6 +35,18 @@ Create or update a skill when one of these is true:
 4. Keep `SKILL.md` compact; move detail to `references/`.
 5. Validate frontmatter, links, duplicate names, and install plan.
 6. Record the source inspiration and local adaptation in docs when borrowed from another project.
+
+## Curator Constraints
+
+Borrow the Hermes Curator pattern, but keep mutation bounded:
+
+- Run curation on a schedule or after substantial work, not on every tiny turn.
+- Use rubric-first review instead of free-form "improve the skill" prompts.
+- Prefer active-update: update a skill that was just loaded before touching unrelated skills.
+- Restrict the review toolset to memory, skills, catalog, and audit evidence.
+- Track usage, last-used time, importance, and stale candidates outside `SKILL.md`.
+- Never auto-delete. Archive reversibly and protect `critical` and `important` skills.
+- A new skill requires dedup search, overlap explanation, verification evidence, and a catalog/audit pass.
 
 ## Anti-Bloat Checks
 

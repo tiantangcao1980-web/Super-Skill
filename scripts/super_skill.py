@@ -12,6 +12,7 @@ import argparse
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -28,6 +29,10 @@ SKILLS_ROOT = ROOT / "skills"
 VENDOR_ROOT = ROOT / "vendor" / "cowork"
 CATALOG_ROOT = ROOT / "catalog"
 MANIFEST_ROOT = ROOT / "manifests"
+PLUGIN_ROOT = ROOT / "plugins"
+MEMORY_PLUGIN_NAME = "super-skill-memory-harness"
+AUTO_TRIGGER_POLICY_PATH = MANIFEST_ROOT / "auto-trigger-policy.json"
+SKILL_LIFECYCLE_POLICY_PATH = MANIFEST_ROOT / "skill-lifecycle-policy.json"
 
 EXIT_OK = 0
 EXIT_RUNTIME = 1
@@ -322,6 +327,23 @@ HARNESS_CAPABILITIES = [
         "recommendation": "Turn verified experience into bounded memory, offline replay, skill patches, evals, and rejected lessons.",
     },
     {
+        "id": "auto-trigger-governance",
+        "label": "Automatic trigger governance",
+        "patterns": [
+            r"auto-trigger",
+            r"automatic trigger",
+            r"SessionStart",
+            r"\bStop\b",
+            r"trigger policy",
+            r"fallback skill",
+            r"controllable",
+            r"opt-in",
+        ],
+        "min_matches": 3,
+        "paths": ["README.md", "docs", "workflows", "skills", "manifests", "plugins"],
+        "recommendation": "Define automatic trigger surfaces, control gates, and fallback skill behavior for runtimes without plugins.",
+    },
+    {
         "id": "output-quality",
         "label": "Output quality gate",
         "patterns": [r"output-quality-gate", r"verification-loop", r"evidence before claims", r"known gaps"],
@@ -500,12 +522,46 @@ MEMORY_CAPABILITIES = [
         "recommendation": "Block secrets, private data, stale claims, and unverified model assertions from durable memory.",
     },
     {
+        "id": "automatic-memory-trigger",
+        "label": "Automatic memory trigger controls",
+        "patterns": [
+            r"auto-trigger",
+            r"automatic trigger",
+            r"SessionStart",
+            r"\bStop\b",
+            r"fallback skill",
+            r"trigger policy",
+            r"controllable",
+            r"capture_raw_prompt",
+        ],
+        "min_matches": 3,
+        "paths": ["README.md", "docs", "workflows", "skills", "manifests", "plugins"],
+        "recommendation": "Install plugin hooks where possible, and use a controlled implicit skill trigger where plugins are unavailable.",
+    },
+    {
         "id": "token-efficient-recall",
         "label": "Token-efficient recall",
         "patterns": [r"token", r"always-on context", r"retrieve", r"pointer", r"compression", r"prompt-cache"],
         "min_matches": 2,
         "paths": ["docs", "workflows", "skills", "README.md"],
         "recommendation": "Keep traces and large references outside prompts; load compact memories by relevance.",
+    },
+    {
+        "id": "skill-lifecycle-curation",
+        "label": "Skill lifecycle curation",
+        "patterns": [
+            r"Curator",
+            r"usage tracking",
+            r"importance",
+            r"archive",
+            r"pinned",
+            r"stale",
+            r"dedup",
+            r"skill lifecycle",
+        ],
+        "min_matches": 3,
+        "paths": ["README.md", "docs", "workflows", "skills", "manifests"],
+        "recommendation": "Constrain self-evolution with usage stats, importance levels, reversible archive state, and duplicate checks.",
     },
 ]
 
@@ -518,6 +574,16 @@ class Skill:
     stage: str
     source: str
     relative_path: str
+
+
+@dataclass(frozen=True)
+class Plugin:
+    name: str
+    version: str
+    description: str
+    path: Path
+    relative_path: str
+    manifest: dict
 
 
 def request_id() -> str:
@@ -612,6 +678,100 @@ def discover_vendor_skills() -> list[Skill]:
         skill_from_path(path, source="vendor")
         for path in sorted(VENDOR_ROOT.rglob("SKILL.md"))
     ]
+
+
+def plugin_from_manifest(manifest_path: Path) -> Plugin:
+    manifest = read_json_file(manifest_path)
+    plugin_path = manifest_path.parents[1]
+    rel = plugin_path.relative_to(ROOT).as_posix()
+    return Plugin(
+        name=str(manifest.get("name") or plugin_path.name),
+        version=str(manifest.get("version") or ""),
+        description=str(manifest.get("description") or ""),
+        path=plugin_path,
+        relative_path=rel,
+        manifest=manifest,
+    )
+
+
+def discover_plugins() -> list[Plugin]:
+    if not PLUGIN_ROOT.exists():
+        return []
+
+    plugins = []
+    for manifest_path in sorted(PLUGIN_ROOT.glob("*/.codex-plugin/plugin.json")):
+        try:
+            plugins.append(plugin_from_manifest(manifest_path))
+        except (OSError, json.JSONDecodeError, ValueError):
+            continue
+    return sorted(plugins, key=lambda p: (p.name, p.relative_path))
+
+
+def manifest_relative_path(plugin: Plugin, value: str) -> Path:
+    clean = value[2:] if value.startswith("./") else value
+    return plugin.path / clean
+
+
+def plugin_manifest_paths(plugin: Plugin) -> list[tuple[str, Path]]:
+    out: list[tuple[str, Path]] = []
+    for field in ("skills", "mcpServers", "apps", "hooks"):
+        value = plugin.manifest.get(field)
+        if isinstance(value, str):
+            out.append((field, manifest_relative_path(plugin, value)))
+        elif isinstance(value, list):
+            for item in value:
+                if isinstance(item, str):
+                    out.append((field, manifest_relative_path(plugin, item)))
+    default_hooks = plugin.path / "hooks" / "hooks.json"
+    if "hooks" not in plugin.manifest and default_hooks.exists():
+        out.append(("hooks", default_hooks))
+    return out
+
+
+def validate_plugin(plugin: Plugin) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+    manifest_path = plugin.path / ".codex-plugin" / "plugin.json"
+    if not manifest_path.exists():
+        errors.append("missing .codex-plugin/plugin.json")
+    if not plugin.name:
+        errors.append("manifest.name missing")
+    elif not NAME_RE.match(plugin.name):
+        errors.append(f"invalid plugin name '{plugin.name}'")
+    if plugin.name and plugin.name != plugin.path.name:
+        warnings.append("plugin name differs from folder name")
+    if not plugin.version:
+        errors.append("manifest.version missing")
+    if not plugin.description:
+        errors.append("manifest.description missing")
+    elif len(plugin.description) < 20:
+        warnings.append("description is short")
+
+    for field, path in plugin_manifest_paths(plugin):
+        if not path.exists():
+            errors.append(f"manifest.{field} path not found: {path.relative_to(plugin.path)}")
+        if field == "hooks" and path.exists():
+            try:
+                read_json_file(path)
+            except json.JSONDecodeError as exc:
+                errors.append(f"manifest.hooks invalid JSON: {exc}")
+
+    skills_path = plugin.manifest.get("skills")
+    if isinstance(skills_path, str):
+        skills_root = manifest_relative_path(plugin, skills_path)
+        if skills_root.exists():
+            skill_files = sorted(skills_root.rglob("SKILL.md"))
+            if not skill_files:
+                warnings.append("manifest.skills contains no SKILL.md files")
+            for skill_md in skill_files:
+                text = skill_md.read_text(encoding="utf-8", errors="replace")
+                fm = parse_frontmatter(text)
+                if not fm.get("name"):
+                    errors.append(f"plugin skill missing name: {skill_md.relative_to(plugin.path)}")
+                if not fm.get("description"):
+                    errors.append(f"plugin skill missing description: {skill_md.relative_to(plugin.path)}")
+
+    return errors, warnings
 
 
 def tracked_repo_files() -> list[Path]:
@@ -863,6 +1023,270 @@ def build_install_plan(profile: str, target: str | None, mode: str) -> dict:
     }
 
 
+def default_memory_plugin_marketplace() -> Path:
+    return Path("~/.agents/plugins/marketplace.json").expanduser()
+
+
+def marketplace_root_for_path(marketplace: Path) -> Path:
+    expanded = marketplace.expanduser()
+    if expanded.name == "marketplace.json" and expanded.parent.name == "plugins" and expanded.parent.parent.name == ".agents":
+        return expanded.parent.parent.parent
+    return expanded.parent
+
+
+def default_memory_plugin_target(marketplace: Path | None = None) -> Path:
+    root = marketplace_root_for_path(marketplace or default_memory_plugin_marketplace())
+    if root == Path.home():
+        return root / ".codex" / "plugins" / MEMORY_PLUGIN_NAME
+    return root / "plugins" / MEMORY_PLUGIN_NAME
+
+
+def default_codex_hooks_path() -> Path:
+    return Path("~/.codex/hooks.json").expanduser()
+
+
+def default_codex_config_path() -> Path:
+    return Path("~/.codex/config.toml").expanduser()
+
+
+def memory_plugin_hook_config(script_path: Path) -> dict:
+    quoted_script = shlex.quote(str(script_path.expanduser()))
+    return {
+        "hooks": {
+            "SessionStart": [
+                {
+                    "matcher": "startup|resume",
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": f"python3 {quoted_script} --event session-start",
+                            "timeout": 10,
+                        }
+                    ],
+                }
+            ],
+            "Stop": [
+                {
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": f"python3 {quoted_script} --event stop",
+                            "timeout": 30,
+                        }
+                    ],
+                }
+            ],
+        }
+    }
+
+
+def hooks_group_commands(group: dict) -> set[str]:
+    return {
+        str(item.get("command"))
+        for item in group.get("hooks", [])
+        if isinstance(item, dict) and item.get("type") == "command" and item.get("command")
+    }
+
+
+def merge_hook_config(existing: dict, update: dict) -> dict:
+    merged = dict(existing)
+    merged_hooks = dict(merged.get("hooks") or {})
+    for event, groups in (update.get("hooks") or {}).items():
+        current = list(merged_hooks.get(event) or [])
+        current_commands = set().union(*(hooks_group_commands(group) for group in current)) if current else set()
+        for group in groups:
+            commands = hooks_group_commands(group)
+            if commands and commands.issubset(current_commands):
+                continue
+            current.append(group)
+            current_commands.update(commands)
+        merged_hooks[event] = current
+    merged["hooks"] = merged_hooks
+    return merged
+
+
+def marketplace_source_path(marketplace: Path, target: Path) -> tuple[str, list[str]]:
+    warnings: list[str] = []
+    root = marketplace_root_for_path(marketplace)
+    resolved_target = target.expanduser()
+    try:
+        rel = resolved_target.relative_to(root)
+        return f"./{rel.as_posix()}", warnings
+    except ValueError:
+        warnings.append("plugin target is outside marketplace root; using absolute local source path")
+        return str(resolved_target), warnings
+
+
+def marketplace_payload_with_plugin(existing: dict, marketplace: Path, target: Path) -> tuple[dict, list[str]]:
+    payload = dict(existing) if existing else {}
+    payload.setdefault("name", "super-skill-local")
+    payload.setdefault("interface", {"displayName": "Super Skill Local"})
+    plugins = [item for item in payload.get("plugins", []) if item.get("name") != MEMORY_PLUGIN_NAME]
+    source_path, warnings = marketplace_source_path(marketplace, target)
+    plugins.append(
+        {
+            "name": MEMORY_PLUGIN_NAME,
+            "source": {
+                "source": "local",
+                "path": source_path,
+            },
+            "policy": {
+                "installation": "INSTALLED_BY_DEFAULT",
+                "authentication": "ON_INSTALL",
+            },
+            "category": "Productivity",
+        }
+    )
+    payload["plugins"] = sorted(plugins, key=lambda item: item.get("name", ""))
+    return payload, warnings
+
+
+def read_existing_json(path: Path) -> dict:
+    if not path.exists():
+        return {}
+    return read_json_file(path)
+
+
+def install_directory(source: Path, target: Path, mode: str, force: bool, dry_run: bool) -> dict:
+    if target.exists() or target.is_symlink():
+        if not force:
+            return {"name": MEMORY_PLUGIN_NAME, "status": "skipped", "reason": "target exists", "target": str(target)}
+        if dry_run:
+            return {"name": MEMORY_PLUGIN_NAME, "status": "would-replace", "target": str(target)}
+        if target.is_symlink() or target.is_file():
+            target.unlink()
+        else:
+            shutil.rmtree(target)
+
+    action = "symlink" if mode == "symlink" else "copy"
+    if dry_run:
+        return {"name": MEMORY_PLUGIN_NAME, "status": f"would-{action}", "target": str(target)}
+
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if mode == "symlink":
+        target.symlink_to(source)
+    else:
+        shutil.copytree(source, target)
+    return {"name": MEMORY_PLUGIN_NAME, "status": action, "target": str(target)}
+
+
+def update_codex_config_for_hooks(config_path: Path, force: bool, dry_run: bool) -> dict:
+    if config_path.exists():
+        text = config_path.read_text(encoding="utf-8", errors="replace")
+    else:
+        text = ""
+
+    if re.search(r"(?m)^\s*codex_hooks\s*=\s*true\s*$", text):
+        return {"path": str(config_path), "status": "already-enabled"}
+
+    if re.search(r"(?m)^\s*codex_hooks\s*=\s*false\s*$", text):
+        if not force:
+            return {
+                "path": str(config_path),
+                "status": "blocked",
+                "reason": "codex_hooks is explicitly false; rerun with --force to enable",
+            }
+        updated = re.sub(r"(?m)^(\s*)codex_hooks\s*=\s*false\s*$", r"\1codex_hooks = true", text, count=1)
+    elif re.search(r"(?m)^\[features\]\s*$", text):
+        updated = re.sub(r"(?m)^(\[features\]\s*)$", r"\1\ncodex_hooks = true", text, count=1)
+    else:
+        prefix = "" if not text or text.endswith("\n") else "\n"
+        updated = f"{text}{prefix}\n[features]\ncodex_hooks = true\n"
+
+    if dry_run:
+        return {"path": str(config_path), "status": "would-update" if config_path.exists() else "would-create"}
+
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(updated, encoding="utf-8")
+    return {"path": str(config_path), "status": "updated" if text else "created"}
+
+
+def install_memory_plugin_payload(
+    *,
+    runtime: str,
+    target: str | None,
+    marketplace: str | None,
+    hooks: str | None,
+    config: str | None,
+    mode: str,
+    force: bool,
+    dry_run: bool,
+) -> dict:
+    if runtime != "codex":
+        raise ValueError("memory plugin currently supports runtime=codex")
+
+    source = PLUGIN_ROOT / MEMORY_PLUGIN_NAME
+    if not source.exists():
+        raise ValueError(f"memory plugin source not found: {source.relative_to(ROOT)}")
+
+    marketplace_path = Path(marketplace).expanduser() if marketplace else default_memory_plugin_marketplace()
+    target_path = Path(target).expanduser() if target else default_memory_plugin_target(marketplace_path)
+    hooks_path = Path(hooks).expanduser() if hooks else default_codex_hooks_path()
+    config_path = Path(config).expanduser() if config else default_codex_config_path()
+    installed_script = target_path / "scripts" / "memory_dream_hook.py"
+
+    operations: list[dict] = []
+    warnings: list[str] = []
+
+    operations.append({"type": "plugin-bundle", **install_directory(source, target_path, mode, force, dry_run)})
+
+    marketplace_existing = read_existing_json(marketplace_path)
+    marketplace_next, marketplace_warnings = marketplace_payload_with_plugin(marketplace_existing, marketplace_path, target_path)
+    warnings.extend(marketplace_warnings)
+    if dry_run:
+        marketplace_status = "would-update" if marketplace_path.exists() else "would-create"
+    else:
+        marketplace_path.parent.mkdir(parents=True, exist_ok=True)
+        marketplace_path.write_text(json.dumps(marketplace_next, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        marketplace_status = "updated" if marketplace_existing else "created"
+    operations.append(
+        {
+            "type": "marketplace",
+            "path": str(marketplace_path),
+            "status": marketplace_status,
+            "plugin_source": next(
+                item["source"]["path"]
+                for item in marketplace_next.get("plugins", [])
+                if item.get("name") == MEMORY_PLUGIN_NAME
+            ),
+        }
+    )
+
+    hooks_existing = read_existing_json(hooks_path)
+    hooks_next = merge_hook_config(hooks_existing, memory_plugin_hook_config(installed_script))
+    if dry_run:
+        hooks_status = "would-update" if hooks_path.exists() else "would-create"
+    else:
+        hooks_path.parent.mkdir(parents=True, exist_ok=True)
+        hooks_path.write_text(json.dumps(hooks_next, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        hooks_status = "updated" if hooks_existing else "created"
+    operations.append({"type": "hooks", "path": str(hooks_path), "status": hooks_status, "script": str(installed_script)})
+
+    config_op = update_codex_config_for_hooks(config_path, force, dry_run)
+    config_op["type"] = "codex-config"
+    if config_op.get("status") == "blocked":
+        warnings.append(str(config_op.get("reason")))
+    operations.append(config_op)
+
+    return {
+        "runtime": runtime,
+        "plugin": MEMORY_PLUGIN_NAME,
+        "source": str(source),
+        "target": str(target_path),
+        "mode": mode,
+        "marketplace": str(marketplace_path),
+        "hooks": str(hooks_path),
+        "config": str(config_path),
+        "dry_run": dry_run,
+        "operations": operations,
+        "warnings": warnings,
+    }
+
+
+def memory_plugin_has_blocker(payload: dict) -> bool:
+    return any(op.get("status") == "blocked" for op in payload.get("operations", []))
+
+
 def cmd_plan(args: argparse.Namespace) -> int:
     plan = build_install_plan(args.profile, args.target, args.mode)
     if args.json:
@@ -912,23 +1336,94 @@ def cmd_install(args: argparse.Namespace) -> int:
 
     target = Path(args.target or default_target_for_profile(args.profile)).expanduser()
     results = [install_one(skill, target, args.mode, args.force, args.dry_run) for skill in skills]
+    memory_plugin = None
+    if args.with_memory_plugin:
+        memory_plugin = install_memory_plugin_payload(
+            runtime="codex",
+            target=args.memory_plugin_target,
+            marketplace=args.memory_plugin_marketplace,
+            hooks=args.memory_plugin_hooks,
+            config=args.memory_plugin_config,
+            mode=args.mode,
+            force=args.force,
+            dry_run=args.dry_run,
+        )
+        if memory_plugin_has_blocker(memory_plugin):
+            if args.json:
+                emit_json(
+                    False,
+                    {"message": "memory plugin install is blocked", "memory_plugin": memory_plugin},
+                    code="MEMORY_PLUGIN_BLOCKED",
+                )
+            else:
+                print("error: memory plugin install is blocked", file=sys.stderr)
+            return EXIT_RUNTIME
 
     if args.json:
-        emit_json(
-            True,
-            {
-                "profile": args.profile,
-                "mode": args.mode,
-                "target": str(target),
-                "excluded_skills": profile_excluded_skills(args.profile),
-                "results": results,
-            },
-        )
+        payload = {
+            "profile": args.profile,
+            "mode": args.mode,
+            "target": str(target),
+            "excluded_skills": profile_excluded_skills(args.profile),
+            "results": results,
+        }
+        if memory_plugin:
+            payload["memory_plugin"] = memory_plugin
+        emit_json(True, payload)
     else:
         print(f"Install profile '{args.profile}' to {target} ({args.mode})")
         for result in results:
             print(f"  {result['status']:<14} {result['name']}")
+        if memory_plugin:
+            print(f"Memory plugin: {memory_plugin['plugin']} -> {memory_plugin['target']}")
     return EXIT_OK
+
+
+def cmd_memory_plugin(args: argparse.Namespace) -> int:
+    payload = install_memory_plugin_payload(
+        runtime=args.runtime,
+        target=args.target,
+        marketplace=args.marketplace,
+        hooks=args.hooks,
+        config=args.config,
+        mode=args.mode,
+        force=args.force,
+        dry_run=args.dry_run,
+    )
+    blocked = memory_plugin_has_blocker(payload)
+    if args.json:
+        emit_json(not blocked, payload, code="MEMORY_PLUGIN_BLOCKED" if blocked else None)
+    else:
+        print(f"Memory plugin '{payload['plugin']}' for {payload['runtime']}:")
+        for op in payload["operations"]:
+            print(f"  {op['type']:<14} {op['status']:<14} {op.get('path') or op.get('target')}")
+        for warning in payload["warnings"]:
+            print(f"warning: {warning}")
+    return EXIT_RUNTIME if blocked else EXIT_OK
+
+
+def cmd_triggers(args: argparse.Namespace) -> int:
+    trigger_errors, trigger_warnings, trigger_policy = auto_trigger_policy_report()
+    lifecycle_errors, lifecycle_warnings, lifecycle_policy = skill_lifecycle_policy_report()
+    failures = trigger_errors + lifecycle_errors
+    payload = {
+        "auto_trigger_policy": trigger_policy,
+        "skill_lifecycle_policy": lifecycle_policy,
+        "warnings": trigger_warnings + lifecycle_warnings,
+        "failures": failures,
+    }
+    if args.json:
+        emit_json(not failures, payload, code="TRIGGER_POLICY_FAILED" if failures else None)
+    else:
+        if failures:
+            print("Trigger policy failures:")
+            for failure in failures:
+                print(f"  {failure['check']}: {failure['message']}")
+        else:
+            print(f"Fallback skill: {trigger_policy.get('fallback_skill')}")
+            print(f"Automatic triggers: {len(trigger_policy.get('triggers', []))}")
+            print(f"Protected skills: {len(lifecycle_policy.get('protected_skills', []))}")
+    return EXIT_RUNTIME if failures else EXIT_OK
 
 
 def profile_manifest_report() -> tuple[list[dict], list[dict]]:
@@ -1004,6 +1499,130 @@ def profile_manifest_report() -> tuple[list[dict], list[dict]]:
     return errors, warnings
 
 
+def plugin_manifest_report() -> tuple[list[dict], list[dict]]:
+    errors: list[dict] = []
+    warnings: list[dict] = []
+    if not PLUGIN_ROOT.exists():
+        return errors, warnings
+
+    for manifest_path in sorted(PLUGIN_ROOT.glob("*/.codex-plugin/plugin.json")):
+        try:
+            plugin = plugin_from_manifest(manifest_path)
+        except json.JSONDecodeError as exc:
+            errors.append({"check": "plugin", "message": f"invalid plugin JSON: {manifest_path.relative_to(ROOT)}: {exc}"})
+            continue
+        errs, warns = validate_plugin(plugin)
+        if errs:
+            errors.append({"check": "plugin", "plugin": plugin.name, "items": errs})
+        if warns:
+            warnings.append({"check": "plugin", "plugin": plugin.name, "items": warns})
+    return errors, warnings
+
+
+def auto_trigger_policy_report() -> tuple[list[dict], list[dict], dict]:
+    errors: list[dict] = []
+    warnings: list[dict] = []
+    if not AUTO_TRIGGER_POLICY_PATH.exists():
+        errors.append({"check": "auto-trigger-policy", "message": "missing manifests/auto-trigger-policy.json"})
+        return errors, warnings, {}
+
+    try:
+        policy = read_json_file(AUTO_TRIGGER_POLICY_PATH)
+    except json.JSONDecodeError as exc:
+        errors.append({"check": "auto-trigger-policy", "message": f"invalid JSON: {exc}"})
+        return errors, warnings, {}
+
+    installable_names = {skill.name for skill in discover_skills("all")}
+    fallback = policy.get("fallback_skill")
+    if fallback not in installable_names:
+        errors.append({"check": "auto-trigger-policy", "message": f"unknown fallback_skill: {fallback}"})
+
+    triggers = policy.get("triggers", [])
+    if not isinstance(triggers, list) or not triggers:
+        errors.append({"check": "auto-trigger-policy", "message": "triggers must be a non-empty list"})
+    else:
+        trigger_ids = [item.get("id") for item in triggers if isinstance(item, dict)]
+        duplicates = sorted({item for item in trigger_ids if trigger_ids.count(item) > 1})
+        if duplicates:
+            errors.append({"check": "auto-trigger-policy", "message": "duplicate trigger ids", "items": duplicates})
+        for item in triggers:
+            if not isinstance(item, dict):
+                errors.append({"check": "auto-trigger-policy", "message": "trigger item must be an object"})
+                continue
+            for field in ("id", "surface", "condition", "action", "control"):
+                if field not in item:
+                    errors.append(
+                        {
+                            "check": "auto-trigger-policy",
+                            "message": f"trigger missing {field}: {item.get('id', '<unknown>')}",
+                        }
+                    )
+            control = item.get("control", {})
+            if isinstance(control, dict) and control.get("auto_promote", True):
+                errors.append(
+                    {
+                        "check": "auto-trigger-policy",
+                        "message": f"trigger may auto-promote memory without review: {item.get('id', '<unknown>')}",
+                    }
+                )
+
+    required_controls = {"capture_raw_prompt", "capture_raw_response", "auto_promote", "require_review", "deduplicate"}
+    controls = policy.get("controls", {})
+    missing_controls = sorted(required_controls - set(controls)) if isinstance(controls, dict) else sorted(required_controls)
+    if missing_controls:
+        errors.append({"check": "auto-trigger-policy", "message": "missing global controls", "items": missing_controls})
+    elif controls.get("capture_raw_prompt") or controls.get("capture_raw_response") or controls.get("auto_promote"):
+        errors.append({"check": "auto-trigger-policy", "message": "unsafe global capture or promotion control is enabled"})
+
+    return errors, warnings, policy
+
+
+def skill_lifecycle_policy_report() -> tuple[list[dict], list[dict], dict]:
+    errors: list[dict] = []
+    warnings: list[dict] = []
+    if not SKILL_LIFECYCLE_POLICY_PATH.exists():
+        errors.append({"check": "skill-lifecycle-policy", "message": "missing manifests/skill-lifecycle-policy.json"})
+        return errors, warnings, {}
+
+    try:
+        policy = read_json_file(SKILL_LIFECYCLE_POLICY_PATH)
+    except json.JSONDecodeError as exc:
+        errors.append({"check": "skill-lifecycle-policy", "message": f"invalid JSON: {exc}"})
+        return errors, warnings, {}
+
+    levels = policy.get("importance_levels", {})
+    for level in ("critical", "important", "normal", "low"):
+        if level not in levels:
+            errors.append({"check": "skill-lifecycle-policy", "message": f"missing importance level: {level}"})
+    protected = policy.get("protected_skills", [])
+    installable_names = {skill.name for skill in discover_skills("all")}
+    unknown_protected = sorted(set(protected) - installable_names) if isinstance(protected, list) else []
+    if unknown_protected:
+        errors.append({"check": "skill-lifecycle-policy", "message": "unknown protected skills", "items": unknown_protected})
+
+    curation = policy.get("curation", {})
+    if not isinstance(curation, dict):
+        errors.append({"check": "skill-lifecycle-policy", "message": "curation must be an object"})
+    else:
+        if curation.get("auto_delete", True):
+            errors.append({"check": "skill-lifecycle-policy", "message": "auto_delete must be false"})
+        if not curation.get("archive_is_reversible", False):
+            errors.append({"check": "skill-lifecycle-policy", "message": "archive_is_reversible must be true"})
+        if not curation.get("require_dedup_before_create", False):
+            errors.append({"check": "skill-lifecycle-policy", "message": "require_dedup_before_create must be true"})
+        allowed = set(curation.get("allowed_toolsets", []))
+        if allowed - {"memory", "skills", "catalog", "audit"}:
+            errors.append(
+                {
+                    "check": "skill-lifecycle-policy",
+                    "message": "curation allowed_toolsets are too broad",
+                    "items": sorted(allowed),
+                }
+            )
+
+    return errors, warnings, policy
+
+
 def compatibility_report() -> list[dict]:
     results = []
     for link_rel, target_rel in sorted(COMPATIBILITY_LINKS.items()):
@@ -1062,6 +1681,10 @@ def cmd_audit(args: argparse.Namespace) -> int:
     install_dups = duplicate_names(skills)
     vendor_dups = duplicate_names(vendor_skills)
     manifest_errors, manifest_warnings = profile_manifest_report()
+    plugin_errors, plugin_warnings = plugin_manifest_report()
+    trigger_errors, trigger_warnings, trigger_policy = auto_trigger_policy_report()
+    lifecycle_errors, lifecycle_warnings, lifecycle_policy = skill_lifecycle_policy_report()
+    plugins = discover_plugins()
     compatibility = compatibility_report()
 
     secret_findings: list[dict] = []
@@ -1084,6 +1707,12 @@ def cmd_audit(args: argparse.Namespace) -> int:
         failures.append({"check": "compatibility-links", "items": broken_links})
     if manifest_errors:
         failures.append({"check": "manifests", "items": manifest_errors})
+    if plugin_errors:
+        failures.append({"check": "plugins", "items": plugin_errors})
+    if trigger_errors:
+        failures.append({"check": "auto-trigger-policy", "items": trigger_errors})
+    if lifecycle_errors:
+        failures.append({"check": "skill-lifecycle-policy", "items": lifecycle_errors})
     missing_exec = [item for item in executable_checks if not (item["exists"] and item["executable"])]
     if missing_exec:
         failures.append({"check": "executables", "items": missing_exec})
@@ -1097,6 +1726,19 @@ def cmd_audit(args: argparse.Namespace) -> int:
         "vendor_duplicate_names": {k: [s.relative_path for s in v] for k, v in vendor_dups.items()},
         "compatibility_links": compatibility,
         "manifest_warnings": manifest_warnings,
+        "codex_plugins": [plugin_dict(plugin) for plugin in plugins],
+        "plugin_warnings": plugin_warnings,
+        "auto_trigger_policy": {
+            "path": AUTO_TRIGGER_POLICY_PATH.relative_to(ROOT).as_posix(),
+            "fallback_skill": trigger_policy.get("fallback_skill"),
+            "triggers": len(trigger_policy.get("triggers", [])) if trigger_policy else 0,
+            "warnings": trigger_warnings,
+        },
+        "skill_lifecycle_policy": {
+            "path": SKILL_LIFECYCLE_POLICY_PATH.relative_to(ROOT).as_posix(),
+            "protected_skills": len(lifecycle_policy.get("protected_skills", [])) if lifecycle_policy else 0,
+            "warnings": lifecycle_warnings,
+        },
         "secret_findings": secret_findings,
         "risky_pattern_findings": risky_findings,
         "executable_checks": executable_checks,
@@ -1108,6 +1750,9 @@ def cmd_audit(args: argparse.Namespace) -> int:
     else:
         print(f"Installable skills: {len(skills)}")
         print(f"Vendor skill files: {len(vendor_skills)}")
+        print(f"Codex plugins: {len(plugins)}")
+        print(f"Auto triggers: {payload['auto_trigger_policy']['triggers']}")
+        print(f"Protected skills: {payload['skill_lifecycle_policy']['protected_skills']}")
         print(f"Installable duplicate names: {len(install_dups)}")
         print(f"Vendor duplicate names: {len(vendor_dups)}")
         print(f"Compatibility links: {len(compatibility) - len(broken_links)}/{len(compatibility)} ok")
@@ -1282,6 +1927,8 @@ def cmd_describe(args: argparse.Namespace) -> int:
             {"name": "harness", "purpose": "Assess AI-first harness readiness for this or another project"},
             {"name": "hermes", "purpose": "Assess Hermes-inspired self-improving agent system readiness"},
             {"name": "memory", "purpose": "Assess agent memory, experience reuse, and dream replay readiness"},
+            {"name": "memory-plugin", "purpose": "Install or preview the automatic memory/dream Codex plugin"},
+            {"name": "triggers", "purpose": "Validate automatic trigger and skill lifecycle controls"},
             {"name": "vendor", "purpose": "Summarize vendored Cowork domain ecosystem skills"},
             {"name": "catalog", "purpose": "Generate catalog/skill-index.json and catalog/skill-index.md"},
             {"name": "doctor", "purpose": "Check local tools used by Super Skill"},
@@ -1310,13 +1957,26 @@ def skill_dict(skill: Skill) -> dict:
     }
 
 
+def plugin_dict(plugin: Plugin) -> dict:
+    return {
+        "name": plugin.name,
+        "version": plugin.version,
+        "description": plugin.description,
+        "path": plugin.relative_path,
+        "skills": plugin.manifest.get("skills"),
+        "hooks": plugin.manifest.get("hooks"),
+    }
+
+
 def cmd_catalog(args: argparse.Namespace) -> int:
     skills = discover_skills("all")
     vendor_skills = discover_vendor_skills()
+    plugins = discover_plugins()
     payload = {
         "generated_at": int(time.time()),
         "installable_skills": [skill_dict(s) for s in skills],
         "vendor_skills": [skill_dict(s) for s in vendor_skills],
+        "codex_plugins": [plugin_dict(p) for p in plugins],
         "profiles": {k: sorted(v) for k, v in PROFILE_STAGE_PREFIXES.items()},
         "profile_excludes": {k: sorted(v) for k, v in PROFILE_SKILL_EXCLUDES.items()},
     }
@@ -1326,7 +1986,7 @@ def cmd_catalog(args: argparse.Namespace) -> int:
     md_path = CATALOG_ROOT / "skill-index.md"
     if not args.dry_run:
         json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        md_path.write_text(render_catalog_md(skills, vendor_skills), encoding="utf-8")
+        md_path.write_text(render_catalog_md(skills, vendor_skills, plugins), encoding="utf-8")
 
     if args.json:
         emit_json(True, {"json": str(json_path), "markdown": str(md_path), "dry_run": args.dry_run})
@@ -1337,7 +1997,7 @@ def cmd_catalog(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
-def render_catalog_md(skills: list[Skill], vendor_skills: list[Skill]) -> str:
+def render_catalog_md(skills: list[Skill], vendor_skills: list[Skill], plugins: list[Plugin]) -> str:
     lines = [
         "# Super Skill Catalog",
         "",
@@ -1345,6 +2005,7 @@ def render_catalog_md(skills: list[Skill], vendor_skills: list[Skill]) -> str:
         "",
         f"- Installable lifecycle skills: {len(skills)}",
         f"- Vendored Cowork domain skill files: {len(vendor_skills)}",
+        f"- Codex plugins: {len(plugins)}",
         f"- DesignDNA brand systems: {count_design_brands()}",
         "",
         "## Lifecycle Skills",
@@ -1370,6 +2031,16 @@ def render_catalog_md(skills: list[Skill], vendor_skills: list[Skill]) -> str:
             lines.append(f"- `{profile}` excludes: {', '.join(f'`{name}`' for name in excluded)}")
         else:
             lines.append(f"- `{profile}` excludes: none")
+    lines.extend([
+        "",
+        "## Codex Plugins",
+        "",
+    ])
+    if plugins:
+        for plugin in plugins:
+            lines.append(f"- `{plugin.name}` v{plugin.version} — {plugin.description}")
+    else:
+        lines.append("- none")
     lines.extend([
         "",
         "## Vendor Ecosystem",
@@ -1418,6 +2089,11 @@ def build_parser() -> argparse.ArgumentParser:
     ins_p.add_argument("--mode", choices=["symlink", "copy"], default="symlink")
     ins_p.add_argument("--force", action="store_true")
     ins_p.add_argument("--dry-run", action="store_true")
+    ins_p.add_argument("--with-memory-plugin", action="store_true")
+    ins_p.add_argument("--memory-plugin-target", default=None)
+    ins_p.add_argument("--memory-plugin-marketplace", default=None)
+    ins_p.add_argument("--memory-plugin-hooks", default=None)
+    ins_p.add_argument("--memory-plugin-config", default=None)
     ins_p.add_argument("--json", action="store_true")
     ins_p.set_defaults(func=cmd_install)
 
@@ -1446,6 +2122,22 @@ def build_parser() -> argparse.ArgumentParser:
     memory_p.add_argument("--project", default=".")
     memory_p.add_argument("--json", action="store_true")
     memory_p.set_defaults(func=cmd_memory)
+
+    memory_plugin_p = sub.add_parser("memory-plugin", help="install the automatic memory/dream Codex plugin")
+    memory_plugin_p.add_argument("--runtime", choices=["codex"], default="codex")
+    memory_plugin_p.add_argument("--target", default=None)
+    memory_plugin_p.add_argument("--marketplace", default=None)
+    memory_plugin_p.add_argument("--hooks", default=None)
+    memory_plugin_p.add_argument("--config", default=None)
+    memory_plugin_p.add_argument("--mode", choices=["symlink", "copy"], default="symlink")
+    memory_plugin_p.add_argument("--force", action="store_true")
+    memory_plugin_p.add_argument("--dry-run", action="store_true")
+    memory_plugin_p.add_argument("--json", action="store_true")
+    memory_plugin_p.set_defaults(func=cmd_memory_plugin)
+
+    triggers_p = sub.add_parser("triggers", help="validate automatic trigger and skill lifecycle controls")
+    triggers_p.add_argument("--json", action="store_true")
+    triggers_p.set_defaults(func=cmd_triggers)
 
     vendor_p = sub.add_parser("vendor", help="summarize vendored domain ecosystem")
     vendor_p.add_argument("--json", action="store_true")

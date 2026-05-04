@@ -1,0 +1,36 @@
+{
+  "name": "super-skill-memory-harness",
+  "version": "0.1.0",
+  "description": "Automatic memory and dream-replay harness for Super Skill workflows.",
+  "author": {
+    "name": "Super Skill",
+    "url": "https://github.com/tiantangcao1980-web/Super-Skill"
+  },
+  "homepage": "https://github.com/tiantangcao1980-web/Super-Skill",
+  "repository": "https://github.com/tiantangcao1980-web/Super-Skill",
+  "license": "MIT",
+  "keywords": [
+    "agent-memory",
+    "dream-replay",
+    "harness-engineering",
+    "codex"
+  ],
+  "hooks": "./hooks/hooks.json",
+  "interface": {
+    "displayName": "Super Skill Memory Harness",
+    "shortDescription": "Capture verified experience into reusable memory candidates.",
+    "longDescription": "Adds hook-based memory/dream automation that can capture lightweight session metadata, create reviewable memory candidates, and keep reusable experience outside the always-on prompt until needed.",
+    "developerName": "Super Skill",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/tiantangcao1980-web/Super-Skill",
+    "defaultPrompt": [
+      "Use agent-memory-dream-loop to review pending memory candidates.",
+      "Use agent-memory-dream-loop after a substantial task to promote verified lessons."
+    ],
+    "brandColor": "#10A37F"
+  }
+}

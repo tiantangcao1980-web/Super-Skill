@@ -28,6 +28,18 @@ The goal is portability without drift. Keep the canonical capability in `SKILL.m
 | OpenCode | `opencode.json`, `.opencode/agents/`, `.opencode/skills/` | Map roles to agents, permissions to `permission`, and reusable workflows to skills. | `opencode debug config` resolves expected model, skills, agents, and permissions. |
 | OpenClaw | `~/.openclaw/skills/<name>/SKILL.md`, `<workspace>/skills/<name>/SKILL.md`, plugins | Install canonical skill folders; prefer workspace skills for project overrides. | `openclaw skills list`, `openclaw skills info <name>`, and `openclaw skills check` pass. |
 
+## Memory/Dream Auto-Trigger Mapping
+
+For Codex, prefer the `super-skill-memory-harness` plugin because hooks can fire on `SessionStart` and `Stop`.
+
+For tools without plugin or hook support, preserve the same behavior through the canonical `agent-memory-dream-loop` skill:
+
+- Put the fallback trigger policy in project rules, not as another near-duplicate skill.
+- Trigger on substantial completed work, repeated failures, user corrections, runtime/model/tool lessons, and skill library changes.
+- Keep the off switch visible: `SUPER_SKILL_MEMORY_DISABLED=1` or the tool's equivalent rule toggle.
+- Store only review candidates and metadata; never raw prompt or response text.
+- Route any skill mutation through `skill-evolution-loop` and `manifests/skill-lifecycle-policy.json`.
+
 ## Adapter Output
 
 Produce a compact report:

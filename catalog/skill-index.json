@@ -1,5 +1,5 @@
 {
-  "generated_at": 1777901520,
+  "generated_at": 1777903755,
   "installable_skills": [
     {
       "name": "auto-flow",
@@ -771,7 +771,7 @@
     },
     {
       "name": "agent-memory-dream-loop",
-      "description": "Connect agent experience, durable memory, negative lessons, and offline dream replay into a safe self-improving harness loop.",
+      "description": "Auto-trigger when work creates reusable experience, repeated failures, user corrections, skill changes, or memory/dream replay needs; connect durable memory, negative lessons, and offline replay into a controlled self-improving harness loop.",
       "stage": "09-operations-and-knowledge",
       "stage_label": "Operations",
       "source": "core",
@@ -1442,6 +1442,16 @@
       "stage_label": "vendor",
       "source": "vendor",
       "path": "vendor/cowork/slack-by-salesforce/1.0.0/skills/slack-search"
+    }
+  ],
+  "codex_plugins": [
+    {
+      "name": "super-skill-memory-harness",
+      "version": "0.1.0",
+      "description": "Automatic memory and dream-replay harness for Super Skill workflows.",
+      "path": "plugins/super-skill-memory-harness",
+      "skills": null,
+      "hooks": "./hooks/hooks.json"
     }
   ],
   "profiles": {

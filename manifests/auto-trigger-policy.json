@@ -1,0 +1,124 @@
+{
+  "version": "0.1.0",
+  "plugin": "super-skill-memory-harness",
+  "fallback_skill": "agent-memory-dream-loop",
+  "controls": {
+    "capture_raw_prompt": false,
+    "capture_raw_response": false,
+    "auto_promote": false,
+    "require_review": true,
+    "deduplicate": true,
+    "max_candidates_per_session": 3,
+    "disable_env": "SUPER_SKILL_MEMORY_DISABLED",
+    "allowed_write_roots": [
+      ".super-skill/memory"
+    ],
+    "skill_mutation_mode": "propose-only-until-verified"
+  },
+  "triggers": [
+    {
+      "id": "codex-session-start",
+      "surface": "codex-plugin-hook",
+      "condition": "SessionStart on startup or resume",
+      "action": "Inject compact memory governance context and append a metadata trace.",
+      "control": {
+        "auto_promote": false,
+        "capture_raw_prompt": false,
+        "capture_raw_response": false,
+        "deduplicate": true
+      }
+    },
+    {
+      "id": "codex-stop",
+      "surface": "codex-plugin-hook",
+      "condition": "Stop at the end of a Codex turn or session",
+      "action": "Write a reviewable memory candidate with metadata only.",
+      "control": {
+        "auto_promote": false,
+        "capture_raw_prompt": false,
+        "capture_raw_response": false,
+        "deduplicate": true
+      }
+    },
+    {
+      "id": "fallback-substantial-work",
+      "surface": "implicit-skill",
+      "condition": "Task changed files, ran verification, shipped a feature, or produced a reusable workflow.",
+      "action": "Use agent-memory-dream-loop to decide whether to record one memory candidate, eval, runbook note, or rejection.",
+      "control": {
+        "auto_promote": false,
+        "capture_raw_prompt": false,
+        "capture_raw_response": false,
+        "deduplicate": true
+      }
+    },
+    {
+      "id": "fallback-failure-or-regression",
+      "surface": "implicit-skill",
+      "condition": "A build, test, audit, security check, deployment, or user acceptance loop failed more than once.",
+      "action": "Capture the failure pattern as negative memory or an eval candidate after redaction.",
+      "control": {
+        "auto_promote": false,
+        "capture_raw_prompt": false,
+        "capture_raw_response": false,
+        "deduplicate": true
+      }
+    },
+    {
+      "id": "fallback-user-correction",
+      "surface": "implicit-skill",
+      "condition": "The user corrects a process, preference, standard, or expected output shape that will matter again.",
+      "action": "Create a compact semantic or procedural memory candidate with source and scope.",
+      "control": {
+        "auto_promote": false,
+        "capture_raw_prompt": false,
+        "capture_raw_response": false,
+        "deduplicate": true
+      }
+    },
+    {
+      "id": "fallback-skill-evolution",
+      "surface": "implicit-skill",
+      "condition": "A new skill is proposed, a skill is updated, or duplicate/overlapping skills are detected.",
+      "action": "Route through skill-evolution-loop and the lifecycle policy before any skill mutation.",
+      "control": {
+        "auto_promote": false,
+        "capture_raw_prompt": false,
+        "capture_raw_response": false,
+        "deduplicate": true
+      }
+    }
+  ],
+  "runtime_fallbacks": [
+    {
+      "runtime": "Codex",
+      "preferred": "plugin hook plus canonical skill",
+      "install": "bin/super-skill install --profile core --with-memory-plugin --target ~/.codex/skills"
+    },
+    {
+      "runtime": "Claude Code",
+      "preferred": "implicit skill trigger",
+      "install": "bin/super-skill install --profile core --target ~/.claude/skills"
+    },
+    {
+      "runtime": "Cursor",
+      "preferred": "rules wrapper plus implicit skill trigger",
+      "install": "Use dev-tool-adapter to generate .cursor/rules from agent-memory-dream-loop."
+    },
+    {
+      "runtime": "Trae",
+      "preferred": "rules wrapper plus implicit skill trigger",
+      "install": "Use dev-tool-adapter to add memory trigger policy to .rules."
+    },
+    {
+      "runtime": "OpenCode",
+      "preferred": "opencode.json guidance plus implicit skill trigger",
+      "install": "Use dev-tool-adapter to map the fallback skill and control policy into .opencode/."
+    },
+    {
+      "runtime": "OpenClaw",
+      "preferred": "workspace or user skill plus implicit trigger",
+      "install": "Install canonical skill folders to ~/.openclaw/skills or workspace skills."
+    }
+  ]
+}

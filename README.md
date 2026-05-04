@@ -36,7 +36,9 @@ Super Skill 是一个面向 AI coding agent 的全流程技能集合：从用户
 当前清单：
 
 - 113 个可安装生命周期技能
+- 1 个 Codex 插件：`super-skill-memory-harness`
 - profile/component manifest 支持只读安装预案
+- automatic trigger / skill lifecycle manifest 支持自动触发、可控记忆、技能去重和可逆归档
 - 58 套 DesignDNA 品牌系统，位于 `resources/design-md/`
 - 67 个 Cowork 领域技能文件，位于 `vendor/cowork/`
 - 0 个 installable skill 命名冲突
@@ -65,8 +67,17 @@ bin/super-skill hermes --json
 # 评估 agent memory / dream replay readiness
 bin/super-skill memory --json
 
+# 校验自动触发策略、技能自我进化约束、protected skills 和去重门
+bin/super-skill triggers --json
+
+# 预览安装 Codex 记忆/做梦自动插件，不修改本机配置
+bin/super-skill memory-plugin --dry-run --json
+
 # 安装完整集合到 Codex skills 目录，默认软链
 bin/super-skill install --profile all --target ~/.codex/skills
+
+# 安装 core skills 时一并安装 Codex 记忆/做梦插件和 hooks
+bin/super-skill install --profile core --target ~/.codex/skills --with-memory-plugin
 
 # 只安装开发相关能力
 bin/super-skill install --profile dev --target ~/.codex/skills
@@ -88,6 +99,19 @@ Profiles:
 - `design`: DesignDNA、设计系统、UI 库与质量约束
 - `hermes`: 面向 Hermes Agent 的完整生命周期集合，默认目标 `~/.hermes/skills`，排除 Hermes 原生能力镜像
 - `all`: 所有可安装技能
+
+## 自动记忆/做梦闭环
+
+Codex 路径使用 `plugins/super-skill-memory-harness/`：它把记忆/做梦闭环做成可安装插件，并通过 `SessionStart`/`Stop` hook 记录轻量 metadata 和 review candidate。安装命令会把 hook 命令改成绝对脚本路径，避免插件缓存或启动目录变化导致脚本找不到。
+
+不支持插件的开发工具使用同一个 canonical skill：`agent-memory-dream-loop`。它的描述和 `manifests/auto-trigger-policy.json` 会让 Cursor、Trae、OpenCode、OpenClaw、Claude Code 等工具通过规则/技能隐式触发，而不是再复制一套重复技能。
+
+自动触发是可控的：
+
+- `SUPER_SKILL_MEMORY_DISABLED=1` 可以关闭 hook/fallback。
+- 不捕获 raw prompt、raw response、密钥、私人数据或未验证结论。
+- 默认只生成候选，不自动提升为 durable memory 或 skill patch。
+- 技能自我进化必须经过 `manifests/skill-lifecycle-policy.json`：rubric-first、先找最近已有技能、保护 critical/important 技能、可逆 archive、不自动删除、catalog/audit 后再推广。
 
 ## 目录结构
 
@@ -131,12 +155,15 @@ bin/super-skill audit --json
 bin/super-skill harness --json
 bin/super-skill hermes --json
 bin/super-skill memory --json
+bin/super-skill triggers --json
+bin/super-skill memory-plugin --dry-run --json
 bin/super-skill install --profile core --dry-run --json
+bin/super-skill install --profile core --dry-run --with-memory-plugin --json
 python3 -m unittest discover -s tests
 npm --prefix packages/designdna-cli test
 ```
 
-CI 会运行 `doctor`、`validate`、`plan`、Hermes profile plan、`audit`、`harness`、`hermes`、`memory`、Python CLI 测试，以及 DesignDNA CLI 测试，确保结构、兼容、安全、harness readiness、self-improving agent readiness、agent memory readiness 和基础工具链可用。
+CI 会运行 `doctor`、`validate`、`plan`、Hermes profile plan、`audit`、`harness`、`hermes`、`memory`、`triggers`、`memory-plugin` dry-run、Python CLI 测试，以及 DesignDNA CLI 测试，确保结构、兼容、安全、自动触发、harness readiness、self-improving agent readiness、agent memory readiness 和基础工具链可用。
 
 ## 文档
 
