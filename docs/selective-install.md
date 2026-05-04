@@ -9,6 +9,8 @@ Super Skill keeps a human-friendly lifecycle tree and installs it into the flat 
 
 Profiles resolve to lifecycle stages. Components provide a stable vocabulary for future finer-grained installs without changing the current directory layout.
 
+For cross-runtime work, keep `dev-tool-adapter`, `model-adaptation-contract`, and `agent-memory-dream-loop` installed in the source project profile. They are meta-skills: they describe how to adapt the canonical skill set, constrain models, and promote memory without duplicating every downstream runtime's native behavior.
+
 ## Profiles
 
 - `core`: research-to-delivery baseline without stack-specific development packs

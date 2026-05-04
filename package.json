@@ -11,6 +11,7 @@
     "audit": "bin/super-skill audit",
     "harness": "bin/super-skill harness",
     "hermes": "bin/super-skill hermes",
+    "memory": "bin/super-skill memory",
     "plan": "bin/super-skill plan --profile core",
     "plan:hermes": "bin/super-skill plan --profile hermes",
     "doctor": "bin/super-skill doctor",

@@ -50,7 +50,10 @@ Hermes 的关键价值不是某一个模型、某一个 UI 或某个工具清单
 ## Upgrade Decisions In This Repo
 
 - Added six installable skills for memory curation, skill evolution, prompt layering, tool routing, durable boards, and rollback safety.
+- Added `agent-memory-dream-loop` to connect episodic traces, semantic memory, procedural skills, negative lessons, eval memory, and offline replay.
+- Added `dev-tool-adapter` and `model-adaptation-contract` so Hermes-style ideas can travel across Cursor, Trae, OpenCode, OpenClaw, Claude Code, Codex, and future model routes without cloning divergent prompts.
 - Added `bin/super-skill hermes --json` to assess Hermes-inspired agent-system readiness.
+- Added `bin/super-skill memory --json` to assess whether a project has enough governed memory and replay surfaces for self-improving agent work.
 - Added a `hermes` install profile that excludes those Hermes-native mirror skills when installing into Hermes Agent, avoiding duplicate procedural guidance.
 - Added a Hermes engineering workflow for turning task experience into memory, skills, tools, queues, and verification.
 - Kept the adaptation vendor-neutral: no dependency on Hermes runtime, Honcho, specific providers, or any one messaging platform.

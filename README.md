@@ -4,7 +4,7 @@ Super Skill 是一个面向 AI coding agent 的全流程技能集合：从用户
 
 它的目标不是简单增加技能数量，而是提升 LLM 输入和输出质量：把用户期待转成可验收契约，把大上下文压缩成高信号上下文包，把 agent 输出重新拉回用户目标、证据和质量门。
 
-最新一层能力是 AI-first harness engineering + Hermes-style self-improving agent engineering：让项目架构、CI/CD、代码评审、实验发布、可观测性、长期记忆、技能演进、工具路由和回滚安全都变得 agent 可读、可执行、可验证。
+最新一层能力是 AI-first harness engineering + Hermes-style self-improving agent engineering：让项目架构、CI/CD、代码评审、实验发布、可观测性、长期记忆、技能演进、工具路由、模型约束、开发工具适配和回滚安全都变得 agent 可读、可执行、可验证。
 
 本仓库整合并重新编排了：
 
@@ -30,12 +30,12 @@ Super Skill 是一个面向 AI coding agent 的全流程技能集合：从用户
 | 开发 | `skills/06-development` | `agent-legible-architecture`, `frontend-patterns`, `backend-patterns`, `database-patterns`, `ai-agent-frameworks` |
 | 测试/输出质量 | `skills/07-testing-and-quality` | `agent-eval-harness`, `ai-review-gates`, `checkpoint-rollback-safety`, `qa-strategy`, `output-quality-gate`, `browser-automation`, `security-review` |
 | 交付/增长 | `skills/08-delivery-and-growth` | `experiment-driven-delivery`, `deployment-patterns`, `docker`, `git`, `github` |
-| 运维/知识 | `skills/09-operations-and-knowledge` | `observability-triage-loop`, `persistent-memory-curation`, `file-curation`, `documentation`, `continuous-learning` |
-| Codex/Hermes/上下文模式 | `skills/90-codex-patterns` | `harness-engineering`, `skill-evolution-loop`, `token-budgeting`, `skill-authoring-system`, `verification-loop`, `agent-routing` |
+| 运维/知识 | `skills/09-operations-and-knowledge` | `observability-triage-loop`, `agent-memory-dream-loop`, `persistent-memory-curation`, `file-curation`, `documentation`, `continuous-learning` |
+| Codex/Hermes/上下文模式 | `skills/90-codex-patterns` | `harness-engineering`, `dev-tool-adapter`, `model-adaptation-contract`, `skill-evolution-loop`, `token-budgeting`, `skill-authoring-system`, `verification-loop`, `agent-routing` |
 
 当前清单：
 
-- 110 个可安装生命周期技能
+- 113 个可安装生命周期技能
 - profile/component manifest 支持只读安装预案
 - 58 套 DesignDNA 品牌系统，位于 `resources/design-md/`
 - 67 个 Cowork 领域技能文件，位于 `vendor/cowork/`
@@ -61,6 +61,9 @@ bin/super-skill harness --json
 
 # 评估 Hermes-style self-improving agent readiness
 bin/super-skill hermes --json
+
+# 评估 agent memory / dream replay readiness
+bin/super-skill memory --json
 
 # 安装完整集合到 Codex skills 目录，默认软链
 bin/super-skill install --profile all --target ~/.codex/skills
@@ -127,12 +130,13 @@ bin/super-skill plan --profile hermes --json
 bin/super-skill audit --json
 bin/super-skill harness --json
 bin/super-skill hermes --json
+bin/super-skill memory --json
 bin/super-skill install --profile core --dry-run --json
 python3 -m unittest discover -s tests
 npm --prefix packages/designdna-cli test
 ```
 
-CI 会运行 `doctor`、`validate`、`plan`、Hermes profile plan、`audit`、`harness`、`hermes`、Python CLI 测试，以及 DesignDNA CLI 测试，确保结构、兼容、安全、harness readiness、self-improving agent readiness 和基础工具链可用。
+CI 会运行 `doctor`、`validate`、`plan`、Hermes profile plan、`audit`、`harness`、`hermes`、`memory`、Python CLI 测试，以及 DesignDNA CLI 测试，确保结构、兼容、安全、harness readiness、self-improving agent readiness、agent memory readiness 和基础工具链可用。
 
 ## 文档
 
@@ -143,10 +147,12 @@ CI 会运行 `doctor`、`validate`、`plan`、Hermes profile plan、`audit`、`h
 - [AI-first Harness Analysis](docs/ai-first-harness-analysis.md)
 - [Harness Engineering Validation](docs/harness-engineering-validation.md)
 - [Hermes Engineering Analysis](docs/hermes-engineering-analysis.md)
+- [Dev Tool, Model, and Memory Adaptation](docs/dev-tool-model-memory-adaptation.md)
 - [端到端工作流](workflows/research-to-delivery.md)
 - [Agentic 上下文到交付工作流](workflows/agentic-context-to-delivery.md)
 - [Harness Engineering Operating Loop](workflows/harness-engineering-operating-loop.md)
 - [Hermes Engineering Learning Loop](workflows/hermes-engineering-learning-loop.md)
+- [Adaptive Agent Memory Harness Loop](workflows/adaptive-agent-memory-harness-loop.md)
 - [Agentic Development Model](docs/agentic-development-model.md)
 - [LLM 输入/输出质量](docs/llm-io-quality.md)
 - [兼容性说明](docs/compatibility.md)

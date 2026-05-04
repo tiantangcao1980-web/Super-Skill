@@ -21,6 +21,14 @@ Use `context-engineering` to provide:
 - open unknowns
 - what to ignore
 
+Use `model-adaptation-contract` to provide:
+
+- model profile and routing reason
+- allowed tools and disallowed actions
+- structured output schema when downstream code consumes the answer
+- fallback policy when the model cannot satisfy the task
+- compatibility evals before switching default models
+
 ## Better Outputs
 
 Use `output-quality-gate` to check:
@@ -31,6 +39,12 @@ Use `output-quality-gate` to check:
 - Are risks and gaps explicit?
 - Is the answer concise enough for the user to absorb?
 
+Use `dev-tool-adapter` to check:
+
+- whether the runtime uses `SKILL.md`, project rules, agent config, or plugin packaging
+- whether tool permissions and memory policies survived conversion
+- whether the wrapper points back to the canonical skill
+
 ## More Context, Fewer Tokens
 
 Use `token-budgeting` to:
@@ -40,6 +54,14 @@ Use `token-budgeting` to:
 - reference large artifacts by path
 - preserve current decisions instead of full chronology
 - keep command evidence compact
+
+Use `agent-memory-dream-loop` to:
+
+- store raw traces outside always-on context
+- promote only verified lessons into durable memory
+- keep negative memory short
+- replay failures offline before changing skills or model routes
+- delete or expire memories that no longer improve output quality
 
 ## Recommended Prompt Shape
 
@@ -53,6 +75,9 @@ Acceptance checks:
 Output format:
 Verification required:
 Token budget:
+Runtime adapter:
+Model profile:
+Memory policy:
 ```
 
 ## Recommended Final Shape

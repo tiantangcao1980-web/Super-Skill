@@ -70,6 +70,9 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertIn("eval-trace-benchmark", ids)
         self.assertIn("observability-triage", ids)
         self.assertIn("tool-sandbox-policy", ids)
+        self.assertIn("dev-tool-adaptation", ids)
+        self.assertIn("model-adaptation-contract", ids)
+        self.assertIn("memory-dream-loop", ids)
 
     def test_hermes_assessment_reports_self_improving_capabilities(self) -> None:
         data = run_cli("hermes", "--project", ".")
@@ -79,6 +82,18 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertIn("progressive-skill-disclosure", ids)
         self.assertIn("memory-curation", ids)
         self.assertIn("durable-agent-board", ids)
+        self.assertIn("runtime-adapters", ids)
+
+    def test_memory_assessment_reports_dream_loop_capabilities(self) -> None:
+        data = run_cli("memory", "--project", ".")
+        self.assertGreaterEqual(data["score"], 70)
+        self.assertEqual(data["total"], len(data["capabilities"]))
+        ids = {item["id"] for item in data["capabilities"]}
+        self.assertIn("episodic-traces", ids)
+        self.assertIn("procedural-memory", ids)
+        self.assertIn("negative-memory", ids)
+        self.assertIn("dream-replay", ids)
+        self.assertIn("memory-safety", ids)
 
 
 if __name__ == "__main__":

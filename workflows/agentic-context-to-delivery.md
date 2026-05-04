@@ -23,6 +23,7 @@ Skills:
 - `prompt-cache-layering`
 - `token-budgeting`
 - `file-curation`
+- `model-adaptation-contract`
 
 Outputs:
 
@@ -31,11 +32,13 @@ Outputs:
 - working file/source list
 - decisions and open unknowns
 - token budget
+- model profile, output schema, and fallback policy
 
-## 2. Lifecycle Execution
+## 2. Runtime And Lifecycle Execution
 
 Skills:
 
+- `dev-tool-adapter`
 - `harness-engineering`
 - `agent-legible-architecture`
 - `toolset-sandbox-routing`
@@ -49,6 +52,7 @@ Outputs:
 
 - product/design/development artifacts
 - agent-readable architecture and validation plan
+- runtime adapter and tool permission map
 - toolset, sandbox, and durable-task routing decisions
 - implementation with evidence
 - changed files and decision records
@@ -94,6 +98,7 @@ Skills:
 - `git`
 - `github`
 - `documentation`
+- `agent-memory-dream-loop`
 - `persistent-memory-curation`
 - `continuous-learning`
 - `skill-evolution-loop`
@@ -103,4 +108,4 @@ Outputs:
 
 - commit, PR, release, or deployed artifact
 - concise final report
-- reusable lessons routed into memory, searchable history, docs, tests, automation, or skills
+- reusable lessons routed into memory, searchable history, docs, tests, automation, skills, or rejected negative memory

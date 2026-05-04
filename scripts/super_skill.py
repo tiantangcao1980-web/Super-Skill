@@ -272,6 +272,56 @@ HARNESS_CAPABILITIES = [
         "recommendation": "Budget stable and volatile context separately, track cost-sensitive loops, and avoid repeated scans.",
     },
     {
+        "id": "dev-tool-adaptation",
+        "label": "Developer tool runtime adaptation",
+        "patterns": [
+            r"dev-tool-adapter",
+            r"Cursor",
+            r"Trae",
+            r"OpenCode",
+            r"OpenClaw",
+            r"Claude Code",
+            r"Codex",
+            r"runtime adapter",
+        ],
+        "min_matches": 3,
+        "paths": ["README.md", "docs", "workflows", "skills"],
+        "recommendation": "Map canonical skills to each developer tool's native rule, skill, agent, and permission surfaces.",
+    },
+    {
+        "id": "model-adaptation-contract",
+        "label": "Model adaptation and output contracts",
+        "patterns": [
+            r"model-adaptation-contract",
+            r"model profile",
+            r"structured output",
+            r"output schema",
+            r"model routing",
+            r"fallback policy",
+            r"compatibility gate",
+        ],
+        "min_matches": 3,
+        "paths": ["README.md", "docs", "workflows", "skills", "AGENTS.md"],
+        "recommendation": "Define provider-neutral model profiles, input contracts, output schemas, and eval gates.",
+    },
+    {
+        "id": "memory-dream-loop",
+        "label": "Memory and dream replay loop",
+        "patterns": [
+            r"agent-memory-dream-loop",
+            r"dream loop",
+            r"dream replay",
+            r"episodic traces?",
+            r"semantic memory",
+            r"procedural memory",
+            r"negative memory",
+            r"memory candidates?",
+        ],
+        "min_matches": 3,
+        "paths": ["README.md", "docs", "workflows", "skills"],
+        "recommendation": "Turn verified experience into bounded memory, offline replay, skill patches, evals, and rejected lessons.",
+    },
+    {
         "id": "output-quality",
         "label": "Output quality gate",
         "patterns": [r"output-quality-gate", r"verification-loop", r"evidence before claims", r"known gaps"],
@@ -350,9 +400,23 @@ HERMES_CAPABILITIES = [
     {
         "id": "provider-aux-routing",
         "label": "Provider and auxiliary model routing",
-        "patterns": [r"agent-routing", r"provider", r"auxiliary", r"model routing", r"fallback"],
+        "patterns": [
+            r"agent-routing",
+            r"provider",
+            r"auxiliary",
+            r"model routing",
+            r"fallback",
+            r"model-adaptation-contract",
+        ],
         "paths": ["docs", "workflows", "skills", "AGENTS.md"],
         "recommendation": "Route main, auxiliary, review, and low-risk tasks to appropriate models with fallback policy.",
+    },
+    {
+        "id": "runtime-adapters",
+        "label": "Runtime adapters for developer tools",
+        "patterns": [r"dev-tool-adapter", r"Cursor", r"Trae", r"OpenCode", r"OpenClaw", r"Claude Code", r"Codex"],
+        "paths": ["README.md", "docs", "workflows", "skills"],
+        "recommendation": "Keep one canonical skill body and generate thin wrappers for each agent runtime.",
     },
     {
         "id": "session-search-history",
@@ -367,6 +431,81 @@ HERMES_CAPABILITIES = [
         "patterns": [r"skill-evolution-loop", r"continuous-learning", r"learning loop", r"lessons learned", r"postmortem"],
         "paths": ["README.md", "docs", "workflows", "skills"],
         "recommendation": "Convert repeated successes and failures into memory, docs, tests, skills, or automation.",
+    },
+]
+
+MEMORY_CAPABILITIES = [
+    {
+        "id": "episodic-traces",
+        "label": "Episodic trace capture",
+        "patterns": [r"episodic traces?", r"logs", r"diffs", r"commands", r"errors", r"review notes"],
+        "min_matches": 2,
+        "paths": ["docs", "workflows", "skills", "AGENTS.md"],
+        "recommendation": "Capture raw session evidence outside always-on context and retrieve it by task, file, or failure mode.",
+    },
+    {
+        "id": "semantic-memory",
+        "label": "Semantic memory with provenance",
+        "patterns": [r"semantic memory", r"durable facts", r"decisions", r"source", r"date", r"scope"],
+        "min_matches": 2,
+        "paths": ["docs", "workflows", "skills", "AGENTS.md"],
+        "recommendation": "Store verified facts and decisions with source, date, scope, and expiry.",
+    },
+    {
+        "id": "procedural-memory",
+        "label": "Procedural memory through skills",
+        "patterns": [r"procedural memory", r"skills", r"runbooks?", r"scripts", r"checklists?", r"skill-authoring-system"],
+        "min_matches": 2,
+        "paths": ["docs", "workflows", "skills", "README.md"],
+        "recommendation": "Promote repeated useful procedures into skills, runbooks, scripts, or checklists.",
+    },
+    {
+        "id": "evaluation-memory",
+        "label": "Evaluation and benchmark memory",
+        "patterns": [r"evaluation memory", r"evals?", r"benchmarks?", r"rubric", r"regression", r"baseline"],
+        "min_matches": 2,
+        "paths": ["docs", "workflows", "skills", "tests", ".github/workflows"],
+        "recommendation": "Keep regression examples, rubrics, and baselines near model and skill changes.",
+    },
+    {
+        "id": "negative-memory",
+        "label": "Negative memory and rejected lessons",
+        "patterns": [r"negative memory", r"rejected", r"anti-pattern", r"failure mode", r"do not use"],
+        "min_matches": 2,
+        "paths": ["docs", "workflows", "skills", "AGENTS.md"],
+        "recommendation": "Store short rejected approaches and anti-patterns to prevent repeated waste.",
+    },
+    {
+        "id": "dream-replay",
+        "label": "Offline dream replay loop",
+        "patterns": [r"dream loop", r"dream replay", r"offline replay", r"simulate", r"memory candidates?", r"baseline comparison"],
+        "min_matches": 2,
+        "paths": ["docs", "workflows", "skills"],
+        "recommendation": "Replay traces offline, mutate one artifact, and compare against a baseline before promotion.",
+    },
+    {
+        "id": "promotion-gate",
+        "label": "Memory promotion gate",
+        "patterns": [r"promotion criteria", r"promote", r"source evidence", r"expiry", r"verification", r"owner"],
+        "min_matches": 2,
+        "paths": ["docs", "workflows", "skills"],
+        "recommendation": "Promote memories only with evidence, redaction, freshness, verification, and expiry policy.",
+    },
+    {
+        "id": "memory-safety",
+        "label": "Memory safety and privacy",
+        "patterns": [r"secrets", r"private data", r"PII", r"raw customer data", r"stale", r"verified"],
+        "min_matches": 2,
+        "paths": ["docs", "workflows", "skills", "AGENTS.md"],
+        "recommendation": "Block secrets, private data, stale claims, and unverified model assertions from durable memory.",
+    },
+    {
+        "id": "token-efficient-recall",
+        "label": "Token-efficient recall",
+        "patterns": [r"token", r"always-on context", r"retrieve", r"pointer", r"compression", r"prompt-cache"],
+        "min_matches": 2,
+        "paths": ["docs", "workflows", "skills", "README.md"],
+        "recommendation": "Keep traces and large references outside prompts; load compact memories by relevance.",
     },
 ]
 
@@ -1103,6 +1242,33 @@ def cmd_hermes(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def assess_memory(project: Path) -> dict:
+    return assess_capability_set(project, MEMORY_CAPABILITIES)
+
+
+def cmd_memory(args: argparse.Namespace) -> int:
+    project = Path(args.project)
+    if not project.expanduser().exists():
+        if args.json:
+            emit_json(False, {"message": f"project path not found: {project}"}, code="USAGE")
+        else:
+            print(f"error: project path not found: {project}", file=sys.stderr)
+        return EXIT_USAGE
+
+    payload = assess_memory(project)
+    if args.json:
+        emit_json(True, payload)
+    else:
+        print(f"Agent memory readiness: {payload['score']}% ({payload['present']}/{payload['total']})")
+        print(f"Project: {payload['project']}")
+        for item in payload["capabilities"]:
+            mark = "OK" if item["status"] == "present" else "MISS"
+            print(f"[{mark}] {item['label']}")
+            if item["status"] != "present":
+                print(f"      {item['recommendation']}")
+    return EXIT_OK
+
+
 def cmd_describe(args: argparse.Namespace) -> int:
     payload = {
         "name": "super-skill",
@@ -1115,6 +1281,7 @@ def cmd_describe(args: argparse.Namespace) -> int:
             {"name": "audit", "purpose": "Check duplicates, manifests, compatibility links, secrets, and risky patterns"},
             {"name": "harness", "purpose": "Assess AI-first harness readiness for this or another project"},
             {"name": "hermes", "purpose": "Assess Hermes-inspired self-improving agent system readiness"},
+            {"name": "memory", "purpose": "Assess agent memory, experience reuse, and dream replay readiness"},
             {"name": "vendor", "purpose": "Summarize vendored Cowork domain ecosystem skills"},
             {"name": "catalog", "purpose": "Generate catalog/skill-index.json and catalog/skill-index.md"},
             {"name": "doctor", "purpose": "Check local tools used by Super Skill"},
@@ -1274,6 +1441,11 @@ def build_parser() -> argparse.ArgumentParser:
     hermes_p.add_argument("--project", default=".")
     hermes_p.add_argument("--json", action="store_true")
     hermes_p.set_defaults(func=cmd_hermes)
+
+    memory_p = sub.add_parser("memory", help="assess agent memory and dream replay readiness")
+    memory_p.add_argument("--project", default=".")
+    memory_p.add_argument("--json", action="store_true")
+    memory_p.set_defaults(func=cmd_memory)
 
     vendor_p = sub.add_parser("vendor", help="summarize vendored domain ecosystem")
     vendor_p.add_argument("--json", action="store_true")

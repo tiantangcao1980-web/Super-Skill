@@ -9,11 +9,13 @@ Skills/tools:
 - `harness-engineering`
 - `bin/super-skill harness --json`
 - `bin/super-skill hermes --json`
+- `bin/super-skill memory --json`
 
 Outputs:
 
 - harness readiness score
 - Hermes-style self-improving readiness score
+- agent memory and dream replay readiness score
 - missing capability list
 - ordered upgrade plan
 
@@ -40,6 +42,7 @@ Outputs:
 
 Skills:
 
+- `dev-tool-adapter`
 - `toolset-sandbox-routing`
 - `checkpoint-rollback-safety`
 - `security-review`
@@ -47,12 +50,29 @@ Skills:
 Outputs:
 
 - tool permission map
+- runtime adapter map for Cursor, Trae, OpenCode, OpenClaw, Claude Code, Codex, or target tools
 - sandbox/worktree/container policy
 - destructive-action approval gates
 - prompt-injection and secret-handling rules
 - checkpoint and rollback contract for risky changes
 
-## 3. Make Validation Deterministic
+## 3. Make Model Behavior Constrained
+
+Skills:
+
+- `model-adaptation-contract`
+- `agent-routing`
+- `token-budgeting`
+
+Outputs:
+
+- model profile and routing decision
+- input contract and output schema
+- fallback policy
+- model compatibility evals
+- prompt cache and token reuse plan
+
+## 4. Make Validation Deterministic
 
 Skills:
 
@@ -69,7 +89,7 @@ Outputs:
 - environment parity checks
 - agent eval task set, traces, deterministic verifiers, and no-skill baseline
 
-## 4. Add Review Gates
+## 5. Add Review Gates
 
 Skills:
 
@@ -84,7 +104,7 @@ Outputs:
 - dependency/license review pass
 - product-risk review pass
 
-## 5. Add Progressive Delivery
+## 6. Add Progressive Delivery
 
 Skills:
 
@@ -98,7 +118,7 @@ Outputs:
 - rollout/kill decision rules
 - A/B or cohort experiment plan
 
-## 6. Add Observability And Triage
+## 7. Add Observability And Triage
 
 Skills:
 
@@ -113,10 +133,11 @@ Outputs:
 - clustered triage ticket format
 - post-fix re-verification signal
 
-## 7. Close The Learning Loop
+## 8. Close The Learning Loop
 
 Skills:
 
+- `agent-memory-dream-loop`
 - `persistent-memory-curation`
 - `continuous-learning`
 - `skill-evolution-loop`
@@ -127,6 +148,7 @@ Outputs:
 
 - new or updated skills
 - curated memory/session-history/project-context decisions
+- dream replay results and promotion/rejection decisions
 - runbooks
 - CI/audit/tool improvements
 - final user-expectation fit check

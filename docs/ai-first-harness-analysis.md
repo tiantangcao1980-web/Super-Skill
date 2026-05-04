@@ -14,6 +14,8 @@ The article is not mainly about AI writing code. It is about redesigning the com
 - review is split into specialized AI gates
 - observability becomes queryable by agents
 - issues are triaged, fixed, deployed, and re-verified through one loop
+- developer tools and models are treated as replaceable runtime surfaces behind one contract
+- memory becomes a governed learning system, not a longer prompt
 - humans shift from code production to architecture, judgment, risk, and taste
 
 This matches the direction of Super Skill: improve the system around the model, not just the prompt.
@@ -29,6 +31,8 @@ Super Skill implementation:
 - `harness-engineering`
 - `context-engineering`
 - `token-budgeting`
+- `dev-tool-adapter`
+- `model-adaptation-contract`
 - `agent-eval-harness`
 - `bin/super-skill harness`
 
@@ -74,6 +78,17 @@ Super Skill implementation:
 - `security-review`
 - `github`
 
+### 6. Memory And Dream Replay
+
+If agent intelligence compounds through memory, that memory must be governed. Raw traces stay outside always-on prompts; verified lessons become semantic, procedural, evaluation, or negative memory; offline replay tests whether a skill or model route actually improves.
+
+Super Skill implementation:
+
+- `agent-memory-dream-loop`
+- `persistent-memory-curation`
+- `skill-evolution-loop`
+- `bin/super-skill memory`
+
 ## Capability Map
 
 | Article Practice | Super Skill Surface |
@@ -89,6 +104,9 @@ Super Skill implementation:
 | Auto-created tickets | `github`, future Linear connector support |
 | Architect/operator roles | `harness-engineering`, `agent-routing` |
 | AI-native marketing/release ops | `documentation`, `programmatic-video`, `continuous-learning` |
+| Tool/runtime portability | `dev-tool-adapter`, `docs/dev-tool-model-memory-adaptation.md` |
+| Model constraints and routing | `model-adaptation-contract`, `agent-routing`, `token-budgeting` |
+| Memory and offline replay | `agent-memory-dream-loop`, `persistent-memory-curation`, `skill-evolution-loop`, `bin/super-skill memory` |
 
 ## Practical Adoption Sequence
 
@@ -100,12 +118,13 @@ Super Skill implementation:
 6. Add AI review gates.
 7. Add feature flags and experiment rules.
 8. Add observability and triage loops.
-9. Convert recurring failures into skills, tools, or CI gates.
+9. Add runtime adapter and model compatibility checks before spreading the workflow across tools.
+10. Convert recurring failures into memory, skills, evals, tools, or CI gates.
 
 ## Warning
 
 The article's throughput claims only make sense after the harness exists. Copying the speed without the gates creates production risk. The safe order is:
 
 ```text
-legibility -> tool/sandbox policy -> validation/evals -> review gates -> progressive delivery -> observability -> self-healing
+legibility -> tool/sandbox policy -> runtime/model contracts -> validation/evals -> review gates -> progressive delivery -> observability -> memory/dream replay -> self-healing
 ```

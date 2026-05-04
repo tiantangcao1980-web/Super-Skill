@@ -1,5 +1,5 @@
 {
-  "generated_at": 1777900641,
+  "generated_at": 1777901520,
   "installable_skills": [
     {
       "name": "auto-flow",
@@ -770,6 +770,14 @@
       "path": "skills/08-delivery-and-growth/programmatic-video"
     },
     {
+      "name": "agent-memory-dream-loop",
+      "description": "Connect agent experience, durable memory, negative lessons, and offline dream replay into a safe self-improving harness loop.",
+      "stage": "09-operations-and-knowledge",
+      "stage_label": "Operations",
+      "source": "core",
+      "path": "skills/09-operations-and-knowledge/agent-memory-dream-loop"
+    },
+    {
       "name": "claude-code-resources",
       "description": "Claude Code 生态资源索引 skill:用户问\"哪里找 plugin / hook 怎么写 / awesome 列表 / 教程\"等问题时触发,给出具体推荐和导航。 包含:plugin marketplace、skill 仓库、hook 范例、社区 awesome 列表、最佳实践博客、Anthropic 官方资源。 触发词:「Claude Code 资源」「awesome claude code」「plugin 找哪里」「hook 教程」「skill 找哪里」「Claude Code 怎么入门」「Claude Code 配置」。 适用阶段:新人入门、找现成解决方案、对标他人配置。",
       "stage": "09-operations-and-knowledge",
@@ -834,12 +842,28 @@
       "path": "skills/90-codex-patterns/cross-tool-packaging"
     },
     {
+      "name": "dev-tool-adapter",
+      "description": "Adapt Super Skill workflows across Cursor, Trae, OpenCode, OpenClaw, Claude Code, and Codex without duplicating canonical skill behavior.",
+      "stage": "90-codex-patterns",
+      "stage_label": "Codex Patterns",
+      "source": "core",
+      "path": "skills/90-codex-patterns/dev-tool-adapter"
+    },
+    {
       "name": "harness-engineering",
       "description": "Use when redesigning a project, team workflow, or engineering system so AI agents can plan, implement, test, deploy, observe, and repair production software reliably.",
       "stage": "90-codex-patterns",
       "stage_label": "Codex Patterns",
       "source": "core",
       "path": "skills/90-codex-patterns/harness-engineering"
+    },
+    {
+      "name": "model-adaptation-contract",
+      "description": "Define provider-neutral LLM constraints that improve input quality, output reliability, model routing, and token economy.",
+      "stage": "90-codex-patterns",
+      "stage_label": "Codex Patterns",
+      "source": "core",
+      "path": "skills/90-codex-patterns/model-adaptation-contract"
     },
     {
       "name": "selective-install-planning",

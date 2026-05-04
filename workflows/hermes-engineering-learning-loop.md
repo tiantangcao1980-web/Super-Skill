@@ -6,6 +6,7 @@ Use this workflow after complex agent work, repeated failures, long sessions, or
 
 Skills:
 
+- `agent-memory-dream-loop`
 - `persistent-memory-curation`
 - `context-engineering`
 
@@ -15,6 +16,7 @@ Output:
 - temporary facts
 - project conventions
 - repeated failures
+- negative lessons
 - useful command/test evidence
 
 Decision:
@@ -39,6 +41,7 @@ Output:
 
 Skills:
 
+- `agent-memory-dream-loop`
 - `skill-evolution-loop`
 - `skill-authoring-system`
 
@@ -48,6 +51,7 @@ Output:
 - reason for update
 - pressure prompt or failure pattern
 - validation command
+- dream replay or baseline comparison result
 
 Guardrail:
 
@@ -57,6 +61,8 @@ Guardrail:
 
 Skills:
 
+- `dev-tool-adapter`
+- `model-adaptation-contract`
 - `toolset-sandbox-routing`
 - `agent-routing`
 
@@ -64,6 +70,8 @@ Output:
 
 - required capabilities
 - excluded capabilities
+- runtime adapter target
+- model profile, output contract, and fallback policy
 - sandbox/worktree/container decision
 - approval or rollback gate
 
@@ -115,11 +123,14 @@ Output:
 - tests or checks added
 - docs or runbooks updated
 - skills updated
+- memory candidates promoted or rejected
 - next automation candidate
 
 ## Done Means
 
 - useful facts are stored in the right layer
+- raw traces are outside always-on context
+- dream replay has either promoted a useful artifact or recorded a rejected lesson
 - repeated workflow is encoded as a skill or script
 - risky work has rollback evidence
 - long work has durable state
