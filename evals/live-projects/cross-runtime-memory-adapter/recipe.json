@@ -1,0 +1,49 @@
+{
+  "project": "cross-runtime-memory-adapter",
+  "description": "A runnable adapter policy that proves memory/dream behavior can be mapped across agent developer tools without raw prompt capture.",
+  "required_skills": [
+    "dev-tool-adapter",
+    "selective-install-planning",
+    "agent-memory-dream-loop",
+    "skill-evolution-loop",
+    "toolset-sandbox-routing",
+    "cross-tool-packaging"
+  ],
+  "acceptance": {
+    "required_files": [
+      "AGENTS.md",
+      "docs/runtime-memory-policy.md",
+      "tools/runtime_adapter.py",
+      "tests/test_runtime_adapter.py"
+    ],
+    "required_content": [
+      {
+        "path": "docs/runtime-memory-policy.md",
+        "patterns": ["Codex", "Cursor", "Trae", "OpenCode", "OpenClaw", "Claude Code", "auto_promote", "review"]
+      },
+      {
+        "path": "tools/runtime_adapter.py",
+        "patterns": ["capture_raw_prompt", "False", "agent-memory-dream-loop"]
+      }
+    ],
+    "forbidden_content": [
+      {
+        "path": "docs/runtime-memory-policy.md",
+        "patterns": ["store raw prompt", "automatic skill mutation"]
+      }
+    ],
+    "commands": [
+      {
+        "id": "runtime-policy-tests",
+        "argv": ["{python}", "-m", "unittest", "discover", "-s", "tests"]
+      }
+    ],
+    "capability_scans": [
+      {
+        "kind": "memory",
+        "min_score": 15
+      }
+    ],
+    "memory_hook": true
+  }
+}

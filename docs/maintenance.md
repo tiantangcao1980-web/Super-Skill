@@ -16,6 +16,7 @@ bin/super-skill hermes
 bin/super-skill memory
 bin/super-skill triggers
 bin/super-skill evals
+bin/super-skill live-evals
 bin/super-skill memory-plugin --dry-run
 bin/super-skill plan --profile hermes
 bin/super-skill catalog
@@ -46,6 +47,7 @@ Then update NOTICE and run validation.
 - `bin/super-skill memory --json` reports the memory, dream replay, and experience reuse capability matrix.
 - `bin/super-skill triggers --json` reports automatic trigger and skill lifecycle policy validity.
 - `bin/super-skill evals --json` runs validation projects for lifecycle coverage, cross-runtime memory, DesignDNA/frontend quality, incident learning, and token-efficient LLM I/O.
+- `bin/super-skill live-evals --json` runs local temporary project graders for SaaS feedback loops, runtime memory adapters, and DesignDNA frontend quality.
 - `bin/super-skill memory-plugin --dry-run --json` reports Codex plugin, marketplace, hook, and config operations without mutating the machine.
 - `bin/super-skill plan --profile core --json` emits a deterministic read-only plan.
 - `bin/super-skill plan --profile hermes --json` emits a Hermes-safe plan with native mirror exclusions.

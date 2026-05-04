@@ -1,0 +1,58 @@
+{
+  "project": "mini-saas-feedback-loop",
+  "description": "A small AI-first SaaS delivery loop with flags, metrics, rollback, tests, release notes, and memory capture.",
+  "required_skills": [
+    "intent-contract",
+    "product-spec",
+    "agent-legible-architecture",
+    "agent-eval-harness",
+    "experiment-driven-delivery",
+    "observability-triage-loop",
+    "agent-memory-dream-loop",
+    "output-quality-gate"
+  ],
+  "acceptance": {
+    "required_files": [
+      "AGENTS.md",
+      ".github/workflows/ci.yml",
+      "docs/product-spec.md",
+      "docs/observability.md",
+      "docs/release-notes.md",
+      "src/feedback_loop.py",
+      "tests/test_feedback_loop.py"
+    ],
+    "required_content": [
+      {
+        "path": "docs/product-spec.md",
+        "patterns": ["feature flag", "kill switch", "metrics", "rollback", "memory"]
+      },
+      {
+        "path": "docs/observability.md",
+        "patterns": ["structured logs", "triage", "verification"]
+      },
+      {
+        "path": ".github/workflows/ci.yml",
+        "patterns": ["python -m unittest"]
+      }
+    ],
+    "forbidden_content": [
+      {
+        "path": "docs/product-spec.md",
+        "patterns": ["manual qa only", "ship without tests"]
+      }
+    ],
+    "commands": [
+      {
+        "id": "unit-tests",
+        "argv": ["{python}", "-m", "unittest", "discover", "-s", "tests"]
+      }
+    ],
+    "capability_scans": [
+      {
+        "kind": "harness",
+        "min_score": 20
+      }
+    ],
+    "memory_hook": true
+  }
+}

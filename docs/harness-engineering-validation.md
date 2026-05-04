@@ -59,11 +59,19 @@ The important caveat: it is a portable skill and workflow harness, not a product
 
 These projects prove the repository exposes the right skills, policies, and validation surfaces. They do not replace live agent runs against a real product backlog.
 
+`bin/super-skill live-evals --json` goes one step further by creating temporary runnable projects from recipes:
+
+- `mini-saas-feedback-loop`: feature flag, kill switch, metrics, rollback, observability, release notes, and memory hook.
+- `cross-runtime-memory-adapter`: runtime policy mapping for Codex, Cursor, Trae, OpenCode, OpenClaw, and Claude Code.
+- `design-frontend-quality-gate`: DesignDNA tokens, accessible rendering, responsive constraints, and anti-slop checks.
+
+These live evals run code-based graders and unit tests. They still do not call an external LLM; they are the stable executable harness that future model-driven attempts should target.
+
 ## Remaining Validation Gaps
 
 - Live production observability is described but not connected to a real telemetry backend in this repository.
 - Feature-flag and A/B testing are guidance-level skills unless the target project wires Statsig, LaunchDarkly, or another experimentation provider.
-- Agent eval support is now explicit, but each adopting project must supply realistic task fixtures, traces, deterministic verifiers, and no-skill baselines.
+- Agent eval support now includes deterministic live project fixtures, but each adopting project must still supply realistic backlog tasks, traces, model attempts, and no-skill baselines.
 - Runtime adapters still need smoke checks inside each target tool because Cursor, Trae, OpenCode, OpenClaw, Claude Code, and Codex evolve quickly.
 - The memory/dream loop now has plugin/fallback auto-trigger checks, but downstream projects still need a real eval corpus before any automatic promotion.
 - `bin/super-skill harness` is a static readiness scan. It proves the repository exposes harness surfaces; it does not prove a downstream product's runtime behavior without project-specific evals and production signals.
@@ -76,6 +84,7 @@ bin/super-skill hermes --json
 bin/super-skill memory --json
 bin/super-skill triggers --json
 bin/super-skill evals --json
+bin/super-skill live-evals --json
 bin/super-skill memory-plugin --dry-run --json
 bin/super-skill validate --json
 bin/super-skill audit --json

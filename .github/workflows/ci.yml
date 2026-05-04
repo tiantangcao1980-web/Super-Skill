@@ -25,6 +25,7 @@ jobs:
       - run: bin/super-skill memory --json
       - run: bin/super-skill triggers --json
       - run: bin/super-skill evals --json
+      - run: bin/super-skill live-evals --json
       - run: bin/super-skill memory-plugin --dry-run --json
       - run: bin/super-skill install --profile core --dry-run --json
       - run: bin/super-skill install --profile core --dry-run --with-memory-plugin --json

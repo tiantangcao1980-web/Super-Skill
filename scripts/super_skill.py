@@ -32,6 +32,7 @@ CATALOG_ROOT = ROOT / "catalog"
 MANIFEST_ROOT = ROOT / "manifests"
 PLUGIN_ROOT = ROOT / "plugins"
 EVALS_ROOT = ROOT / "evals"
+LIVE_EVALS_ROOT = EVALS_ROOT / "live-projects"
 MEMORY_PLUGIN_NAME = "super-skill-memory-harness"
 AUTO_TRIGGER_POLICY_PATH = MANIFEST_ROOT / "auto-trigger-policy.json"
 SKILL_LIFECYCLE_POLICY_PATH = MANIFEST_ROOT / "skill-lifecycle-policy.json"
@@ -1499,48 +1500,50 @@ def evaluate_project_fixture(project_dir: Path, skills_by_name: dict[str, Skill]
     }
 
 
-def simulate_memory_hook_eval() -> dict:
+def run_memory_hook_probe(workspace: Path, prompt: str = "do not store this raw prompt") -> dict:
     script = PLUGIN_ROOT / MEMORY_PLUGIN_NAME / "scripts" / "memory_dream_hook.py"
     if not script.exists():
         return {"id": "memory-hook-simulation", "ok": False, "message": "hook script missing"}
 
-    secret_prompt = "do not store this raw prompt"
-    with tempfile.TemporaryDirectory() as tmp:
-        root = Path(tmp)
-        payload = {
-            "hook_event_name": "Stop",
-            "cwd": str(root),
-            "model": "eval-model",
-            "session_id": "eval-session",
-            "transcript_path": str(root / "transcript.jsonl"),
-            "prompt": secret_prompt,
-        }
-        proc = subprocess.run(
-            [sys.executable, str(script), "--event", "stop"],
-            cwd=root,
-            input=json.dumps(payload),
-            capture_output=True,
-            text=True,
-            timeout=30,
-            check=False,
-        )
-        if proc.returncode != 0:
-            return {
-                "id": "memory-hook-simulation",
-                "ok": False,
-                "message": "hook exited non-zero",
-                "stderr": proc.stderr[:500],
-            }
-        candidates = sorted((root / ".super-skill" / "memory" / "inbox").glob("*.md"))
-        traces = sorted((root / ".super-skill" / "memory" / "traces").glob("*.jsonl"))
-        candidate_text = candidates[0].read_text(encoding="utf-8") if candidates else ""
+    payload = {
+        "hook_event_name": "Stop",
+        "cwd": str(workspace),
+        "model": "eval-model",
+        "session_id": "eval-session",
+        "transcript_path": str(workspace / "transcript.jsonl"),
+        "prompt": prompt,
+    }
+    proc = subprocess.run(
+        [sys.executable, str(script), "--event", "stop"],
+        cwd=workspace,
+        input=json.dumps(payload),
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    if proc.returncode != 0:
         return {
             "id": "memory-hook-simulation",
-            "ok": bool(candidates) and bool(traces) and secret_prompt not in candidate_text,
-            "candidates": len(candidates),
-            "traces": len(traces),
-            "raw_prompt_stored": secret_prompt in candidate_text,
+            "ok": False,
+            "message": "hook exited non-zero",
+            "stderr": proc.stderr[:500],
         }
+    candidates = sorted((workspace / ".super-skill" / "memory" / "inbox").glob("*.md"))
+    traces = sorted((workspace / ".super-skill" / "memory" / "traces").glob("*.jsonl"))
+    candidate_text = candidates[0].read_text(encoding="utf-8") if candidates else ""
+    return {
+        "id": "memory-hook-simulation",
+        "ok": bool(candidates) and bool(traces) and prompt not in candidate_text,
+        "candidates": len(candidates),
+        "traces": len(traces),
+        "raw_prompt_stored": prompt in candidate_text,
+    }
+
+
+def simulate_memory_hook_eval() -> dict:
+    with tempfile.TemporaryDirectory() as tmp:
+        return run_memory_hook_probe(Path(tmp))
 
 
 def evaluate_capability_suite(project_filter: str | None = None) -> dict:
@@ -1645,6 +1648,196 @@ def cmd_evals(args: argparse.Namespace) -> int:
     else:
         print(f"Capability eval projects: {payload['projects_passed']}/{payload['projects_total']} passed")
         print(f"Global checks: {payload['global_checks_passed']}/{payload['global_checks_total']} passed")
+        if payload["failures"]:
+            print("Failures:")
+            for failure in payload["failures"]:
+                print(f"  {failure['scope']}: {failure.get('project', '<global>')}")
+    return EXIT_OK if ok else EXIT_RUNTIME
+
+
+def live_project_dirs() -> list[Path]:
+    if not LIVE_EVALS_ROOT.exists():
+        return []
+    return sorted(path for path in LIVE_EVALS_ROOT.iterdir() if path.is_dir())
+
+
+def command_argv(argv: list[str]) -> list[str]:
+    return [sys.executable if part == "{python}" else part for part in argv]
+
+
+def check_live_required_files(workspace: Path, required_files: list[str]) -> dict:
+    missing = sorted(path for path in required_files if not (workspace / path).exists())
+    return {"id": "required-files", "ok": not missing, "expected": len(required_files), "missing": missing}
+
+
+def check_live_required_content(workspace: Path, content_checks: list[dict]) -> dict:
+    missing: list[dict] = []
+    for item in content_checks:
+        path = workspace / item["path"]
+        text = path.read_text(encoding="utf-8", errors="replace").lower() if path.exists() else ""
+        for pattern in item.get("patterns", []):
+            if pattern.lower() not in text:
+                missing.append({"path": item["path"], "pattern": pattern})
+    return {"id": "required-content", "ok": not missing, "missing": missing}
+
+
+def check_live_forbidden_content(workspace: Path, content_checks: list[dict]) -> dict:
+    hits: list[dict] = []
+    for item in content_checks:
+        path = workspace / item["path"]
+        text = path.read_text(encoding="utf-8", errors="replace").lower() if path.exists() else ""
+        for pattern in item.get("patterns", []):
+            if pattern.lower() in text:
+                hits.append({"path": item["path"], "pattern": pattern})
+    return {"id": "forbidden-content", "ok": not hits, "hits": hits}
+
+
+def run_live_commands(workspace: Path, commands: list[dict]) -> dict:
+    results = []
+    for command in commands:
+        argv = command_argv(command.get("argv", []))
+        expected_exit = command.get("expect_exit", 0)
+        try:
+            proc = subprocess.run(
+                argv,
+                cwd=workspace,
+                capture_output=True,
+                text=True,
+                timeout=command.get("timeout", 30),
+                check=False,
+            )
+            results.append(
+                {
+                    "id": command.get("id", "command"),
+                    "ok": proc.returncode == expected_exit,
+                    "argv": argv,
+                    "returncode": proc.returncode,
+                    "expected_exit": expected_exit,
+                    "stdout_tail": proc.stdout[-800:],
+                    "stderr_tail": proc.stderr[-800:],
+                }
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            results.append(
+                {
+                    "id": command.get("id", "command"),
+                    "ok": False,
+                    "argv": argv,
+                    "error": str(exc),
+                }
+            )
+    return {"id": "commands", "ok": all(result["ok"] for result in results), "results": results}
+
+
+def run_live_capability_scans(workspace: Path, scans: list[dict]) -> dict:
+    assessors = {
+        "harness": assess_harness,
+        "hermes": assess_hermes,
+        "memory": assess_memory,
+    }
+    results = []
+    for scan in scans:
+        kind = scan.get("kind")
+        assessor = assessors.get(kind)
+        if assessor is None:
+            results.append({"kind": kind, "ok": False, "message": "unknown scan kind"})
+            continue
+        report = assessor(workspace)
+        min_score = scan.get("min_score", 0)
+        results.append({"kind": kind, "ok": report["score"] >= min_score, "score": report["score"], "min_score": min_score})
+    return {"id": "capability-scans", "ok": all(result["ok"] for result in results), "results": results}
+
+
+def run_live_eval_project(project_dir: Path, skills_by_name: dict[str, Skill], keep: bool = False) -> dict:
+    recipe_path = project_dir / "recipe.json"
+    files_root = project_dir / "files"
+    if not recipe_path.exists() or not files_root.exists():
+        return {
+            "project": project_dir.name,
+            "ok": False,
+            "checks": [{"id": "fixture-files", "ok": False, "message": "missing recipe.json or files/"}],
+        }
+
+    recipe = read_json_file(recipe_path)
+    temp_ctx: tempfile.TemporaryDirectory[str] | None = None
+    if keep:
+        workspace = Path(tempfile.mkdtemp(prefix=f"super-skill-live-{project_dir.name}-"))
+    else:
+        temp_ctx = tempfile.TemporaryDirectory(prefix=f"super-skill-live-{project_dir.name}-")
+        workspace = Path(temp_ctx.name)
+
+    try:
+        shutil.copytree(files_root, workspace, dirs_exist_ok=True)
+        required_skills = recipe.get("required_skills", [])
+        acceptance = recipe.get("acceptance", {})
+        checks: list[dict] = []
+
+        missing_skills = sorted(name for name in required_skills if name not in skills_by_name)
+        checks.append({"id": "required-skills", "ok": not missing_skills, "expected": len(required_skills), "missing": missing_skills})
+        checks.append(check_live_required_files(workspace, acceptance.get("required_files", [])))
+        checks.append(check_live_required_content(workspace, acceptance.get("required_content", [])))
+        checks.append(check_live_forbidden_content(workspace, acceptance.get("forbidden_content", [])))
+        if acceptance.get("capability_scans"):
+            checks.append(run_live_capability_scans(workspace, acceptance["capability_scans"]))
+        checks.append(run_live_commands(workspace, acceptance.get("commands", [])))
+        if acceptance.get("memory_hook"):
+            checks.append(run_memory_hook_probe(workspace, prompt="live eval secret prompt"))
+
+        return {
+            "project": recipe.get("project", project_dir.name),
+            "description": recipe.get("description"),
+            "ok": all(check["ok"] for check in checks),
+            "workspace": str(workspace) if keep else None,
+            "checks": checks,
+        }
+    finally:
+        if temp_ctx is not None:
+            temp_ctx.cleanup()
+
+
+def evaluate_live_suite(project_filter: str | None = None, keep: bool = False) -> dict:
+    skills = discover_skills("all")
+    skills_by_name = {skill.name: skill for skill in skills}
+    projects = []
+    for project_dir in live_project_dirs():
+        if project_filter and project_dir.name != project_filter:
+            continue
+        projects.append(run_live_eval_project(project_dir, skills_by_name, keep=keep))
+
+    global_checks = [{"id": "project-filter", "ok": not project_filter or bool(projects), "project": project_filter}]
+    failures = [
+        {"scope": "project", "project": project["project"], "checks": [c for c in project["checks"] if not c["ok"]]}
+        for project in projects
+        if not project["ok"]
+    ]
+    failed_global = [check for check in global_checks if not check["ok"]]
+    if failed_global:
+        failures.append({"scope": "global", "checks": failed_global})
+
+    return {
+        "projects_total": len(projects),
+        "projects_passed": sum(1 for project in projects if project["ok"]),
+        "global_checks_total": len(global_checks),
+        "global_checks_passed": sum(1 for check in global_checks if check["ok"]),
+        "keep": keep,
+        "projects": projects,
+        "global_checks": global_checks,
+        "failures": failures,
+    }
+
+
+def cmd_live_evals(args: argparse.Namespace) -> int:
+    payload = evaluate_live_suite(args.project, keep=args.keep)
+    ok = not payload["failures"]
+    if args.json:
+        emit_json(ok, payload, code="LIVE_EVALS_FAILED" if not ok else None)
+    else:
+        print(f"Live eval projects: {payload['projects_passed']}/{payload['projects_total']} passed")
+        for project in payload["projects"]:
+            status = "PASS" if project["ok"] else "FAIL"
+            print(f"[{status}] {project['project']}")
+            if args.keep and project.get("workspace"):
+                print(f"      workspace: {project['workspace']}")
         if payload["failures"]:
             print("Failures:")
             for failure in payload["failures"]:
@@ -2156,6 +2349,7 @@ def cmd_describe(args: argparse.Namespace) -> int:
             {"name": "memory-plugin", "purpose": "Install or preview the automatic memory/dream Codex plugin"},
             {"name": "triggers", "purpose": "Validate automatic trigger and skill lifecycle controls"},
             {"name": "evals", "purpose": "Run validation projects that prove lifecycle, harness, memory, and runtime coverage"},
+            {"name": "live-evals", "purpose": "Run local live validation projects with deterministic graders in temporary workspaces"},
             {"name": "vendor", "purpose": "Summarize vendored Cowork domain ecosystem skills"},
             {"name": "catalog", "purpose": "Generate catalog/skill-index.json and catalog/skill-index.md"},
             {"name": "doctor", "purpose": "Check local tools used by Super Skill"},
@@ -2370,6 +2564,12 @@ def build_parser() -> argparse.ArgumentParser:
     evals_p.add_argument("--project", default=None)
     evals_p.add_argument("--json", action="store_true")
     evals_p.set_defaults(func=cmd_evals)
+
+    live_evals_p = sub.add_parser("live-evals", help="run local live validation projects")
+    live_evals_p.add_argument("--project", default=None)
+    live_evals_p.add_argument("--keep", action="store_true", help="keep generated workspaces for debugging")
+    live_evals_p.add_argument("--json", action="store_true")
+    live_evals_p.set_defaults(func=cmd_live_evals)
 
     vendor_p = sub.add_parser("vendor", help="summarize vendored domain ecosystem")
     vendor_p.add_argument("--json", action="store_true")

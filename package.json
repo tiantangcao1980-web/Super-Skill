@@ -14,6 +14,7 @@
     "memory": "bin/super-skill memory",
     "triggers": "bin/super-skill triggers",
     "evals": "bin/super-skill evals",
+    "live-evals": "bin/super-skill live-evals",
     "memory-plugin": "bin/super-skill memory-plugin",
     "plan": "bin/super-skill plan --profile core",
     "plan:hermes": "bin/super-skill plan --profile hermes",

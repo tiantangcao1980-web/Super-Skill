@@ -213,6 +213,30 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertFalse(payload["ok"])
         self.assertEqual(payload["error"]["code"], "EVALS_FAILED")
 
+    def test_live_evals_run_local_project_graders(self) -> None:
+        data = run_cli("live-evals")
+        self.assertEqual(data["failures"], [])
+        self.assertGreaterEqual(data["projects_total"], 3)
+        self.assertEqual(data["projects_passed"], data["projects_total"])
+        project_names = {item["project"] for item in data["projects"]}
+        self.assertIn("mini-saas-feedback-loop", project_names)
+        self.assertIn("cross-runtime-memory-adapter", project_names)
+        self.assertIn("design-frontend-quality-gate", project_names)
+
+    def test_live_evals_reject_unknown_project(self) -> None:
+        proc = subprocess.run(
+            [sys.executable, str(CLI), "live-evals", "--project", "missing-project", "--json"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+        self.assertNotEqual(proc.returncode, 0)
+        payload = json.loads(proc.stdout)
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["error"]["code"], "LIVE_EVALS_FAILED")
+
 
 if __name__ == "__main__":
     unittest.main()
