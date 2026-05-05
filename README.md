@@ -3,8 +3,25 @@
 [![CI](https://github.com/tiantangcao1980-web/Super-Skill/actions/workflows/ci.yml/badge.svg)](https://github.com/tiantangcao1980-web/Super-Skill/actions/workflows/ci.yml)
 [![Quality](https://github.com/tiantangcao1980-web/Super-Skill/actions/workflows/quality.yml/badge.svg)](https://github.com/tiantangcao1980-web/Super-Skill/actions/workflows/quality.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Skills](https://img.shields.io/badge/skills-113-blue)](catalog/skill-index.md)
+[![Skills](https://img.shields.io/badge/skills-114-blue)](catalog/skill-index.md)
 [![Profiles](https://img.shields.io/badge/profiles-core%20%7C%20dev%20%7C%20design%20%7C%20hermes%20%7C%20all-green)](manifests/install-profiles.json)
+
+> **Thesis.** AI coding agents fail in four predictable ways: they don't do what the user actually wanted (input quality), they ramble (output quality), the code doesn't run (verification), and yesterday's lesson never reaches today's session (memory). Super Skill is a 114-skill collection plus a runnable harness CLI built around exactly those four failure modes — every skill front-loads its trigger condition, every loop has a hard quality gate, and the autonomous closed loop (`bin/super-skill autopilot`) drives one prompt through intent → spec → design → ralph-loop implementation → simplifier → quality gate → reviewable memory candidate, with every artifact checkpointed on disk.
+
+## ⚡ Quick start (autonomous closed loop)
+
+```bash
+# Offline deterministic stub — CI safe, no API key needed:
+bin/super-skill autopilot --provider stub --prompt "Build a TODO list API with tests"
+
+# Real LLM:
+ANTHROPIC_API_KEY=sk-... bin/super-skill autopilot --provider anthropic \
+    --prompt "Build a TODO list API with tests" --project ./build
+```
+
+Each phase loads the canonical SKILL.md as its system prompt, calls the LLM (or stub), and writes a checkpoint under `<project>/.super-skill/autopilot/<run-id>/`. Phases 1 (intent contract) and 6 (output quality gate) are hard exits. Phase 4 wraps `ralph-loop` for iterative implementation. Phase 7 produces a Hermes-style reviewable memory candidate without ever echoing the raw prompt.
+
+## What's inside
 
 Super Skill 是一个面向 AI coding agent 的全流程技能集合：从用户意图、上下文工程、市场/用户调研，到需求分析、产品规格、设计系统、接口与开发、测试验证、交付增长、运维知识沉淀，形成一套可安装、可验证、可继续扩展的 skills 生态。
 
@@ -117,6 +134,13 @@ bin/super-skill adapt --tool hermes
 # 跑真实 LLM 端到端循环：intent-contract → implementation → output-quality-gate
 bin/super-skill llm-eval --provider stub                    # 离线 stub，CI 安全
 ANTHROPIC_API_KEY=sk-... bin/super-skill llm-eval --provider anthropic --prompt "建一个待办列表 API"
+
+# 自主闭环 (autopilot): intent → spec → design → ralph-loop → simplifier → gate → memory
+# 每阶段写产物到 <project>/.super-skill/autopilot/<run-id>/，可中断可恢复
+bin/super-skill autopilot --provider stub --prompt "Build a Python add(a,b)"
+ANTHROPIC_API_KEY=sk-... bin/super-skill autopilot --provider anthropic --project ./build \
+    --prompt "Build a TODO list API with tests" --max-ralph-rounds 20
+# 跳过某阶段：--skip 03-design,07-memory；强制重跑：--force；指定运行 id：--run-id ...
 ```
 
 Profiles:

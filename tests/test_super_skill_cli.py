@@ -298,6 +298,73 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertIn("contract", data["outputs"])
         self.assertIn("Intent Contract", data["outputs"]["contract"])
 
+    def test_autopilot_dry_run_lists_seven_phases(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            data = run_cli("autopilot", "--provider", "stub", "--project", td, "--dry-run")
+            self.assertEqual(len(data["phases_planned"]), 7)
+            ids = [p["id"] for p in data["phases_planned"]]
+            self.assertEqual(
+                ids,
+                ["01-intent", "02-spec", "03-design", "04-impl", "05-simplify", "06-gate", "07-memory"],
+            )
+
+    def test_autopilot_stub_full_run_passes_all_phases(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            data = run_cli("autopilot", "--provider", "stub", "--project", td, "--prompt", "Build add(a,b)")
+            self.assertTrue(data["ok"])
+            self.assertIsNone(data["failed_phase"])
+            self.assertEqual(len(data["phases"]), 7)
+            phase_by_id = {p["phase"]: p for p in data["phases"]}
+            self.assertTrue(phase_by_id["01-intent"]["grade"]["ok"])
+            self.assertTrue(phase_by_id["06-gate"]["grade"]["ok"])
+            self.assertGreaterEqual(len(phase_by_id["04-impl"]["ralph_attempts"]), 1)
+            workspace = Path(data["workspace"])
+            self.assertTrue(workspace.exists())
+            self.assertTrue((workspace / "run.json").exists())
+
+    def test_autopilot_resume_skips_existing_phases(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            first = run_cli("autopilot", "--provider", "stub", "--project", td, "--prompt", "Build add(a,b)")
+            run_id = first["run_id"]
+            second = run_cli(
+                "autopilot", "--provider", "stub", "--project", td,
+                "--prompt", "Build add(a,b)", "--run-id", run_id,
+            )
+            self.assertTrue(second["ok"])
+            for ph in second["phases"]:
+                self.assertTrue(
+                    ph["skipped"], f"phase {ph['phase']} should have been skipped on resume",
+                )
+
+    def test_autopilot_skip_phase(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            data = run_cli("autopilot", "--provider", "stub", "--project", td, "--skip", "07-memory")
+            stages = [p["phase"] for p in data["phases"]]
+            self.assertNotIn("07-memory", stages)
+
+    def test_autopilot_memory_candidate_does_not_echo_prompt(self) -> None:
+        marker_phrase = "marker-do-not-leak-9f1c2"
+        with tempfile.TemporaryDirectory() as td:
+            data = run_cli(
+                "autopilot", "--provider", "stub", "--project", td,
+                "--prompt", f"Build a thing. Marker: {marker_phrase}",
+            )
+            self.assertTrue(data["ok"])
+            workspace = Path(data["workspace"])
+            mem = (workspace / "07-memory-candidate.md").read_text(encoding="utf-8")
+            self.assertNotIn(
+                marker_phrase, mem,
+                "memory candidate must not echo raw user prompt — Hermes principle violated",
+            )
+
+    def test_live_evals_includes_autopilot_project(self) -> None:
+        data = run_cli("live-evals", "--project", "autopilot-end-to-end")
+        self.assertEqual(data["projects_total"], 1)
+        self.assertEqual(data["projects_passed"], 1)
+        proj = data["projects"][0]
+        self.assertEqual(proj["project"], "autopilot-end-to-end")
+        self.assertTrue(proj["ok"])
+
 
 if __name__ == "__main__":
     unittest.main()

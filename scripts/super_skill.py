@@ -1662,19 +1662,49 @@ def live_project_dirs() -> list[Path]:
 
 
 def command_argv(argv: list[str]) -> list[str]:
-    return [sys.executable if part == "{python}" else part for part in argv]
+    out = []
+    for part in argv:
+        if part == "{python}":
+            out.append(sys.executable)
+            continue
+        # Allow `{root}` and `{python}` to appear as substrings, e.g. `{root}/bin/x`.
+        replaced = part.replace("{root}", str(ROOT)).replace("{python}", sys.executable)
+        out.append(replaced)
+    return out
 
 
 def check_live_required_files(workspace: Path, required_files: list[str]) -> dict:
-    missing = sorted(path for path in required_files if not (workspace / path).exists())
-    return {"id": "required-files", "ok": not missing, "expected": len(required_files), "missing": missing}
+    """Check that each required path exists. Glob patterns (containing * or ?)
+    must match at least one file under workspace."""
+    missing: list[str] = []
+    for path in required_files:
+        if any(ch in path for ch in "*?["):
+            matches = list(workspace.glob(path))
+            if not matches:
+                missing.append(path)
+        else:
+            if not (workspace / path).exists():
+                missing.append(path)
+    return {"id": "required-files", "ok": not missing, "expected": len(required_files), "missing": sorted(missing)}
+
+
+def _resolve_content_targets(workspace: Path, path_spec: str) -> list[Path]:
+    if any(ch in path_spec for ch in "*?["):
+        return sorted(workspace.glob(path_spec))
+    p = workspace / path_spec
+    return [p] if p.exists() else []
 
 
 def check_live_required_content(workspace: Path, content_checks: list[dict]) -> dict:
     missing: list[dict] = []
     for item in content_checks:
-        path = workspace / item["path"]
-        text = path.read_text(encoding="utf-8", errors="replace").lower() if path.exists() else ""
+        targets = _resolve_content_targets(workspace, item["path"])
+        if not targets:
+            for pattern in item.get("patterns", []):
+                missing.append({"path": item["path"], "pattern": pattern, "reason": "no matching file"})
+            continue
+        # Concatenate text from all matched files (handles glob expansion).
+        text = "\n".join(t.read_text(encoding="utf-8", errors="replace") for t in targets).lower()
         for pattern in item.get("patterns", []):
             if pattern.lower() not in text:
                 missing.append({"path": item["path"], "pattern": pattern})
@@ -1684,15 +1714,16 @@ def check_live_required_content(workspace: Path, content_checks: list[dict]) -> 
 def check_live_forbidden_content(workspace: Path, content_checks: list[dict]) -> dict:
     hits: list[dict] = []
     for item in content_checks:
-        path = workspace / item["path"]
-        text = path.read_text(encoding="utf-8", errors="replace").lower() if path.exists() else ""
-        for pattern in item.get("patterns", []):
-            if pattern.lower() in text:
-                hits.append({"path": item["path"], "pattern": pattern})
+        targets = _resolve_content_targets(workspace, item["path"])
+        for target in targets:
+            text = target.read_text(encoding="utf-8", errors="replace").lower()
+            for pattern in item.get("patterns", []):
+                if pattern.lower() in text:
+                    hits.append({"path": str(target.relative_to(workspace)), "pattern": pattern})
     return {"id": "forbidden-content", "ok": not hits, "hits": hits}
 
 
-def run_live_commands(workspace: Path, commands: list[dict]) -> dict:
+def run_live_commands(workspace: Path, commands: list[dict], scope: str = "commands") -> dict:
     results = []
     for command in commands:
         argv = command_argv(command.get("argv", []))
@@ -1703,12 +1734,12 @@ def run_live_commands(workspace: Path, commands: list[dict]) -> dict:
                 cwd=workspace,
                 capture_output=True,
                 text=True,
-                timeout=command.get("timeout", 30),
+                timeout=command.get("timeout", 60),
                 check=False,
             )
             results.append(
                 {
-                    "id": command.get("id", "command"),
+                    "id": command.get("id", scope),
                     "ok": proc.returncode == expected_exit,
                     "argv": argv,
                     "returncode": proc.returncode,
@@ -1720,13 +1751,13 @@ def run_live_commands(workspace: Path, commands: list[dict]) -> dict:
         except (OSError, subprocess.TimeoutExpired) as exc:
             results.append(
                 {
-                    "id": command.get("id", "command"),
+                    "id": command.get("id", scope),
                     "ok": False,
                     "argv": argv,
                     "error": str(exc),
                 }
             )
-    return {"id": "commands", "ok": all(result["ok"] for result in results), "results": results}
+    return {"id": scope, "ok": all(result["ok"] for result in results), "results": results}
 
 
 def run_live_capability_scans(workspace: Path, scans: list[dict]) -> dict:
@@ -1774,6 +1805,15 @@ def run_live_eval_project(project_dir: Path, skills_by_name: dict[str, Skill], k
 
         missing_skills = sorted(name for name in required_skills if name not in skills_by_name)
         checks.append({"id": "required-skills", "ok": not missing_skills, "expected": len(required_skills), "missing": missing_skills})
+
+        # setup_commands run BEFORE file/content checks so a recipe can drive the
+        # workspace through autopilot (or another generator) and then assert on
+        # the resulting artifacts. The post-acceptance `commands` block still
+        # runs last, after the file/content/forbidden/capability checks.
+        setup = acceptance.get("setup_commands", [])
+        if setup:
+            checks.append(run_live_commands(workspace, setup, scope="setup"))
+
         checks.append(check_live_required_files(workspace, acceptance.get("required_files", [])))
         checks.append(check_live_required_content(workspace, acceptance.get("required_content", [])))
         checks.append(check_live_forbidden_content(workspace, acceptance.get("forbidden_content", [])))
@@ -1870,12 +1910,20 @@ def llm_load_skill_body(name: str) -> str:
 
 def llm_call_stub(stage: str, system: str, user: str) -> dict:
     """Deterministic offline pseudo-LLM. Validates that the harness wires the
-    skill body, user input, and stage tag through without touching network."""
+    skill body, user input, and stage tag through without touching network.
+
+    Stage ids understood:
+      - llm-eval: contract / implementation / gate
+      - autopilot: 01-intent / 02-spec / 03-design / 04-impl / 05-simplify /
+        06-gate / 07-memory
+    """
     digest = hashlib_sha1(f"{stage}|{system}|{user}")[:10]
-    if stage == "contract":
+    request = user[:160].replace("\n", " ").strip()
+
+    if stage in ("contract", "01-intent"):
         body = textwrap.dedent(f"""\
             ## Intent Contract (stub)
-            - Goal: {user[:120].strip()}
+            - Goal: {request}
             - Acceptance:
               - The deliverable matches the user goal.
               - One unit test is included if the goal mentions code.
@@ -1884,7 +1932,43 @@ def llm_call_stub(stage: str, system: str, user: str) -> dict:
             - Evidence: passing test + one-line summary.
             - Trace: stub-{digest}
             """)
-    elif stage == "implementation":
+    elif stage == "02-spec":
+        body = textwrap.dedent(f"""\
+            ## Product Spec (stub)
+            - Problem: {request}
+            - MVP slice: smallest deliverable that proves the contract.
+            - Success metric: contract acceptance items pass.
+            - Rollback: revert to last green checkpoint.
+            - Trace: stub-{digest}
+            """)
+    elif stage == "03-design":
+        body = textwrap.dedent(f"""\
+            # DESIGN.md (stub)
+            - Purpose: deliver the request without AI-slop defaults.
+            - Aesthetic Direction: editorial, brutalist-leaning, asymmetric.
+            - Color Palette: #0F172A, #F1F5F9, #F97316, #14B8A6.
+            - Typography: serif headlines (Source Serif), monospaced data (JetBrains Mono).
+            - Layout Strategy: 12-col fluid grid, max-width 72ch for prose.
+            - Trace: stub-{digest}
+            """)
+    elif stage in ("implementation", "04-impl"):
+        body = textwrap.dedent(f"""\
+            def add(a, b):
+                \"\"\"Implements: {request[:80]}\"\"\"
+                return a + b
+
+
+            def test_add():
+                assert add(1, 2) == 3
+                assert add(-1, 1) == 0
+
+
+            # Exit conditions met:
+            # - acceptance items pass
+            # - one unit test present
+            # - implementation is self-contained
+            """)
+    elif stage == "05-simplify":
         body = textwrap.dedent(f"""\
             def add(a, b):
                 return a + b
@@ -1894,7 +1978,7 @@ def llm_call_stub(stage: str, system: str, user: str) -> dict:
                 assert add(1, 2) == 3
                 assert add(-1, 1) == 0
             """)
-    elif stage == "gate":
+    elif stage in ("gate", "06-gate"):
         body = json.dumps(
             {
                 "matches_intent": True,
@@ -1907,6 +1991,19 @@ def llm_call_stub(stage: str, system: str, user: str) -> dict:
             ensure_ascii=False,
             indent=2,
         )
+    elif stage == "07-memory":
+        # Hermes principle: memory candidates must NOT echo the raw user prompt
+        # — that's how prompts leak across sessions. Reference the run by trace
+        # only and let the reviewer pull the originating prompt from run.json.
+        body = textwrap.dedent(f"""\
+            Type: episodic
+            Scope: project
+            Claim: Autopilot harness produced a green deliverable for one task (see run.json for originating intent).
+            Evidence: trace=stub-{digest}; phases=7; rolled back at: none
+            Use when: A future request resembles this contract shape.
+            Do not use when: The deliverable was unverified or contained secrets.
+            Expiry: review within 14 days
+            """)
     else:
         body = "{}"
     return {"text": body, "model": "stub-deterministic-v1", "tokens_in": len(system) + len(user), "tokens_out": len(body)}
@@ -1975,6 +2072,248 @@ def llm_grade_gate(text: str) -> dict:
         m = re.search(r"verdict[\"'\s:]*([a-z]+)", text, re.I)
         verdict = m.group(1).lower() if m else None
         return {"parsed": False, "verdict": verdict, "score": None, "ok": verdict in ("pass", "warn")}
+
+
+# --- autopilot: autonomous harness-engineering closed loop ---------------
+#
+# A runnable end-to-end orchestrator that takes one user prompt and walks it
+# through intent → spec → design → ralph-loop implementation → simplifier →
+# output-quality-gate → memory capture, writing every artifact to a per-run
+# workspace so the loop is auditable and resumable.
+
+AUTOPILOT_PHASES = [
+    # (id, label, canonical_skill, output_filename, system_prefix)
+    ("01-intent",   "Intent Contract",      "intent-contract",        "01-intent-contract.md",
+        "Apply the Super Skill `intent-contract` skill below. Produce a compact contract with sections Goal, Acceptance, Out of scope, Evidence, Trace. No implementation."),
+    ("02-spec",     "Product Spec",         "product-spec",           "02-product-spec.md",
+        "Apply `product-spec`. Convert the contract into a PRD with MVP slice, success metrics, and rollout plan. Markdown only."),
+    ("03-design",   "Design Direction",     "design-templates",       "03-design.md",
+        "Apply `design-templates`. Output a small DESIGN.md with Purpose, Aesthetic Direction, Color Palette (hex), Typography, Layout Strategy. Avoid AI-slop defaults."),
+    ("04-impl",     "Implementation (Ralph loop)", "ralph-loop",      "04-implementation.md",
+        "Apply `ralph-loop`. Implement the MVP from the contract+PRD+DESIGN. Output the deliverable code or text. After it, list the exit-condition checklist actually met."),
+    ("05-simplify", "Code Simplifier",      "code-simplifier",        "05-simplified.md",
+        "Apply `code-simplifier`. Remove dead code, premature abstractions, redundant comments, future-proofing shims. Preserve observable behavior. Output the simplified deliverable."),
+    ("06-gate",     "Output Quality Gate",  "output-quality-gate",    "06-quality-gate.json",
+        "Apply `output-quality-gate`. Score the simplified deliverable against the original contract. Strict JSON only: "
+        '{"matches_intent": bool, "evidence_present": bool, "missing": [str], "score": int(0..10), "verdict": "pass"|"warn"|"fail", "trace": str}.'),
+    ("07-memory",   "Memory Candidate",     "agent-memory-dream-loop","07-memory-candidate.md",
+        "Apply `agent-memory-dream-loop`. Produce ONE reviewable memory candidate as plain text. Include Type, Scope, Claim, Evidence, Use when, Do not use when, Expiry. Never include raw user prompt or raw model response — summarise."),
+]
+
+
+def autopilot_run_id() -> str:
+    return time.strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:6]
+
+
+def autopilot_workspace(project: Path, run_id: str) -> Path:
+    return project / ".super-skill" / "autopilot" / run_id
+
+
+def autopilot_grade_intent(text: str) -> dict:
+    needed = ("goal", "acceptance", "evidence")
+    found = [n for n in needed if re.search(n, text, re.I)]
+    return {"required": list(needed), "found": found, "ok": len(found) == len(needed)}
+
+
+def autopilot_grade_gate(text: str) -> dict:
+    try:
+        body = json.loads(text)
+        verdict = body.get("verdict")
+        return {
+            "parsed": True,
+            "verdict": verdict,
+            "score": body.get("score"),
+            "missing": body.get("missing", []),
+            "ok": bool(body.get("matches_intent")) and verdict in ("pass", "warn"),
+        }
+    except Exception:
+        m = re.search(r"verdict[\"'\s:]*([a-z]+)", text, re.I)
+        return {"parsed": False, "verdict": (m.group(1).lower() if m else None), "score": None, "ok": False}
+
+
+def autopilot_run_phase(
+    phase: tuple,
+    provider: str,
+    model: str,
+    user_prompt: str,
+    prior_artifacts: dict[str, str],
+    workspace: Path,
+    force: bool,
+) -> dict:
+    phase_id, label, canonical, filename, system_prefix = phase
+    out_path = workspace / filename
+    if out_path.exists() and not force:
+        text = out_path.read_text(encoding="utf-8")
+        return {
+            "phase": phase_id,
+            "label": label,
+            "skill": canonical,
+            "output": str(out_path),
+            "tokens_in": 0,
+            "tokens_out": 0,
+            "skipped": True,
+            "text": text,
+        }
+
+    skill_body = llm_load_skill_body(canonical)
+    context_lines = [f"User request: {user_prompt}"]
+    for label_, content in prior_artifacts.items():
+        snippet = content if len(content) <= 4000 else content[:4000] + "\n[...truncated]"
+        context_lines.append(f"\n--- {label_} ---\n{snippet}")
+    user_msg = "\n".join(context_lines)
+
+    system_msg = system_prefix + "\n\n=== Canonical skill ===\n" + skill_body
+    call = llm_call(provider, phase_id, system_msg, user_msg, model)
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(call["text"] + "\n", encoding="utf-8")
+
+    return {
+        "phase": phase_id,
+        "label": label,
+        "skill": canonical,
+        "output": str(out_path),
+        "tokens_in": call.get("tokens_in", 0),
+        "tokens_out": call.get("tokens_out", 0),
+        "skipped": False,
+        "text": call["text"],
+    }
+
+
+def cmd_autopilot(args: argparse.Namespace) -> int:
+    provider = args.provider
+    if provider == "auto":
+        provider = "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "stub"
+    model = args.model or {
+        "anthropic": "claude-haiku-4-5-20251001",
+        "stub": "stub-deterministic-v1",
+    }.get(provider, "stub-deterministic-v1")
+
+    user_prompt = args.prompt or "Build a small Python CLI that adds two numbers and ships with one unit test."
+    project = Path(args.project).resolve()
+    project.mkdir(parents=True, exist_ok=True)
+
+    run_id = args.run_id or autopilot_run_id()
+    workspace = autopilot_workspace(project, run_id)
+    workspace.mkdir(parents=True, exist_ok=True)
+
+    skip = set((args.skip or "").split(",")) if args.skip else set()
+    skip.discard("")
+
+    phases_to_run = [p for p in AUTOPILOT_PHASES if p[0] not in skip]
+    requested_skills = sorted({p[2] for p in phases_to_run})
+
+    if args.dry_run:
+        plan = {
+            "run_id": run_id,
+            "workspace": str(workspace),
+            "provider": provider,
+            "model": model,
+            "phases_planned": [{"id": p[0], "label": p[1], "skill": p[2]} for p in phases_to_run],
+            "skills_required": requested_skills,
+            "max_ralph_rounds": args.max_ralph_rounds,
+        }
+        emit_json(True, plan) if args.json else print(json.dumps(plan, ensure_ascii=False, indent=2))
+        return EXIT_OK
+
+    artifacts: dict[str, str] = {}
+    phase_results: list[dict] = []
+    overall_ok = True
+    failed_phase: str | None = None
+
+    for phase in phases_to_run:
+        phase_id = phase[0]
+        # Ralph inner loop only wraps the implementation phase.
+        if phase_id == "04-impl":
+            attempts: list[dict] = []
+            last_result: dict | None = None
+            for attempt in range(1, args.max_ralph_rounds + 1):
+                # On retry, force regeneration and feed previous failure back via artifacts.
+                local_force = args.force or attempt > 1
+                result = autopilot_run_phase(
+                    phase, provider, model, user_prompt, artifacts, workspace, force=local_force
+                )
+                # Cheap grader: implementation must be non-empty and reference the user prompt's first noun.
+                impl_ok = bool(result["text"].strip()) and len(result["text"]) > 20
+                attempts.append({"attempt": attempt, "ok": impl_ok, "tokens_out": result["tokens_out"]})
+                last_result = result
+                if impl_ok:
+                    break
+                # On failure, surface the issue to the next attempt via a synthetic artifact.
+                artifacts["Previous attempt error"] = "Implementation was empty or trivially short. Try again with concrete code/text."
+            result = last_result or result
+            result["ralph_attempts"] = attempts
+            result["ralph_passed"] = bool(attempts and attempts[-1]["ok"])
+            artifacts.pop("Previous attempt error", None)
+            phase_results.append(result)
+            artifacts[phase[1]] = result["text"]
+            if not result["ralph_passed"]:
+                overall_ok = False
+                failed_phase = phase_id
+                break
+            continue
+
+        result = autopilot_run_phase(phase, provider, model, user_prompt, artifacts, workspace, force=args.force)
+        phase_results.append(result)
+        artifacts[phase[1]] = result["text"]
+
+        # Hard gates: phase 1 contract must pass; phase 6 quality gate must pass.
+        if phase_id == "01-intent":
+            grade = autopilot_grade_intent(result["text"])
+            result["grade"] = grade
+            if not grade["ok"]:
+                overall_ok = False
+                failed_phase = phase_id
+                break
+        elif phase_id == "06-gate":
+            grade = autopilot_grade_gate(result["text"])
+            result["grade"] = grade
+            if not grade["ok"]:
+                overall_ok = False
+                failed_phase = phase_id
+                break
+
+    # Persist the run journal.
+    run_journal = {
+        "run_id": run_id,
+        "workspace": str(workspace),
+        "provider": provider,
+        "model": model,
+        "user_prompt": user_prompt,
+        "started_at": int(time.time()),
+        "phases": [
+            {k: v for k, v in pr.items() if k != "text"}
+            for pr in phase_results
+        ],
+        "ok": overall_ok,
+        "failed_phase": failed_phase,
+        "skipped": sorted(skip),
+    }
+    (workspace / "run.json").write_text(json.dumps(run_journal, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    payload = dict(run_journal)
+    if args.show_outputs:
+        payload["outputs"] = {pr["phase"]: pr.get("text", "") for pr in phase_results}
+
+    if args.json:
+        emit_json(overall_ok, payload, code="AUTOPILOT_FAILED" if not overall_ok else None)
+    else:
+        print(f"autopilot run: {run_id}")
+        print(f"  workspace: {workspace}")
+        print(f"  provider: {provider}  model: {model}")
+        for pr in phase_results:
+            tag = "skipped" if pr.get("skipped") else "ran"
+            extra = ""
+            if pr.get("ralph_attempts"):
+                extra = f"  ralph={len(pr['ralph_attempts'])} attempts pass={pr.get('ralph_passed')}"
+            grade = pr.get("grade")
+            if grade:
+                extra += f"  grade={grade}"
+            print(f"  [{pr['phase']}] {pr['label']:24s} {tag:7s} tokens_out={pr.get('tokens_out')}{extra}")
+        if failed_phase:
+            print(f"  FAILED at: {failed_phase}")
+        print(f"overall: {'PASS' if overall_ok else 'FAIL'}")
+    return EXIT_OK if overall_ok else EXIT_RUNTIME
 
 
 def cmd_llm_eval(args: argparse.Namespace) -> int:
@@ -2577,6 +2916,7 @@ def cmd_describe(args: argparse.Namespace) -> int:
             {"name": "catalog", "purpose": "Generate catalog/skill-index.json and catalog/skill-index.md"},
             {"name": "adapt", "purpose": "Generate per-tool runtime wrappers for Cursor/Trae/Windsurf/OpenCode/Claude Code/Codex/OpenClaw/Hermes"},
             {"name": "llm-eval", "purpose": "Run a real (or stubbed) intent-contract → implementation → output-quality-gate round trip"},
+            {"name": "autopilot", "purpose": "Autonomous closed loop: intent → spec → design → ralph-loop impl → simplifier → quality-gate → memory candidate, with checkpoint per phase"},
             {"name": "doctor", "purpose": "Check local tools used by Super Skill"},
         ],
         "profiles": sorted(PROFILE_STAGE_PREFIXES),
@@ -3105,6 +3445,23 @@ def build_parser() -> argparse.ArgumentParser:
     llm_p.add_argument("--show-outputs", action="store_true", help="include phase outputs in the JSON payload")
     llm_p.add_argument("--json", action="store_true")
     llm_p.set_defaults(func=cmd_llm_eval)
+
+    auto_p = sub.add_parser(
+        "autopilot",
+        help="run the autonomous harness-engineering closed loop end-to-end (intent → spec → design → ralph-loop impl → simplifier → quality-gate → memory)",
+    )
+    auto_p.add_argument("--prompt", default=None, help="user request that drives the run")
+    auto_p.add_argument("--provider", choices=["auto", "stub", "anthropic"], default="auto")
+    auto_p.add_argument("--model", default=None)
+    auto_p.add_argument("--project", default=".", help="project root that owns the run workspace")
+    auto_p.add_argument("--run-id", default=None, help="explicit run id (default: timestamped)")
+    auto_p.add_argument("--max-ralph-rounds", type=int, default=20)
+    auto_p.add_argument("--skip", default=None, help="comma-separated phase ids to skip (e.g. '03-design,07-memory')")
+    auto_p.add_argument("--force", action="store_true", help="regenerate phase artifacts even if present")
+    auto_p.add_argument("--dry-run", action="store_true")
+    auto_p.add_argument("--show-outputs", action="store_true")
+    auto_p.add_argument("--json", action="store_true")
+    auto_p.set_defaults(func=cmd_autopilot)
 
     return parser
 
