@@ -2780,6 +2780,44 @@ def autopilot_load_parent_run(project: Path, parent_run_id: str) -> dict:
     }
 
 
+def autopilot_consistency_check(phase_text: str, intent_text: str | None) -> dict:
+    """Soft anchor check: extract key terms from the intent contract and report
+    which ones the current phase output mentions. No phase fails on a low score
+    — the result is informational, surfaced in the journal so reviewers can
+    catch drift early.
+    """
+    if not intent_text:
+        return {"anchors": [], "found": [], "ok": True, "skipped": True, "reason": "no intent contract yet"}
+    # Pull the Goal line (single sentence) and any backticked identifiers.
+    goal_match = re.search(r"^[-\s]*Goal[:：]\s*(.+)$", intent_text, re.M)
+    goal = goal_match.group(1).strip() if goal_match else ""
+    backticked = re.findall(r"`([^`]+)`", intent_text)
+    # Pick the 3-6 most distinctive nouns from goal + identifiers as anchors.
+    candidates = []
+    for word in re.findall(r"[A-Za-z_][\w/.\-]{3,}", goal):
+        if word.lower() not in {"with", "that", "this", "should", "from", "into", "build", "make", "code", "test", "tests", "function", "module"}:
+            candidates.append(word)
+    candidates = list(dict.fromkeys(candidates + backticked))[:6]
+    if not candidates:
+        return {"anchors": [], "found": [], "ok": True, "skipped": True, "reason": "no identifiable anchors"}
+    found = [a for a in candidates if a.lower() in phase_text.lower()]
+    ratio = len(found) / len(candidates) if candidates else 1.0
+    return {
+        "anchors": candidates,
+        "found": found,
+        "ratio": round(ratio, 2),
+        # Soft gate at 30% — pure prose phases (research, business case)
+        # often don't echo every identifier; we just want a non-zero hit so
+        # the phase clearly relates to the intent.
+        "ok": ratio >= 0.3 or len(candidates) <= 2,
+        "skipped": False,
+    }
+
+
+def autopilot_pending_marker(workspace: Path) -> Path:
+    return workspace / "pending.json"
+
+
 def run_autopilot_inner(
     prompt: str | None,
     provider: str,
@@ -2793,6 +2831,7 @@ def run_autopilot_inner(
     show_outputs: bool,
     based_on: str | None,
     feedback: str | None,
+    hitl: str | None = None,
 ) -> tuple[bool, dict]:
     """Pure-function autopilot core. Returns (overall_ok, payload).
 
@@ -2833,8 +2872,19 @@ def run_autopilot_inner(
     skip_set = set((skip or "").split(",")) if skip else set()
     skip_set.discard("")
 
+    hitl_set = set((hitl or "").split(",")) if hitl else set()
+    hitl_set.discard("")
+
     phases_to_run = [p for p in AUTOPILOT_PHASES if p[0] not in skip_set]
     requested_skills = sorted({p[2] for p in phases_to_run})
+
+    # If a previous run paused via HITL, clear the marker before continuing.
+    pending_path = autopilot_pending_marker(workspace)
+    if pending_path.exists():
+        try:
+            pending_path.unlink()
+        except OSError:
+            pass
 
     if dry_run:
         plan = {
@@ -2852,6 +2902,7 @@ def run_autopilot_inner(
     phase_results: list[dict] = []
     overall_ok = True
     failed_phase: str | None = None
+    paused = False
 
     for phase in phases_to_run:
         phase_id = phase[0]
@@ -2894,6 +2945,7 @@ def run_autopilot_inner(
             result = last_result or result
             result["ralph_attempts"] = attempts
             result["ralph_passed"] = bool(attempts and attempts[-1]["ok"])
+            result["consistency"] = autopilot_consistency_check(result["text"], artifacts.get("Intent Contract"))
             artifacts.pop("Previous attempt error", None)
             phase_results.append(result)
             artifacts[phase[1]] = result["text"]
@@ -2901,12 +2953,17 @@ def run_autopilot_inner(
                 overall_ok = False
                 failed_phase = phase_id
                 break
+            if phase_id in hitl_set:
+                pending_path.write_text(json.dumps({"after_phase": phase_id, "next_phases": [p[0] for p in phases_to_run if p[0] > phase_id]}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                paused = True
+                break
             continue
 
         result = autopilot_run_phase(
             phase, provider, model, user_prompt, artifacts, workspace,
             force=force, iteration=iteration,
         )
+        result["consistency"] = autopilot_consistency_check(result["text"], artifacts.get("Intent Contract"))
         phase_results.append(result)
         artifacts[phase[1]] = result["text"]
 
@@ -2924,6 +2981,11 @@ def run_autopilot_inner(
                 overall_ok = False
                 failed_phase = phase_id
                 break
+
+        if phase_id in hitl_set:
+            pending_path.write_text(json.dumps({"after_phase": phase_id, "next_phases": [p[0] for p in phases_to_run if p[0] > phase_id]}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            paused = True
+            break
 
     lineage: list[str] = []
     if iteration:
@@ -2959,6 +3021,8 @@ def run_autopilot_inner(
         "ok": overall_ok,
         "failed_phase": failed_phase,
         "skipped": sorted(skip_set),
+        "paused": paused,
+        "hitl": sorted(hitl_set),
     }
     (workspace / "run.json").write_text(json.dumps(run_journal, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
@@ -2982,6 +3046,7 @@ def cmd_autopilot(args: argparse.Namespace) -> int:
         show_outputs=args.show_outputs,
         based_on=getattr(args, "based_on", None),
         feedback=getattr(args, "feedback", None),
+        hitl=getattr(args, "hitl", None),
     )
     if payload.get("_error_code") == "USAGE":
         msg = payload.get("message", "usage error")
@@ -4644,6 +4709,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="parent run id; in iterate mode each phase sees prior version + new feedback")
     auto_p.add_argument("--feedback", default=None,
         help="new feedback to drive the iteration (use with --based-on)")
+    auto_p.add_argument("--hitl", default=None,
+        help="comma-separated phase ids after which to pause for human review (writes pending.json; resume via super-skill resume)")
     auto_p.add_argument("--json", action="store_true")
     auto_p.set_defaults(func=cmd_autopilot)
 

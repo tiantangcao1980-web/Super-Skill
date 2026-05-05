@@ -645,6 +645,54 @@ class SuperSkillCliTests(unittest.TestCase):
             self.assertEqual(phase4["ralph_attempts"][-1]["test_kind"], "node-bare-tests")
             self.assertTrue(phase4["ralph_attempts"][-1]["ok"])
 
+    def test_autopilot_hitl_pauses_after_named_phase(self) -> None:
+        """--hitl 02-business-case should pause the run after that phase
+        (writing pending.json) and leave the remaining phases unrun."""
+        with tempfile.TemporaryDirectory() as td:
+            data = run_cli(
+                "autopilot", "--provider", "stub", "--project", td,
+                "--prompt", "Build add(a,b)", "--hitl", "02-business-case",
+            )
+            self.assertTrue(data["paused"])
+            ran = [p["phase"] for p in data["phases"]]
+            self.assertEqual(ran, ["00-research", "01-intent", "02-business-case"])
+            workspace = Path(data["workspace"])
+            pending = workspace / "pending.json"
+            self.assertTrue(pending.exists())
+            pending_data = json.loads(pending.read_text(encoding="utf-8"))
+            self.assertEqual(pending_data["after_phase"], "02-business-case")
+            self.assertIn("03-spec", pending_data["next_phases"])
+
+    def test_autopilot_hitl_resume_completes_remaining_phases(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            first = run_cli(
+                "autopilot", "--provider", "stub", "--project", td,
+                "--prompt", "Build add(a,b)", "--hitl", "02-business-case",
+            )
+            run_id = first["run_id"]
+            data = run_cli("resume", "--project", td, "--run-id", run_id)
+            self.assertTrue(data["ok"])
+            phases = [p["phase"] for p in data["phases"]]
+            self.assertEqual(len(phases), 12)
+            workspace = Path(data["workspace"])
+            self.assertFalse((workspace / "pending.json").exists())
+
+    def test_autopilot_consistency_check_recorded_per_phase(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            data = run_cli(
+                "autopilot", "--provider", "stub", "--project", td,
+                "--prompt", "Build a Python `match_ride` function for BayGo",
+            )
+            for phase in data["phases"]:
+                self.assertIn("consistency", phase, f"{phase['phase']} missing consistency")
+            phase_by_id = {p["phase"]: p for p in data["phases"]}
+            # Pre-intent phases skip the check (no anchors yet).
+            self.assertTrue(phase_by_id["00-research"]["consistency"].get("skipped"))
+            # The business case stub echoes the request — anchors should land.
+            biz_check = phase_by_id["02-business-case"]["consistency"]
+            self.assertFalse(biz_check.get("skipped"))
+            self.assertGreater(len(biz_check["anchors"]), 0)
+
     def test_fanout_runs_three_tracks_in_parallel(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             data = run_cli(
