@@ -6,5 +6,5 @@
   - Output is a single self-contained snippet.
 - Out of scope: framework choice changes, deployment.
 - Evidence: passing test + one-line summary.
-- Trace: stub-67f8eac925
+- Trace: stub-675dce2044
 

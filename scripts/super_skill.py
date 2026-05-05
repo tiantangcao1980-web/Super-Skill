@@ -1953,7 +1953,36 @@ def llm_call_stub(stage: str, system: str, user: str) -> dict:
             - Evidence: passing test + one-line summary.
             - Trace: stub-{digest}
             """)
-    elif stage == "02-spec":
+    elif stage == "02-business-case":
+        body = textwrap.dedent(f"""\
+            ## Business Case (stub)
+            ### 1. Problem worth solving
+            - {request}
+            - Evidence: one representative user interview / support ticket cluster.
+            ### 2. Market sizing
+            - TAM: $100M order-of-magnitude
+            - SAM: $20M
+            - SOM: $2M (year 1, conservative)
+            ### 3. Business model
+            - B2B SaaS, per-seat tier, gross margin ~75%.
+            - Moat: integrated harness across the lifecycle, hard to replicate quickly.
+            ### 4. ROI estimate
+            | Side | Y1 | Y2 | Y3 |
+            | --- | --- | --- | --- |
+            | Cost | $300k | $500k | $700k |
+            | Revenue | $100k | $800k | $2M |
+            | Net | -$200k | $300k | $1.3M |
+            - Payback: ~14 months.
+            ### 5. Risk register
+            - Technical: medium / medium — mitigated by ralph + verification loop.
+            - Market: medium / high — first 3 customers must be reference-able.
+            - Compliance: low / medium — single jurisdiction at launch.
+            - Delivery: low / medium — autopilot harness controls pace.
+            ### 6. Recommendation
+            - **Go.** Budget approved subject to phase-09 pilot delivering ≥80% target metric.
+            - Trace: stub-{digest}
+            """)
+    elif stage in ("02-spec", "03-spec"):
         body = textwrap.dedent(f"""\
             ## Product Spec (stub)
             - Problem: {request}
@@ -1962,7 +1991,7 @@ def llm_call_stub(stage: str, system: str, user: str) -> dict:
             - Rollback: revert to last green checkpoint.
             - Trace: stub-{digest}
             """)
-    elif stage == "03-design":
+    elif stage in ("03-design", "04-design"):
         body = textwrap.dedent(f"""\
             # DESIGN.md (stub)
             - Purpose: deliver the request without AI-slop defaults.
@@ -1972,7 +2001,7 @@ def llm_call_stub(stage: str, system: str, user: str) -> dict:
             - Layout Strategy: 12-col fluid grid, max-width 72ch for prose.
             - Trace: stub-{digest}
             """)
-    elif stage in ("implementation", "04-impl"):
+    elif stage in ("implementation", "04-impl", "05-impl"):
         # Stub picks a language from prompt keywords so the multi-language
         # sandbox can be exercised end-to-end. Default = Python.
         target_lang = "python"
@@ -2044,7 +2073,7 @@ def llm_call_stub(stage: str, system: str, user: str) -> dict:
                 }}
                 ```
                 """)
-    elif stage == "05-simplify":
+    elif stage in ("05-simplify", "06-simplify"):
         # 05 has the same language-detection rule as 04 — must produce a
         # functional version of the same artifact, just simplified.
         target_lang = "python"
@@ -2085,7 +2114,7 @@ def llm_call_stub(stage: str, system: str, user: str) -> dict:
                     assert add(-1, 1) == 0
                 ```
                 """)
-    elif stage in ("gate", "06-gate"):
+    elif stage in ("gate", "06-gate", "07-gate"):
         body = json.dumps(
             {
                 "matches_intent": True,
@@ -2098,9 +2127,9 @@ def llm_call_stub(stage: str, system: str, user: str) -> dict:
             ensure_ascii=False,
             indent=2,
         )
-    elif stage == "07-delivery":
+    elif stage in ("07-delivery", "08-launch"):
         body = textwrap.dedent(f"""\
-            ## Delivery Plan (stub)
+            ## Launch Readiness Plan (stub)
             - Dockerfile sketch:
               FROM python:3.11-slim
               WORKDIR /app
@@ -2117,28 +2146,101 @@ def llm_call_stub(stage: str, system: str, user: str) -> dict:
               error log carries the trace id from earlier phases.
             - Rollback plan:
               previous container tag stays warm; revert by re-pointing the alias.
+            - Pricing model (initial): per-seat tier, $X/user/month, gross margin ~75%.
+            - Sales / training collateral: 1-page handout + 5-min demo recording.
             - Release notes (draft): "Initial MVP slice. See run.json trace stub-{digest}."
             - Trace: stub-{digest}
             """)
-    elif stage in ("07-memory", "08-memory"):
+    elif stage == "09-pilot":
+        body = textwrap.dedent(f"""\
+            ## Pilot Plan (stub)
+            ### Pilot cohort
+            - 3-5 representative customers covering the two primary segments.
+            - Selection rule: existing engaged users + at least one churn-risk account.
+            ### Scope under flag
+            - The MVP slice from phase 05; everything else stays on legacy path.
+            ### Success metrics & thresholds
+            - Activation: ≥70% of pilot users complete the core flow within 7 days.
+            - Quality: error rate ≤1% across pilot traffic.
+            - Stickiness: ≥40% week-2 return rate.
+            ### Monitoring & alerting
+            - Per-cohort dashboards keyed by trace id.
+            - Pager alerts on error-rate >2% (p1) and >5% (p0).
+            ### Rollback triggers
+            - Any p0 alert sustained >10 min, or pilot NPS < 0.
+            ### Feedback collection
+            - In-app prompt at flow completion; weekly 15-min interview with each pilot account.
+            ### Decision rule
+            - All three metric thresholds met for 2 consecutive weeks → go-wide.
+            - Any single threshold missed by >20% → iterate, do not expand.
+            - Trace: stub-{digest}
+            """)
+    elif stage == "10-commerce":
+        body = textwrap.dedent(f"""\
+            ## Commercial Delivery (stub)
+            ### Acceptance checklist (each item maps back to contract)
+            - [x] Goal A delivered → see phase 05 implementation
+            - [x] Goal B delivered → see phase 05 implementation
+            - [x] Phase 07 quality gate verdict = pass
+            - [x] Phase 09 pilot success metrics met
+            ### SLA commitments
+            - Availability: 99.5% (single-region launch)
+            - Support response: business-hours; p0 within 1 h, p1 within 4 h, p2 within 1 business day.
+            - Data retention: 30 days operational, 12 months billing.
+            ### Billing trigger conditions
+            - Customer signs the acceptance form (template included).
+            - First production environment provisioned with their tenant id.
+            - Day 1 of the next billing cycle.
+            ### Customer training plan
+            - Live 60-min onboarding session per account (recorded for replay).
+            - Self-serve docs at /docs/getting-started; video at /docs/demo.
+            ### Support runbook
+            - On-call rotation: weekly, 2-engineer minimum.
+            - Tickets: Linear project DELIVER-INBOX.
+            - Escalation: tech lead → eng manager → CTO.
+            ### Customer signoff
+            - Signoff template: signoff-template.md (placeholder).
+            - Signed copy stored in CRM under account record.
+            - Trace: stub-{digest}
+            """)
+    elif stage in ("07-memory", "08-memory", "11-ops"):
         # Hermes principle: memory candidates must NOT echo the raw user prompt
         # — that's how prompts leak across sessions. Reference the run by trace
         # only and let the reviewer pull the originating prompt from run.json.
         body = textwrap.dedent(f"""\
+            ## Memory candidate (review-only — summarised lessons only)
             Type: episodic
             Scope: project
-            Claim: Autopilot harness produced a green research → delivery loop for one task (see run.json for originating intent).
-            Evidence: trace=stub-{digest}; phases=9; rolled back at: none
+            Claim: Autopilot harness produced a green needs → commercial-delivery loop for one task (see run.json for originating intent).
+            Evidence: trace=stub-{digest}; phases=12; rolled back at: none
             Use when: A future request resembles this contract shape.
             Do not use when: The deliverable was unverified or contained secrets.
             Expiry: review within 14 days
+
+            ## Ops dashboard spec
+            - Revenue: weekly MRR, churn, expansion.
+            - Activation: % of new accounts hitting the core flow.
+            - Retention: D7, D30 retention curves.
+            - Error budget: monthly availability vs SLA, alert noise rate.
+            - Cost per unit: infra + support cost per active account.
+
+            ## Next iteration roadmap (top 3)
+            - Cover the second target segment surfaced in phase 02.
+            - Add the integration the pilot cohort asked for most.
+            - Tighten the support runbook based on first month of tickets.
+
+            Trace: stub-{digest}
             """)
     else:
         body = "{}"
     # Only annotate prose phases. Appending markdown would corrupt:
     #   - 04-impl / 05-simplify (raw Python — would fail the test runner)
     #   - 06-gate / "gate" (strict JSON — would fail the JSON parser)
-    structured_stages = {"implementation", "04-impl", "05-simplify", "gate", "06-gate"}
+    structured_stages = {
+        "implementation", "04-impl", "05-impl",
+        "05-simplify", "06-simplify",
+        "gate", "06-gate", "07-gate",
+    }
     if iteration_note and body and body != "{}" and stage not in structured_stages:
         body = body.rstrip() + "\n" + iteration_note
     return {"text": body, "model": "stub-deterministic-v1", "tokens_in": len(system) + len(user), "tokens_out": len(body)}
@@ -2218,25 +2320,63 @@ def llm_grade_gate(text: str) -> dict:
 
 AUTOPILOT_PHASES = [
     # (id, label, canonical_skill, output_filename, system_prefix)
-    ("00-research", "Research",             "requirement-analysis",   "00-research.md",
-        "Apply `requirement-analysis` (and draw on `user-research`/`market-research` framings if relevant). Output a compact research note with sections: Problem statement, Target users, Competitor landscape (1-3 bullets), Key assumptions to validate, Open questions, Trace. No solution proposed yet."),
-    ("01-intent",   "Intent Contract",      "intent-contract",        "01-intent-contract.md",
-        "Apply the Super Skill `intent-contract` skill below. Produce a compact contract with sections Goal, Acceptance, Out of scope, Evidence, Trace. No implementation."),
-    ("02-spec",     "Product Spec",         "product-spec",           "02-product-spec.md",
-        "Apply `product-spec`. Convert the contract into a PRD with MVP slice, success metrics, and rollout plan. Markdown only."),
-    ("03-design",   "Design Direction",     "design-templates",       "03-design.md",
-        "Apply `design-templates`. Output a small DESIGN.md with Purpose, Aesthetic Direction, Color Palette (hex), Typography, Layout Strategy. Avoid AI-slop defaults."),
-    ("04-impl",     "Implementation (Ralph loop)", "ralph-loop",      "04-implementation.md",
-        "Apply `ralph-loop`. Implement the MVP from the contract+PRD+DESIGN. Output the deliverable code or text. After it, list the exit-condition checklist actually met."),
-    ("05-simplify", "Code Simplifier",      "code-simplifier",        "05-simplified.md",
-        "Apply `code-simplifier`. Remove dead code, premature abstractions, redundant comments, future-proofing shims. Preserve observable behavior. Output the simplified deliverable."),
-    ("06-gate",     "Output Quality Gate",  "output-quality-gate",    "06-quality-gate.json",
-        "Apply `output-quality-gate`. Score the simplified deliverable against the original contract. Strict JSON only: "
-        '{"matches_intent": bool, "evidence_present": bool, "missing": [str], "score": int(0..10), "verdict": "pass"|"warn"|"fail", "trace": str}.'),
-    ("07-delivery", "Delivery Plan",        "deployment-patterns",    "07-delivery.md",
-        "Apply `deployment-patterns` (and draw on `experiment-driven-delivery`/`observability-triage-loop` for rollout + monitoring). Output a delivery plan with: Dockerfile sketch (or non-containerized equivalent), CI workflow outline (.github/workflows/ci.yml shape), Feature flag + kill switch plan, Observability hooks (logs / metrics / errors), Rollback plan, Release notes draft, Trace."),
-    ("08-memory",   "Memory Candidate",     "agent-memory-dream-loop","08-memory-candidate.md",
-        "Apply `agent-memory-dream-loop`. Produce ONE reviewable memory candidate as plain text. Include Type, Scope, Claim, Evidence, Use when, Do not use when, Expiry. Never include raw user prompt or raw model response — summarise."),
+    # Maps 1:1 to the 10-stage business project lifecycle (需求 → 商业交付).
+    ("00-research",      "Research",                    "requirement-analysis",      "00-research.md",
+        "Stage 1: 需求发现. Apply `requirement-analysis` (with `user-research`/`market-research` framings). "
+        "Output a compact research note with sections: Problem statement, Target users, "
+        "Competitor landscape (1-3 bullets), Key assumptions to validate, Open questions, Trace. "
+        "No solution proposed yet."),
+    ("01-intent",        "Intent Contract",             "intent-contract",           "01-intent-contract.md",
+        "Stage 2: 需求分析. Apply `intent-contract`. Produce a compact contract with sections "
+        "Goal, Acceptance, Out of scope, Evidence, Trace. No implementation."),
+    ("02-business-case", "Business Case",               "business-case",             "02-business-case.md",
+        "Stage 3: 商业可行性 / 立项评估. Apply `business-case`. Output the six required sections: "
+        "Problem worth solving, Market sizing (TAM/SAM/SOM), Business model, ROI estimate, "
+        "Risk register, Recommendation (go / no-go / pivot). End with explicit go/no-go and Trace."),
+    ("03-spec",          "Product Spec",                "product-spec",              "03-product-spec.md",
+        "Stage 4 (a): 方案设计 - 产品. Apply `product-spec`. Convert the contract into a PRD with "
+        "MVP slice, success metrics, and rollout plan. Markdown only."),
+    ("04-design",        "Design Direction",            "design-templates",          "04-design.md",
+        "Stage 4 (b): 方案设计 - UX. Apply `design-templates`. Output a small DESIGN.md with "
+        "Purpose, Aesthetic Direction, Color Palette (hex), Typography, Layout Strategy. "
+        "Avoid AI-slop defaults."),
+    ("05-impl",          "Implementation (Ralph loop)", "ralph-loop",                "05-implementation.md",
+        "Stage 5: 研发. Apply `ralph-loop`. Implement the MVP from the contract+PRD+DESIGN. "
+        "Output the deliverable code or text. After it, list the exit-condition checklist actually met."),
+    ("06-simplify",      "Code Simplifier",             "code-simplifier",           "06-simplified.md",
+        "Stage 5 (b): 精简. Apply `code-simplifier`. Remove dead code, premature abstractions, "
+        "redundant comments, future-proofing shims. Preserve observable behavior. "
+        "Output the simplified deliverable."),
+    ("07-gate",          "Output Quality Gate",         "output-quality-gate",       "07-quality-gate.json",
+        "Stage 6: 测试与验证. Apply `output-quality-gate`. Score the simplified deliverable "
+        "against the original contract. Strict JSON only: "
+        '{"matches_intent": bool, "evidence_present": bool, "missing": [str], "score": int(0..10), '
+        '"verdict": "pass"|"warn"|"fail", "trace": str}.'),
+    ("08-launch",        "Launch Readiness",            "deployment-patterns",       "08-launch-readiness.md",
+        "Stage 7: 上线准备 / 商业化准备. Apply `deployment-patterns` (with "
+        "`experiment-driven-delivery`/`observability-triage-loop` framings). "
+        "Output a launch-readiness plan with: Dockerfile sketch (or non-containerized equivalent), "
+        "CI workflow outline, Feature flag + kill switch plan, Observability hooks "
+        "(logs / metrics / errors), Rollback plan, Pricing model, Sales/training collateral, "
+        "Release notes draft, Trace."),
+    ("09-pilot",         "Pilot / Gradual Rollout",     "experiment-driven-delivery","09-pilot.md",
+        "Stage 8: 试点 / 灰度 / 首批客户. Apply `experiment-driven-delivery`. Output a pilot plan: "
+        "Pilot cohort (which users, why representative), Scope of features under flag, "
+        "Success metrics with thresholds, Monitoring & alerting hooks, Rollback triggers, "
+        "Feedback collection mechanism, Decision rule for go-wide vs. iterate, Trace."),
+    ("10-commerce",      "Commercial Delivery",         "deployment-patterns",       "10-commercial-delivery.md",
+        "Stage 9: 正式商业交付. Output the customer-facing closing artifact: "
+        "Acceptance checklist (each contract item → evidence), SLA commitments, "
+        "Billing / contract trigger conditions, Customer training plan, Support runbook (on-call, "
+        "ticket SLA, escalation), Customer signoff template, Trace. "
+        "Frame this as the commercial close of the project, not internal engineering deployment."),
+    ("11-ops",           "Ops & Retrospective",         "agent-memory-dream-loop",   "11-ops-retrospective.md",
+        "Stage 10: 运营 / 复盘 / 持续迭代. Apply `agent-memory-dream-loop` (with "
+        "`continuous-learning`/`observability-triage-loop` framings). Output two parts: "
+        "(a) ONE reviewable memory candidate (Type, Scope, Claim, Evidence, Use when, Do not use when, "
+        "Expiry — NO raw prompt/response); "
+        "(b) Ops dashboard spec (revenue, activation, retention, error budget, cost per unit) "
+        "and the next iteration roadmap. Trace at the end."),
 ]
 
 
@@ -2715,10 +2855,10 @@ def run_autopilot_inner(
 
     for phase in phases_to_run:
         phase_id = phase[0]
-        if phase_id == "04-impl":
+        if phase_id == "05-impl":
             attempts: list[dict] = []
             last_result: dict | None = None
-            sandbox = workspace / "04-impl-sandbox"
+            sandbox = workspace / "05-impl-sandbox"
             for attempt in range(1, max_ralph_rounds + 1):
                 local_force = force or attempt > 1
                 result = autopilot_run_phase(
@@ -2777,7 +2917,7 @@ def run_autopilot_inner(
                 overall_ok = False
                 failed_phase = phase_id
                 break
-        elif phase_id == "06-gate":
+        elif phase_id == "07-gate":
             grade = autopilot_grade_gate(result["text"])
             result["grade"] = grade
             if not grade["ok"]:

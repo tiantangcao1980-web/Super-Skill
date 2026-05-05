@@ -3,5 +3,5 @@
 - MVP slice: smallest deliverable that proves the contract.
 - Success metric: contract acceptance items pass.
 - Rollback: revert to last green checkpoint.
-- Trace: stub-36304a1b01
+- Trace: stub-98803e2043
 

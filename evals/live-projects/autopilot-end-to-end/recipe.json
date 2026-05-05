@@ -1,16 +1,18 @@
 {
   "project": "autopilot-end-to-end",
-  "description": "Run bin/super-skill autopilot in stub mode against an empty workspace and verify the 9-phase research-to-delivery loop produces every artifact, the run journal is green, the quality gate passes, the delivery plan is present, and the memory candidate is review-only (no raw user prompt).",
+  "description": "Run bin/super-skill autopilot in stub mode against an empty workspace and verify the 12-phase needs-to-commercial-delivery loop produces every artifact, the run journal is green, the quality gate passes, business case + launch + pilot + commercial-delivery + ops artifacts are present, and the ops retrospective is review-only (no raw user prompt).",
   "required_skills": [
     "autopilot",
     "requirement-analysis",
     "intent-contract",
+    "business-case",
     "product-spec",
     "design-templates",
     "ralph-loop",
     "code-simplifier",
     "output-quality-gate",
     "deployment-patterns",
+    "experiment-driven-delivery",
     "agent-memory-dream-loop",
     "harness-engineering",
     "checkpoint-rollback-safety"
@@ -21,13 +23,16 @@
       ".super-skill/autopilot/*/run.json",
       ".super-skill/autopilot/*/00-research.md",
       ".super-skill/autopilot/*/01-intent-contract.md",
-      ".super-skill/autopilot/*/02-product-spec.md",
-      ".super-skill/autopilot/*/03-design.md",
-      ".super-skill/autopilot/*/04-implementation.md",
-      ".super-skill/autopilot/*/05-simplified.md",
-      ".super-skill/autopilot/*/06-quality-gate.json",
-      ".super-skill/autopilot/*/07-delivery.md",
-      ".super-skill/autopilot/*/08-memory-candidate.md"
+      ".super-skill/autopilot/*/02-business-case.md",
+      ".super-skill/autopilot/*/03-product-spec.md",
+      ".super-skill/autopilot/*/04-design.md",
+      ".super-skill/autopilot/*/05-implementation.md",
+      ".super-skill/autopilot/*/06-simplified.md",
+      ".super-skill/autopilot/*/07-quality-gate.json",
+      ".super-skill/autopilot/*/08-launch-readiness.md",
+      ".super-skill/autopilot/*/09-pilot.md",
+      ".super-skill/autopilot/*/10-commercial-delivery.md",
+      ".super-skill/autopilot/*/11-ops-retrospective.md"
     ],
     "required_content": [
       {
@@ -39,16 +44,28 @@
         "patterns": ["goal", "acceptance", "evidence", "trace"]
       },
       {
-        "path": ".super-skill/autopilot/*/06-quality-gate.json",
+        "path": ".super-skill/autopilot/*/02-business-case.md",
+        "patterns": ["market sizing", "roi", "risk", "recommendation"]
+      },
+      {
+        "path": ".super-skill/autopilot/*/07-quality-gate.json",
         "patterns": ["\"verdict\": \"pass\"", "\"matches_intent\": true"]
       },
       {
-        "path": ".super-skill/autopilot/*/07-delivery.md",
+        "path": ".super-skill/autopilot/*/08-launch-readiness.md",
         "patterns": ["dockerfile", "ci workflow", "kill switch", "rollback", "release notes"]
       },
       {
-        "path": ".super-skill/autopilot/*/08-memory-candidate.md",
-        "patterns": ["use when", "do not use when", "expiry"]
+        "path": ".super-skill/autopilot/*/09-pilot.md",
+        "patterns": ["pilot cohort", "success metrics", "rollback triggers", "decision rule"]
+      },
+      {
+        "path": ".super-skill/autopilot/*/10-commercial-delivery.md",
+        "patterns": ["acceptance checklist", "sla", "billing", "training", "signoff"]
+      },
+      {
+        "path": ".super-skill/autopilot/*/11-ops-retrospective.md",
+        "patterns": ["use when", "do not use when", "expiry", "ops dashboard", "iteration roadmap"]
       },
       {
         "path": ".super-skill/autopilot/*/run.json",
@@ -57,7 +74,7 @@
     ],
     "forbidden_content": [
       {
-        "path": ".super-skill/autopilot/*/08-memory-candidate.md",
+        "path": ".super-skill/autopilot/*/11-ops-retrospective.md",
         "patterns": [
           "raw prompt",
           "secret prompt verbatim",

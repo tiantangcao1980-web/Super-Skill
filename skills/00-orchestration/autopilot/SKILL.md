@@ -1,14 +1,16 @@
 ---
 name: autopilot
-description: Autonomous closed-loop harness that drives one user request through research → intent → spec → design → ralph-loop implementation → simplifier → output quality gate → delivery plan → memory candidate, writing every artifact to a resumable workspace. Use when the user says "autopilot", "全自动跑", "from prompt to delivery", "research to production", "self-driving build", "harness loop", "do the whole thing", "end-to-end build", or invokes `bin/super-skill autopilot`.
+description: Autonomous closed-loop harness that drives one user request through 12 phases — research → intent → business case → spec → design → ralph-loop implementation → simplifier → quality gate → launch readiness → pilot → commercial delivery → ops & retrospective — covering the full needs-to-commercial-delivery lifecycle in one resumable workspace. Use when the user says "autopilot", "全自动跑", "from prompt to delivery", "research to production", "needs to commercial delivery", "self-driving build", "harness loop", "do the whole thing", "end-to-end project", or invokes `bin/super-skill autopilot`.
 ---
 
 # Autopilot — Self-Driving Harness Loop
 
 The `autopilot` command is the runnable form of `harness-engineering`. It takes
-one prompt and produces a 9-phase audit trail: each phase loads the canonical
-SKILL.md as its system prompt, calls the LLM (or the deterministic stub), and
-checkpoints a Markdown/JSON artifact next to a structured `run.json` journal.
+one prompt and produces a **12-phase** audit trail mapped 1:1 to the standard
+10-stage commercial project lifecycle (需求 → 商业交付). Each phase loads the
+canonical SKILL.md as its system prompt, calls the LLM (or the deterministic
+stub), and checkpoints a Markdown/JSON artifact next to a structured
+`run.json` journal.
 
 ## When to invoke
 
@@ -19,24 +21,27 @@ checkpoints a Markdown/JSON artifact next to a structured `run.json` journal.
 Do **not** invoke autopilot for one-shot edits, single-file refactors, or live
 debugging. Use the canonical sub-skill directly.
 
-## Phases (each one a hard checkpoint)
+## Phases (12, mapped to the 10-stage business lifecycle)
 
-| # | Phase | Canonical skill | Hard gate |
-| - | --- | --- | --- |
-| 0 | Research | `requirement-analysis` | — |
-| 1 | Intent Contract | `intent-contract` | Goal / Acceptance / Evidence all present |
-| 2 | Product Spec | `product-spec` | — |
-| 3 | Design Direction | `design-templates` | — |
-| 4 | Implementation (Ralph) | `ralph-loop` | Inner loop, max `--max-ralph-rounds` (default 20); Phase-4 sandbox actually runs the generated Python via unittest / bare-tests / py-compile |
-| 5 | Code Simplifier | `code-simplifier` | — |
-| 6 | Output Quality Gate | `output-quality-gate` | JSON `verdict ∈ {pass, warn}` |
-| 7 | Delivery Plan | `deployment-patterns` | — |
-| 8 | Memory Candidate | `agent-memory-dream-loop` | No raw prompt/response; review-only |
+| # | Phase | Business stage | Canonical skill | Hard gate |
+| - | --- | --- | --- | --- |
+| 0 | Research | 1 需求发现 | `requirement-analysis` | — |
+| 1 | Intent Contract | 2 需求分析 | `intent-contract` | Goal / Acceptance / Evidence all present |
+| 2 | Business Case | 3 商业可行性 / 立项评估 | `business-case` | — |
+| 3 | Product Spec | 4 方案-产品 | `product-spec` | — |
+| 4 | Design Direction | 4 方案-设计 | `design-templates` | — |
+| 5 | Implementation (Ralph) | 5 研发 | `ralph-loop` | Inner loop, max `--max-ralph-rounds` (default 20); sandbox actually runs the generated code (Python/JS/Bash/Go) |
+| 6 | Code Simplifier | 5 研发 (b) | `code-simplifier` | — |
+| 7 | Output Quality Gate | 6 测试与验证 | `output-quality-gate` | JSON `verdict ∈ {pass, warn}` |
+| 8 | Launch Readiness | 7 上线 / 商业化准备 | `deployment-patterns` | — |
+| 9 | Pilot / Gradual Rollout | 8 试点 / 灰度 | `experiment-driven-delivery` | — |
+| 10 | Commercial Delivery | 9 正式商业交付 | `deployment-patterns` (commercial framing) | — |
+| 11 | Ops & Retrospective | 10 运营 / 复盘 / 持续迭代 | `agent-memory-dream-loop` | No raw prompt/response in memory candidate |
 
-Phases 1 and 6 are **hard exits**: a failure stops the run and surfaces
-`failed_phase` in `run.json`. Phase 4 retries internally up to N attempts before
-giving up. Phases 0, 2, 3, 5, 7, 8 are soft — they always proceed but their
-artifacts are still graded by phase 6 as a whole.
+Phases 1 (intent contract) and 7 (quality gate) are **hard exits** — failure
+stops the run and surfaces `failed_phase` in `run.json`. Phase 5 (ralph)
+retries internally up to N attempts before giving up. Every other phase is
+soft and always proceeds; phase 7 grades the run as a whole.
 
 ## How to run
 
@@ -59,9 +64,9 @@ bin/super-skill autopilot --based-on <parent-run-id> --project ./build \
 ```
 
 Workspace layout: `<project>/.super-skill/autopilot/<run-id>/00-research.md …
-08-memory-candidate.md` plus `run.json`. The folder is `.gitignore`-d by default
-and **never** stores raw prompts or model responses inside the memory candidate
-itself (see anti-patterns below).
+11-ops-retrospective.md` plus `run.json`. The folder is `.gitignore`-d by
+default and **never** stores raw prompts or model responses inside the memory
+candidate itself (see anti-patterns below).
 
 ## Anti-patterns (named so we never reach for them)
 
@@ -69,7 +74,7 @@ itself (see anti-patterns below).
 fail the contract gate. Always front-load the request with concrete acceptance
 hints — autopilot is a harness, not a wishing well.
 
-**Wrong: skipping phase 6 for speed.** The quality gate is the only step that
+**Wrong: skipping phase 7 for speed.** The quality gate is the only step that
 re-reads the original contract against the final deliverable. Skip it and you
 ship slop.
 
@@ -85,9 +90,18 @@ where you catch the assumption that's about to waste the next 6 phases. Skip it
 only when you've literally just run another autopilot whose research you're
 explicitly carrying over.
 
-**Wrong: shipping without phase 7.** Delivery is the phase that turns "code that
-works on my laptop" into "code with a Dockerfile, a CI workflow, a kill switch,
-and a rollback plan". Skipping it leaves the project at MVP-prototype quality.
+**Wrong: shipping without phase 8.** Launch readiness is the phase that turns
+"code that works on my laptop" into "code with a Dockerfile, a CI workflow, a
+kill switch, a pricing model, and a rollback plan". Skipping it leaves the
+project at prototype quality.
+
+**Wrong: skipping phase 9 (pilot).** A direct-to-GA launch is how product
+launches blow up under real traffic. The pilot's whole job is to find the
+problem in 5 cohort customers instead of 5,000.
+
+**Wrong: stopping at phase 8 because "the code is deployed".** Deployed code
+without a signed acceptance form, an SLA, billing triggers, training, and a
+support runbook is not delivered. Phase 10 closes that gap.
 
 **Wrong: re-running autopilot from scratch when you mean to iterate.** A new
 autopilot run with the same prompt produces a fresh contract that may drift
@@ -107,14 +121,17 @@ to keep, expire, or revert.
 
 ## Composes with
 
-- `requirement-analysis` — phase 0 research backbone (with `user-research`/`market-research` framings)
+- `requirement-analysis` — phase 0 research (with `user-research`/`market-research`)
 - `intent-contract` — phase 1 hard gate
-- `product-spec` — phase 2
-- `design-templates` — phase 3
-- `ralph-loop` — phase 4 inner loop
-- `code-simplifier` — phase 5
-- `output-quality-gate` — phase 6 hard gate
-- `deployment-patterns` — phase 7 (with `experiment-driven-delivery` + `observability-triage-loop` framings)
-- `agent-memory-dream-loop` — phase 8 candidate writer
+- `business-case` — phase 2 ROI / risk / go-no-go
+- `product-spec` — phase 3
+- `design-templates` — phase 4
+- `ralph-loop` — phase 5 inner loop (multi-language sandbox)
+- `code-simplifier` — phase 6
+- `output-quality-gate` — phase 7 hard gate
+- `deployment-patterns` — phases 8 (launch) and 10 (commercial)
+- `experiment-driven-delivery` — phase 9 pilot
+- `agent-memory-dream-loop` — phase 11 ops + retrospective
+- `continuous-learning`, `observability-triage-loop` — phase 11 framings
 - `checkpoint-rollback-safety` — every phase artifact is a rollback point
 - `harness-engineering` — the design philosophy this skill operationalises

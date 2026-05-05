@@ -10,5 +10,5 @@
   - The fastest path through the workflow is shorter than the status quo.
   - The deliverable can be measured against an objective acceptance.
 - Open questions: budget, deadline, deployment surface, audit constraints.
-- Trace: stub-1c3a9c5f06
+- Trace: stub-f1d3c3a1f4
 

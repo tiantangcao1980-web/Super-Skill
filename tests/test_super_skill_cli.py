@@ -313,15 +313,16 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertIn("contract", data["outputs"])
         self.assertIn("Intent Contract", data["outputs"]["contract"])
 
-    def test_autopilot_dry_run_lists_nine_phases(self) -> None:
+    def test_autopilot_dry_run_lists_twelve_phases(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             data = run_cli("autopilot", "--provider", "stub", "--project", td, "--dry-run")
-            self.assertEqual(len(data["phases_planned"]), 9)
+            self.assertEqual(len(data["phases_planned"]), 12)
             ids = [p["id"] for p in data["phases_planned"]]
             self.assertEqual(
                 ids,
-                ["00-research", "01-intent", "02-spec", "03-design", "04-impl",
-                 "05-simplify", "06-gate", "07-delivery", "08-memory"],
+                ["00-research", "01-intent", "02-business-case",
+                 "03-spec", "04-design", "05-impl", "06-simplify",
+                 "07-gate", "08-launch", "09-pilot", "10-commerce", "11-ops"],
             )
 
     def test_autopilot_stub_full_run_passes_all_phases(self) -> None:
@@ -329,17 +330,19 @@ class SuperSkillCliTests(unittest.TestCase):
             data = run_cli("autopilot", "--provider", "stub", "--project", td, "--prompt", "Build add(a,b)")
             self.assertTrue(data["ok"])
             self.assertIsNone(data["failed_phase"])
-            self.assertEqual(len(data["phases"]), 9)
+            self.assertEqual(len(data["phases"]), 12)
             phase_by_id = {p["phase"]: p for p in data["phases"]}
             self.assertTrue(phase_by_id["01-intent"]["grade"]["ok"])
-            self.assertTrue(phase_by_id["06-gate"]["grade"]["ok"])
-            self.assertGreaterEqual(len(phase_by_id["04-impl"]["ralph_attempts"]), 1)
+            self.assertTrue(phase_by_id["07-gate"]["grade"]["ok"])
+            self.assertGreaterEqual(len(phase_by_id["05-impl"]["ralph_attempts"]), 1)
             workspace = Path(data["workspace"])
             self.assertTrue(workspace.exists())
             self.assertTrue((workspace / "run.json").exists())
-            # Research and delivery artifacts must exist on disk too.
-            self.assertTrue((workspace / "00-research.md").exists())
-            self.assertTrue((workspace / "07-delivery.md").exists())
+            # Every business-stage artifact must be on disk.
+            for fname in ("00-research.md", "02-business-case.md",
+                          "08-launch-readiness.md", "09-pilot.md",
+                          "10-commercial-delivery.md", "11-ops-retrospective.md"):
+                self.assertTrue((workspace / fname).exists(), f"{fname} missing")
 
     def test_autopilot_resume_skips_existing_phases(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -357,9 +360,9 @@ class SuperSkillCliTests(unittest.TestCase):
 
     def test_autopilot_skip_phase(self) -> None:
         with tempfile.TemporaryDirectory() as td:
-            data = run_cli("autopilot", "--provider", "stub", "--project", td, "--skip", "08-memory")
+            data = run_cli("autopilot", "--provider", "stub", "--project", td, "--skip", "11-ops")
             stages = [p["phase"] for p in data["phases"]]
-            self.assertNotIn("08-memory", stages)
+            self.assertNotIn("11-ops", stages)
 
     def test_autopilot_memory_candidate_does_not_echo_prompt(self) -> None:
         marker_phrase = "marker-do-not-leak-9f1c2"
@@ -370,7 +373,7 @@ class SuperSkillCliTests(unittest.TestCase):
             )
             self.assertTrue(data["ok"])
             workspace = Path(data["workspace"])
-            mem = (workspace / "08-memory-candidate.md").read_text(encoding="utf-8")
+            mem = (workspace / "11-ops-retrospective.md").read_text(encoding="utf-8")
             self.assertNotIn(
                 marker_phrase, mem,
                 "memory candidate must not echo raw user prompt — Hermes principle violated",
@@ -389,7 +392,7 @@ class SuperSkillCliTests(unittest.TestCase):
         not just a length heuristic. Stub's candidate has bare def test_*()."""
         with tempfile.TemporaryDirectory() as td:
             data = run_cli("autopilot", "--provider", "stub", "--project", td, "--prompt", "add a,b")
-            phase4 = next(p for p in data["phases"] if p["phase"] == "04-impl")
+            phase4 = next(p for p in data["phases"] if p["phase"] == "05-impl")
             attempts = phase4["ralph_attempts"]
             self.assertGreaterEqual(len(attempts), 1)
             kinds = {a["test_kind"] for a in attempts}
@@ -425,7 +428,7 @@ class SuperSkillCliTests(unittest.TestCase):
             run_id = first["run_id"]
             data = run_cli("resume", "--project", td, "--run-id", run_id, "--list")
             self.assertEqual(data["run_id"], run_id)
-            self.assertEqual(len(data["completed_phases"]), 9)
+            self.assertEqual(len(data["completed_phases"]), 12)
             self.assertEqual(data["pending_phases"], [])
 
     def test_resume_picks_latest_run_by_default(self) -> None:
@@ -476,7 +479,7 @@ class SuperSkillCliTests(unittest.TestCase):
             self.assertFalse(call_reply["result"].get("isError"))
             inner = json.loads(call_reply["result"]["content"][0]["text"])
             self.assertTrue(inner["ok"])
-            self.assertEqual(len(inner["data"]["phases_planned"]), 9)
+            self.assertEqual(len(inner["data"]["phases_planned"]), 12)
 
     def test_visualize_renders_html_for_latest_run(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -537,13 +540,16 @@ class SuperSkillCliTests(unittest.TestCase):
             )
             self.assertTrue(child["ok"])
             child_dir = Path(child["workspace"])
-            for prose in ("00-research.md", "01-intent-contract.md", "02-product-spec.md",
-                          "03-design.md", "07-delivery.md", "08-memory-candidate.md"):
+            for prose in ("00-research.md", "01-intent-contract.md",
+                          "02-business-case.md", "03-product-spec.md",
+                          "04-design.md", "08-launch-readiness.md",
+                          "09-pilot.md", "10-commercial-delivery.md",
+                          "11-ops-retrospective.md"):
                 self.assertIn(
                     "Iteration:", (child_dir / prose).read_text(encoding="utf-8"),
                     f"{prose} missing iteration marker",
                 )
-            for structured in ("04-implementation.md", "05-simplified.md", "06-quality-gate.json"):
+            for structured in ("05-implementation.md", "06-simplified.md", "07-quality-gate.json"):
                 self.assertNotIn(
                     "Iteration:", (child_dir / structured).read_text(encoding="utf-8"),
                     f"{structured} must NOT contain iteration marker (would corrupt parser)",
@@ -635,7 +641,7 @@ class SuperSkillCliTests(unittest.TestCase):
                 "--prompt", "Build a JavaScript add(a,b) with one bare test_add() function",
             )
             self.assertTrue(data["ok"])
-            phase4 = next(p for p in data["phases"] if p["phase"] == "04-impl")
+            phase4 = next(p for p in data["phases"] if p["phase"] == "05-impl")
             self.assertEqual(phase4["ralph_attempts"][-1]["test_kind"], "node-bare-tests")
             self.assertTrue(phase4["ralph_attempts"][-1]["ok"])
 

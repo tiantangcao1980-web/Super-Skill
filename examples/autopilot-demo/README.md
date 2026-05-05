@@ -29,17 +29,20 @@ The script:
 
 ```
 sample-run/
-├── 00-research.md             ← Problem / users / competitors / assumptions / open questions
-├── 01-intent-contract.md      ← Goal / Acceptance / Out of scope / Evidence / Trace
-├── 02-product-spec.md         ← MVP slice / success metric / rollback
-├── 03-design.md               ← DESIGN.md tokens (palette, type, layout)
-├── 04-implementation.md       ← code with bare def test_*() functions
-├── 05-simplified.md           ← post-simplifier output
-├── 06-quality-gate.json       ← {"verdict":"pass", "score":8, ...}
-├── 07-delivery.md             ← Dockerfile / CI / kill switch / rollback / release notes
-├── 08-memory-candidate.md     ← review-only memory; no raw user prompt
-├── run.json                   ← full audit journal
-└── timeline.html              ← single-page rendering of the run
+├── 00-research.md                ← Problem / users / competitors / assumptions
+├── 01-intent-contract.md         ← Goal / Acceptance / Out of scope / Evidence
+├── 02-business-case.md           ← TAM/SAM/SOM / ROI table / risks / go-no-go
+├── 03-product-spec.md            ← MVP slice / success metric / rollback
+├── 04-design.md                  ← DESIGN.md tokens (palette, type, layout)
+├── 05-implementation.md          ← code (Python / JS / Bash / Go) with tests
+├── 06-simplified.md              ← post-simplifier output
+├── 07-quality-gate.json          ← {"verdict":"pass", "score":8, ...}
+├── 08-launch-readiness.md        ← Dockerfile / CI / kill switch / rollback / pricing
+├── 09-pilot.md                   ← cohort / metrics / rollback triggers / decision rule
+├── 10-commercial-delivery.md     ← acceptance / SLA / billing / training / signoff
+├── 11-ops-retrospective.md       ← memory candidate + ops dashboard + roadmap
+├── run.json                      ← full audit journal
+└── timeline.html                 ← single-page rendering of the run
 ```
 
 Open `run.json` to see per-phase token counts, ralph-loop attempts, hard-gate
