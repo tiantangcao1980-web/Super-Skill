@@ -156,6 +156,13 @@ bin/super-skill visualize --project ./build
 bin/super-skill autopilot --based-on <parent-run-id> --project ./build \
     --feedback "Reviewers say the error message is too terse; expand it and add a 4xx error code"
 
+# 多智能体并行 (fanout): 一个 prompt 拆 N 个 track，每 track 独立 autopilot，并行跑
+# 每 track 的 run.json 反指 fanout_id；汇总写到 .super-skill/fanout/<id>/fanout.json
+bin/super-skill fanout --provider stub --project ./build \
+    --prompt "Build BayGo ride matching" \
+    --tracks "frontend-miniapp,backend-api,docs"
+bin/super-skill visualize --project ./build --fanout-id <fanout-id>  # 多 track 汇总 HTML
+
 # MCP server 化：让 Claude Desktop / Cursor 直接像调函数一样触发
 python3 plugins/super-skill-mcp-server/scripts/mcp_server.py
 # 配置参考：plugins/super-skill-mcp-server/README.md

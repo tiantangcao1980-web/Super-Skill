@@ -639,6 +639,77 @@ class SuperSkillCliTests(unittest.TestCase):
             self.assertEqual(phase4["ralph_attempts"][-1]["test_kind"], "node-bare-tests")
             self.assertTrue(phase4["ralph_attempts"][-1]["ok"])
 
+    def test_fanout_runs_three_tracks_in_parallel(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            data = run_cli(
+                "fanout", "--provider", "stub", "--project", td,
+                "--prompt", "Build a tool",
+                "--tracks", "frontend-miniapp,backend-api,docs",
+            )
+            self.assertTrue(data["ok"])
+            self.assertEqual(len(data["tracks"]), 3)
+            names = [t["track"] for t in data["tracks"]]
+            self.assertEqual(names, ["frontend-miniapp", "backend-api", "docs"])
+            for t in data["tracks"]:
+                self.assertTrue(t["ok"], f"track {t['track']} failed: {t}")
+                self.assertIsNotNone(t["run_id"])
+            # All three run ids must be distinct.
+            run_ids = [t["run_id"] for t in data["tracks"]]
+            self.assertEqual(len(set(run_ids)), 3)
+
+    def test_fanout_writes_journal_and_fanout_id_into_each_track(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            data = run_cli(
+                "fanout", "--provider", "stub", "--project", td,
+                "--prompt", "x", "--tracks", "a,b",
+            )
+            fid = data["fanout_id"]
+            fanout_journal = Path(td) / ".super-skill" / "fanout" / fid / "fanout.json"
+            self.assertTrue(fanout_journal.exists())
+            for t in data["tracks"]:
+                track_journal = Path(t["workspace"]) / "run.json"
+                self.assertTrue(track_journal.exists())
+                tj = json.loads(track_journal.read_text(encoding="utf-8"))
+                self.assertEqual(tj["fanout_id"], fid)
+                self.assertEqual(tj["track_name"], t["track"])
+
+    def test_fanout_dry_run_returns_plan(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            data = run_cli(
+                "fanout", "--provider", "stub", "--project", td,
+                "--prompt", "x", "--tracks", "a,b,c", "--dry-run",
+            )
+            self.assertEqual(len(data["tracks"]), 3)
+            for t in data["tracks"]:
+                self.assertIn("[track:", t["sub_prompt"])
+
+    def test_visualize_fanout_renders_summary_html(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            data = run_cli(
+                "fanout", "--provider", "stub", "--project", td,
+                "--prompt", "x", "--tracks", "a,b",
+            )
+            fid = data["fanout_id"]
+            viz = run_cli("visualize", "--project", td, "--fanout-id", fid)
+            html = Path(viz["output"]).read_text(encoding="utf-8")
+            self.assertIn("Fanout", html)
+            self.assertIn("parallel tracks", html)
+            for t in data["tracks"]:
+                self.assertIn(t["track"], html)
+                self.assertIn(t["run_id"], html)
+
+    def test_fanout_rejects_empty_tracks(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            proc = subprocess.run(
+                [sys.executable, str(CLI), "fanout",
+                 "--provider", "stub", "--project", td,
+                 "--prompt", "x", "--tracks", "  ", "--json"],
+                cwd=ROOT, capture_output=True, text=True, timeout=30, check=False,
+            )
+            self.assertNotEqual(proc.returncode, 0)
+            payload = json.loads(proc.stdout)
+            self.assertFalse(payload["ok"])
+
     def test_visualize_renders_lineage_when_present(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             parent = run_cli("autopilot", "--provider", "stub", "--project", td, "--prompt", "v1")

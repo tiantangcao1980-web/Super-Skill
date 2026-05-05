@@ -2640,51 +2640,63 @@ def autopilot_load_parent_run(project: Path, parent_run_id: str) -> dict:
     }
 
 
-def cmd_autopilot(args: argparse.Namespace) -> int:
-    provider = args.provider
+def run_autopilot_inner(
+    prompt: str | None,
+    provider: str,
+    model: str | None,
+    project: Path,
+    run_id: str | None,
+    max_ralph_rounds: int,
+    skip: str | None,
+    force: bool,
+    dry_run: bool,
+    show_outputs: bool,
+    based_on: str | None,
+    feedback: str | None,
+) -> tuple[bool, dict]:
+    """Pure-function autopilot core. Returns (overall_ok, payload).
+
+    cmd_autopilot wraps this and emits to stdout; fanout_run_track calls it
+    directly so we don't need to redirect stdout (which is not thread-safe)."""
     if provider == "auto":
         provider = "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "stub"
-    model = args.model or {
+    model = model or {
         "anthropic": "claude-haiku-4-5-20251001",
         "stub": "stub-deterministic-v1",
     }.get(provider, "stub-deterministic-v1")
 
-    project = Path(args.project).resolve()
     project.mkdir(parents=True, exist_ok=True)
 
     # Iterate mode: load parent run's artifacts + journal so each phase sees a
     # "Prior version" alongside the new feedback.
     iteration = None
-    parent_run_id = getattr(args, "based_on", None)
-    feedback = getattr(args, "feedback", None) or ""
-    if parent_run_id:
+    feedback = feedback or ""
+    if based_on:
         try:
-            parent_ctx = autopilot_load_parent_run(project, parent_run_id)
+            parent_ctx = autopilot_load_parent_run(project, based_on)
         except FileNotFoundError as exc:
-            emit_json(False, {"message": str(exc)}, code="USAGE") if args.json else print(str(exc))
-            return EXIT_USAGE
+            return False, {"message": str(exc), "_error_code": "USAGE"}
         iteration = {
-            "parent_run_id": parent_run_id,
+            "parent_run_id": based_on,
             "feedback": feedback,
             "parent_artifacts": parent_ctx["parent_artifacts"],
         }
-        # If user did not supply a prompt, inherit from parent for continuity.
         inherited_prompt = parent_ctx["parent_journal"].get("user_prompt")
-        user_prompt = args.prompt or inherited_prompt or "Iterate on the prior run."
+        user_prompt = prompt or inherited_prompt or "Iterate on the prior run."
     else:
-        user_prompt = args.prompt or "Build a small Python CLI that adds two numbers and ships with one unit test."
+        user_prompt = prompt or "Build a small Python CLI that adds two numbers and ships with one unit test."
 
-    run_id = args.run_id or autopilot_run_id()
+    run_id = run_id or autopilot_run_id()
     workspace = autopilot_workspace(project, run_id)
     workspace.mkdir(parents=True, exist_ok=True)
 
-    skip = set((args.skip or "").split(",")) if args.skip else set()
-    skip.discard("")
+    skip_set = set((skip or "").split(",")) if skip else set()
+    skip_set.discard("")
 
-    phases_to_run = [p for p in AUTOPILOT_PHASES if p[0] not in skip]
+    phases_to_run = [p for p in AUTOPILOT_PHASES if p[0] not in skip_set]
     requested_skills = sorted({p[2] for p in phases_to_run})
 
-    if args.dry_run:
+    if dry_run:
         plan = {
             "run_id": run_id,
             "workspace": str(workspace),
@@ -2692,10 +2704,9 @@ def cmd_autopilot(args: argparse.Namespace) -> int:
             "model": model,
             "phases_planned": [{"id": p[0], "label": p[1], "skill": p[2]} for p in phases_to_run],
             "skills_required": requested_skills,
-            "max_ralph_rounds": args.max_ralph_rounds,
+            "max_ralph_rounds": max_ralph_rounds,
         }
-        emit_json(True, plan) if args.json else print(json.dumps(plan, ensure_ascii=False, indent=2))
-        return EXIT_OK
+        return True, plan
 
     artifacts: dict[str, str] = {}
     phase_results: list[dict] = []
@@ -2704,20 +2715,17 @@ def cmd_autopilot(args: argparse.Namespace) -> int:
 
     for phase in phases_to_run:
         phase_id = phase[0]
-        # Ralph inner loop only wraps the implementation phase.
         if phase_id == "04-impl":
             attempts: list[dict] = []
             last_result: dict | None = None
             sandbox = workspace / "04-impl-sandbox"
-            for attempt in range(1, args.max_ralph_rounds + 1):
-                local_force = args.force or attempt > 1
+            for attempt in range(1, max_ralph_rounds + 1):
+                local_force = force or attempt > 1
                 result = autopilot_run_phase(
                     phase, provider, model, user_prompt, artifacts, workspace,
                     force=local_force, iteration=iteration,
                 )
-                # First-line grader: non-empty / non-trivial output.
                 length_ok = bool(result["text"].strip()) and len(result["text"]) > 20
-                # Real-runner grader: extract code, run it (Python-aware; other langs skip cleanly).
                 test_result = autopilot_test_implementation(result["text"], sandbox / f"attempt-{attempt}") if length_ok else {"ok": False, "kind": "skipped", "reason": "phase output too short"}
                 impl_ok = length_ok and test_result["ok"]
                 attempts.append({
@@ -2732,8 +2740,6 @@ def cmd_autopilot(args: argparse.Namespace) -> int:
                 last_result = result
                 if impl_ok:
                     break
-                # Surface the actual failure to the next attempt — this is the
-                # Ralph loop's "failure → retry with feedback" contract.
                 feedback_lines = []
                 if not length_ok:
                     feedback_lines.append("Previous attempt was empty or trivially short. Provide concrete code with at least one unit test.")
@@ -2759,12 +2765,11 @@ def cmd_autopilot(args: argparse.Namespace) -> int:
 
         result = autopilot_run_phase(
             phase, provider, model, user_prompt, artifacts, workspace,
-            force=args.force, iteration=iteration,
+            force=force, iteration=iteration,
         )
         phase_results.append(result)
         artifacts[phase[1]] = result["text"]
 
-        # Hard gates: phase 1 contract must pass; phase 6 quality gate must pass.
         if phase_id == "01-intent":
             grade = autopilot_grade_intent(result["text"])
             result["grade"] = grade
@@ -2780,11 +2785,10 @@ def cmd_autopilot(args: argparse.Namespace) -> int:
                 failed_phase = phase_id
                 break
 
-    # Build lineage chain: walk parent_run_id pointers backwards.
     lineage: list[str] = []
     if iteration:
-        lineage.append(parent_run_id)
-        cursor = parent_run_id
+        lineage.append(based_on)
+        cursor = based_on
         seen = {cursor, run_id}
         while True:
             try:
@@ -2798,7 +2802,6 @@ def cmd_autopilot(args: argparse.Namespace) -> int:
             lineage.append(ancestor)
             cursor = ancestor
 
-    # Persist the run journal.
     run_journal = {
         "run_id": run_id,
         "workspace": str(workspace),
@@ -2806,7 +2809,7 @@ def cmd_autopilot(args: argparse.Namespace) -> int:
         "model": model,
         "user_prompt": user_prompt,
         "started_at": int(time.time()),
-        "parent_run_id": parent_run_id if iteration else None,
+        "parent_run_id": based_on if iteration else None,
         "feedback": feedback if iteration else None,
         "lineage": lineage,
         "phases": [
@@ -2815,21 +2818,49 @@ def cmd_autopilot(args: argparse.Namespace) -> int:
         ],
         "ok": overall_ok,
         "failed_phase": failed_phase,
-        "skipped": sorted(skip),
+        "skipped": sorted(skip_set),
     }
     (workspace / "run.json").write_text(json.dumps(run_journal, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     payload = dict(run_journal)
-    if args.show_outputs:
+    if show_outputs:
         payload["outputs"] = {pr["phase"]: pr.get("text", "") for pr in phase_results}
+    return overall_ok, payload
+
+
+def cmd_autopilot(args: argparse.Namespace) -> int:
+    overall_ok, payload = run_autopilot_inner(
+        prompt=args.prompt,
+        provider=args.provider,
+        model=args.model,
+        project=Path(args.project).resolve(),
+        run_id=args.run_id,
+        max_ralph_rounds=args.max_ralph_rounds,
+        skip=args.skip,
+        force=args.force,
+        dry_run=args.dry_run,
+        show_outputs=args.show_outputs,
+        based_on=getattr(args, "based_on", None),
+        feedback=getattr(args, "feedback", None),
+    )
+    if payload.get("_error_code") == "USAGE":
+        msg = payload.get("message", "usage error")
+        emit_json(False, {"message": msg}, code="USAGE") if args.json else print(msg)
+        return EXIT_USAGE
+
+    if args.dry_run:
+        emit_json(True, payload) if args.json else print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return EXIT_OK
 
     if args.json:
         emit_json(overall_ok, payload, code="AUTOPILOT_FAILED" if not overall_ok else None)
     else:
+        run_id = payload.get("run_id")
+        workspace = payload.get("workspace")
         print(f"autopilot run: {run_id}")
         print(f"  workspace: {workspace}")
-        print(f"  provider: {provider}  model: {model}")
-        for pr in phase_results:
+        print(f"  provider: {payload.get('provider')}  model: {payload.get('model')}")
+        for pr in payload.get("phases", []):
             tag = "skipped" if pr.get("skipped") else "ran"
             extra = ""
             if pr.get("ralph_attempts"):
@@ -2838,8 +2869,8 @@ def cmd_autopilot(args: argparse.Namespace) -> int:
             if grade:
                 extra += f"  grade={grade}"
             print(f"  [{pr['phase']}] {pr['label']:24s} {tag:7s} tokens_out={pr.get('tokens_out')}{extra}")
-        if failed_phase:
-            print(f"  FAILED at: {failed_phase}")
+        if payload.get("failed_phase"):
+            print(f"  FAILED at: {payload['failed_phase']}")
         print(f"overall: {'PASS' if overall_ok else 'FAIL'}")
     return EXIT_OK if overall_ok else EXIT_RUNTIME
 
@@ -2984,8 +3015,252 @@ def autopilot_render_html(journal: dict, run_dir: Path) -> str:
 """
 
 
+# --- fanout: parallel multi-agent autopilot orchestration ----------------
+#
+# A single user request can have multiple natural tracks (frontend / backend /
+# docs / mobile / etc.). `fanout` is the orchestrator agent that splits one
+# prompt into N parallel autopilot runs, one per track, and aggregates the
+# results into a fanout.json. Each track-level run is a normal autopilot run
+# that lives under .super-skill/autopilot/<run-id>/ and gains a `fanout_id`
+# pointer in its run.json. The fanout itself lives under
+# .super-skill/fanout/<fanout-id>/fanout.json so visualize can render the
+# parent-of-parents page.
+
+import threading
+
+
+def fanout_id() -> str:
+    now = time.time()
+    base = time.strftime("%Y%m%d-%H%M%S", time.localtime(now))
+    millis = int((now - int(now)) * 1000)
+    return f"f-{base}-{millis:03d}-{uuid.uuid4().hex[:6]}"
+
+
+def fanout_root(project: Path, fid: str) -> Path:
+    return project / ".super-skill" / "fanout" / fid
+
+
+def fanout_run_track(
+    track_name: str,
+    prompt: str,
+    provider: str,
+    model: str | None,
+    project: Path,
+    max_ralph_rounds: int,
+    skip: str | None,
+    fid: str,
+    show_outputs: bool,
+) -> dict:
+    """Run one autopilot track in this thread. Returns a small summary dict.
+
+    Calls run_autopilot_inner directly so we don't redirect stdout (which is
+    not thread-safe and was causing tracks to swallow each other's output).
+    """
+    overall_ok, payload = run_autopilot_inner(
+        prompt=prompt,
+        provider=provider,
+        model=model,
+        project=project,
+        run_id=None,
+        max_ralph_rounds=max_ralph_rounds,
+        skip=skip,
+        force=False,
+        dry_run=False,
+        show_outputs=show_outputs,
+        based_on=None,
+        feedback=None,
+    )
+    run_id = payload.get("run_id")
+    workspace = payload.get("workspace")
+
+    # Cross-link: write fanout_id into the track's run.json.
+    if run_id and workspace:
+        journal_path = Path(workspace) / "run.json"
+        if journal_path.exists():
+            try:
+                journal = read_json_file(journal_path)
+                journal["fanout_id"] = fid
+                journal["track_name"] = track_name
+                journal_path.write_text(json.dumps(journal, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            except Exception:
+                pass
+
+    summary = {
+        "track": track_name,
+        "ok": overall_ok,
+        "run_id": run_id,
+        "workspace": workspace,
+        "failed_phase": payload.get("failed_phase"),
+        "user_prompt": payload.get("user_prompt"),
+    }
+    if show_outputs:
+        summary["outputs"] = payload.get("outputs")
+    return summary
+
+
+def cmd_fanout(args: argparse.Namespace) -> int:
+    """Orchestrator: split one prompt into N tracks, run autopilot on each in
+    parallel, aggregate results into fanout.json."""
+    track_names = [t.strip() for t in (args.tracks or "").split(",") if t.strip()]
+    if not track_names:
+        emit_json(False, {"message": "at least one --tracks entry required"}, code="USAGE") if args.json else print("at least one --tracks entry required")
+        return EXIT_USAGE
+
+    provider = args.provider
+    if provider == "auto":
+        provider = "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "stub"
+    model = args.model
+
+    project = Path(args.project).resolve()
+    project.mkdir(parents=True, exist_ok=True)
+
+    fid = fanout_id()
+    fout_root = fanout_root(project, fid)
+    fout_root.mkdir(parents=True, exist_ok=True)
+
+    if args.dry_run:
+        plan = {
+            "fanout_id": fid,
+            "project": str(project),
+            "provider": provider,
+            "tracks": [{"name": t, "sub_prompt": f"{args.prompt} [track: {t}]"} for t in track_names],
+        }
+        emit_json(True, plan) if args.json else print(json.dumps(plan, ensure_ascii=False, indent=2))
+        return EXIT_OK
+
+    started = time.time()
+    # Use a small thread pool. Pure stub mode is CPU-light; real-LLM mode is
+    # network-bound. Either way `len(tracks)` workers is fine.
+    import concurrent.futures
+    summaries: list[dict] = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, len(track_names))) as pool:
+        futures = {
+            pool.submit(
+                fanout_run_track,
+                t, f"{args.prompt} [track: {t}]", provider, model,
+                project, args.max_ralph_rounds, args.skip, fid, args.show_outputs,
+            ): t
+            for t in track_names
+        }
+        for fut in concurrent.futures.as_completed(futures):
+            track_name = futures[fut]
+            try:
+                summaries.append(fut.result())
+            except Exception as exc:
+                # Failure isolation: one track exception must not poison the others.
+                summaries.append({
+                    "track": track_name,
+                    "ok": False,
+                    "error": str(exc),
+                })
+    duration = time.time() - started
+
+    # Sort by original track order so the output is stable.
+    order = {t: i for i, t in enumerate(track_names)}
+    summaries.sort(key=lambda s: order.get(s["track"], len(order)))
+    overall_ok = all(s.get("ok") for s in summaries)
+
+    fanout_journal = {
+        "fanout_id": fid,
+        "project": str(project),
+        "user_prompt": args.prompt,
+        "tracks": summaries,
+        "provider": provider,
+        "model": model,
+        "started_at": int(started),
+        "duration_seconds": round(duration, 2),
+        "ok": overall_ok,
+    }
+    (fout_root / "fanout.json").write_text(json.dumps(fanout_journal, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    if args.json:
+        emit_json(overall_ok, fanout_journal, code="FANOUT_FAILED" if not overall_ok else None)
+    else:
+        print(f"fanout: {fid}  ({len(summaries)} tracks · {duration:.1f}s)")
+        for s in summaries:
+            tag = "PASS" if s.get("ok") else "FAIL"
+            extra = f"failed_at={s['failed_phase']}" if s.get("failed_phase") else ""
+            print(f"  [{tag}] {s['track']:20s} run_id={s.get('run_id')} {extra}")
+        print(f"overall: {'PASS' if overall_ok else 'FAIL'}")
+    return EXIT_OK if overall_ok else EXIT_RUNTIME
+
+
+def fanout_render_html(journal: dict) -> str:
+    """Render a fanout.json as a single-page HTML summary linking to each
+    track's per-run timeline.html."""
+    def esc(s: str) -> str:
+        return (s or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+    overall_ok = bool(journal.get("ok"))
+    badge = "#14B8A6" if overall_ok else "#F97316"
+    verdict = "PASS" if overall_ok else "FAIL"
+    cards: list[str] = []
+    for t in journal.get("tracks", []):
+        ok = t.get("ok")
+        color = "#14B8A6" if ok else "#F97316"
+        run_id = t.get("run_id") or "—"
+        ws = t.get("workspace") or ""
+        link = f"<a href='{esc(ws)}/timeline.html'>{esc(run_id)}</a>" if ws else esc(run_id)
+        failed = f"<dd>failed_at <code>{esc(t.get('failed_phase'))}</code></dd>" if t.get("failed_phase") else ""
+        cards.append(
+            f"<article class='track'>"
+            f"<header><h3>{esc(t['track'])}</h3>"
+            f"<span class='pill' style='background:{color}'>{'ok' if ok else 'fail'}</span></header>"
+            f"<dl><dt>run</dt><dd>{link}</dd>{failed}</dl>"
+            f"</article>"
+        )
+    css = (
+        ":root { --bg:#0F172A; --fg:#F1F5F9; --muted:#94A3B8; --pill-fg:#0F172A; }"
+        " body { background:var(--bg); color:var(--fg); font-family:'Source Serif Pro',Georgia,serif; max-width:960px; margin:2rem auto; padding:0 1rem; }"
+        " .meta { color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:.85rem; margin-bottom:1.5rem; }"
+        " .verdict { font-weight:700; padding:0.4rem 1rem; border-radius:0.4rem; color:var(--pill-fg); }"
+        " .grid { display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); }"
+        " .track { background:rgba(255,255,255,0.04); padding:0.8rem 1.2rem; border-radius:0.4rem; }"
+        " .track header { display:flex; align-items:center; gap:0.6rem; }"
+        " .track h3 { margin:0; flex:1; font-size:1rem; }"
+        " .pill { padding:0.15rem 0.55rem; border-radius:1rem; font-size:0.75rem; font-family:'JetBrains Mono',monospace; font-weight:600; }"
+        " dl { display:grid; grid-template-columns:max-content 1fr; gap:0.2rem 0.8rem; margin:0.4rem 0 0; font-size:0.85rem; }"
+        " dt { color:var(--muted); }"
+        " a { color:#14B8A6; }"
+        " code { font-family:'JetBrains Mono',monospace; font-size:0.85em; }"
+    )
+    return f"""<!doctype html>
+<html lang='en'><head><meta charset='utf-8'><title>Fanout · {esc(journal.get('fanout_id',''))}</title>
+<style>{css}</style></head><body>
+<h1>Fanout — {len(journal.get('tracks', []))} parallel tracks</h1>
+<div class='meta'>
+  <span class='verdict' style='background:{badge}'>{verdict}</span>
+  &nbsp;<code>{esc(journal.get('fanout_id',''))}</code>
+  · provider <code>{esc(journal.get('provider',''))}</code>
+  · {journal.get('duration_seconds','?')}s
+</div>
+<p style='color:var(--muted);font-style:italic;'>“{esc(journal.get('user_prompt','')[:200])}”</p>
+<section class='grid'>{''.join(cards)}</section>
+</body></html>
+"""
+
+
 def cmd_visualize(args: argparse.Namespace) -> int:
     project = Path(args.project).resolve()
+
+    # Fanout mode: render the parent-of-parents page that links to each track.
+    if getattr(args, "fanout_id", None):
+        fout_dir = fanout_root(project, args.fanout_id)
+        journal_path = fout_dir / "fanout.json"
+        if not journal_path.exists():
+            emit_json(False, {"message": f"missing fanout.json: {journal_path}"}, code="USAGE") if args.json else print(f"missing fanout.json: {journal_path}")
+            return EXIT_USAGE
+        journal = read_json_file(journal_path)
+        html = fanout_render_html(journal)
+        out_path = Path(args.output) if args.output else fout_dir / "fanout.html"
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(html, encoding="utf-8")
+        payload = {"fanout_id": args.fanout_id, "output": str(out_path), "bytes": len(html)}
+        if args.json:
+            emit_json(True, payload)
+        else:
+            print(f"wrote {out_path} ({len(html)} bytes)")
+        return EXIT_OK
+
     base = project / ".super-skill" / "autopilot"
     if not base.exists():
         emit_json(False, {"message": f"no autopilot runs under {base}"}, code="USAGE") if args.json else print(f"no autopilot runs under {base}")
@@ -3680,7 +3955,8 @@ def cmd_describe(args: argparse.Namespace) -> int:
             {"name": "llm-eval", "purpose": "Run a real (or stubbed) intent-contract → implementation → output-quality-gate round trip"},
             {"name": "autopilot", "purpose": "Autonomous closed loop: intent → spec → design → ralph-loop impl → simplifier → quality-gate → memory candidate, with checkpoint per phase"},
             {"name": "resume", "purpose": "Resume the latest or a named autopilot run; --list shows pending vs completed phases"},
-            {"name": "visualize", "purpose": "Render an autopilot run.json as a single self-contained HTML timeline"},
+            {"name": "visualize", "purpose": "Render an autopilot run.json (or a fanout.json with --fanout-id) as a single self-contained HTML page"},
+            {"name": "fanout", "purpose": "Parallel multi-agent orchestrator: split one prompt into N tracks, run each as its own autopilot, aggregate into fanout.json"},
             {"name": "doctor", "purpose": "Check local tools used by Super Skill"},
         ],
         "profiles": sorted(PROFILE_STAGE_PREFIXES),
@@ -4233,13 +4509,31 @@ def build_parser() -> argparse.ArgumentParser:
 
     viz_p = sub.add_parser(
         "visualize",
-        help="render an autopilot run.json as a single self-contained HTML timeline",
+        help="render an autopilot run.json (or a fanout.json) as a single self-contained HTML page",
     )
     viz_p.add_argument("--project", default=".", help="project root that owns the run workspace")
     viz_p.add_argument("--run-id", default=None, help="run id to render (default: latest)")
-    viz_p.add_argument("--output", default=None, help="output path (default: <run_dir>/timeline.html)")
+    viz_p.add_argument("--fanout-id", dest="fanout_id", default=None,
+        help="render a fanout summary instead of a single run; if set, --run-id is ignored")
+    viz_p.add_argument("--output", default=None, help="output path (default: <run_dir>/timeline.html or <fanout_dir>/fanout.html)")
     viz_p.add_argument("--json", action="store_true")
     viz_p.set_defaults(func=cmd_visualize)
+
+    fan_p = sub.add_parser(
+        "fanout",
+        help="parallel multi-agent autopilot: split one prompt into N tracks, run each as its own autopilot, aggregate into fanout.json",
+    )
+    fan_p.add_argument("--prompt", required=True, help="user request shared across all tracks; each track gets a sub-prompt of '<prompt> [track: <name>]'")
+    fan_p.add_argument("--tracks", required=True, help="comma-separated track names (e.g. 'frontend-miniapp,backend-api,docs')")
+    fan_p.add_argument("--provider", choices=["auto", "stub", "anthropic"], default="auto")
+    fan_p.add_argument("--model", default=None)
+    fan_p.add_argument("--project", default=".", help="project root that owns the fanout workspace")
+    fan_p.add_argument("--max-ralph-rounds", type=int, default=20)
+    fan_p.add_argument("--skip", default=None)
+    fan_p.add_argument("--dry-run", action="store_true")
+    fan_p.add_argument("--show-outputs", action="store_true")
+    fan_p.add_argument("--json", action="store_true")
+    fan_p.set_defaults(func=cmd_fanout)
 
     res_p = sub.add_parser(
         "resume",
