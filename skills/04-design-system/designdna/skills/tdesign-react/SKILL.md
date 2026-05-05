@@ -1,6 +1,6 @@
 ---
 name: tdesign-react
-description: TDesign React desktop component library skill — Tencent's React enterprise library (v1.16.x, active). Covers 60+ desktop components for B2B admin/dashboard. Includes installation, component catalog, theme customization via CSS variables, Starter templates, and Next.js setup.
+description: TDesign React desktop component library skill — Tencent's React enterprise library (v1.16.x, active). Covers 60+ desktop components for B2B admin/dashboard. Includes installation, component catalog, theme customization via CSS variables, Starter templates, and Next.js setup. Use when building a React desktop or B2B admin/dashboard UI.
 ---
 
 {% raw %}

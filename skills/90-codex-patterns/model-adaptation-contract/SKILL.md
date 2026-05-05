@@ -1,6 +1,6 @@
 ---
 name: model-adaptation-contract
-description: Define provider-neutral LLM constraints that improve input quality, output reliability, model routing, and token economy.
+description: Define provider-neutral LLM constraints that improve input quality, output reliability, model routing, and token economy. Use when a workflow must run across multiple LLMs or agent hosts, when output quality drifts after a model switch (Claude/GPT/Gemini/Hunyuan/DeepSeek), when designing prompts that must survive a model upgrade, or when picking between cheap/fast vs slow/strong models for cost control.
 ---
 
 # Model Adaptation Contract

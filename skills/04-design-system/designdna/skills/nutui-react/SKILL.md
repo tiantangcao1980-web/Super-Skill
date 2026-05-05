@@ -1,6 +1,6 @@
 ---
 name: nutui-react
-description: NutUI React v3 component library skill — JD's mobile-first React component library (1.2k stars, active). Covers 70+ components across basics, forms, feedback, layout, e-commerce. Works with plain React, Next.js, and Taro + React. Includes installation, component reference, theme tokens, on-demand imports, and Taro integration patterns.
+description: NutUI React v3 component library skill — JD's mobile-first React component library (1.2k stars, active). Covers 70+ components across basics, forms, feedback, layout, e-commerce. Works with plain React, Next.js, and Taro + React. Includes installation, component reference, theme tokens, on-demand imports, and Taro integration patterns. Use when building a React mobile H5 / Taro Mini Program UI.
 ---
 
 {% raw %}

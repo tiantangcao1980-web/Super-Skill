@@ -1,10 +1,39 @@
 .DS_Store
+Thumbs.db
+
+# Local agent / IDE state — never commit
 .omx/
+.idea/
+.vscode/
+.cursor/
+.claude/
+.codex/
+.hermes/
+
+# Runtime artifacts from memory harness hook
+.super-skill/
+
+# Python
 __pycache__/
 *.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
 node_modules/
 dist/
 coverage/
+*.tsbuildinfo
+
+# Env / secrets
 .env
 .env.*
+!.env.example
+
+# Logs / scratch
 *.log
+*.swp
+.cache/
+tmp/

@@ -1,6 +1,6 @@
 ---
 name: dev-tool-adapter
-description: Adapt Super Skill workflows across Cursor, Trae, OpenCode, OpenClaw, Claude Code, and Codex without duplicating canonical skill behavior.
+description: Adapt Super Skill workflows across Cursor, Trae, OpenCode, OpenClaw, Claude Code, Codex, and Hermes Agent without duplicating canonical skill behavior. Use when porting a skill to a new AI dev tool, when a rule/skill works in one tool but not another, when generating tool-specific wrappers (`.cursorrules`, `opencode.json`, Claude `~/.claude/skills/*`, Codex plugin manifest), or when planning a multi-tool installation.
 ---
 
 # Dev Tool Adapter

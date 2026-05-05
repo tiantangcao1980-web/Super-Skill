@@ -1,6 +1,6 @@
 ---
 name: mui-material
-description: MUI material-ui — React's biggest Material Design component library (98k stars, v7.3+, active). Google Material Design's de-facto carrier on the web. Covers 100+ components with Emotion/styled CSS-in-JS, theme provider, Material 2/3 styling, dark mode, and Figma kits. For advanced components (DataGrid/Charts/DatePicker Pro), pair with `mui-x` skill.
+description: MUI material-ui — React's biggest Material Design component library (98k stars, v7.3+, active). Google Material Design's de-facto carrier on the web. Covers 100+ components with Emotion/styled CSS-in-JS, theme provider, Material 2/3 styling, dark mode, and Figma kits. For advanced components (DataGrid/Charts/DatePicker Pro), pair with `mui-x` skill. Use when building a React desktop or B2B admin/dashboard UI.
 ---
 
 {% raw %}

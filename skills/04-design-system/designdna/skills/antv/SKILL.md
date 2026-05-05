@@ -1,6 +1,6 @@
 ---
 name: antv
-description: AntV (G2 / G6 / X6) — Alibaba's framework-agnostic data visualization stack. G2 (25k+ combined stars) for statistical charts, G6 for graph/network viz, X6 for flowchart/diagram editor. Plus @ant-design/charts as the React wrapper. Active through 2026. Includes use-case guide and typical chart/graph patterns.
+description: AntV (G2 / G6 / X6) — Alibaba's framework-agnostic data visualization stack. G2 (25k+ combined stars) for statistical charts, G6 for graph/network viz, X6 for flowchart/diagram editor. Plus @ant-design/charts as the React wrapper. Active through 2026. Includes use-case guide and typical chart/graph patterns. Use when building data-viz / charts / graph / flowchart UI in any framework.
 ---
 
 {% raw %}

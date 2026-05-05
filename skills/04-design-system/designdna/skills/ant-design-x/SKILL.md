@@ -1,6 +1,6 @@
 ---
 name: ant-design-x
-description: Ant Design X — Alibaba's React AI/LLM conversation UI library (active v2.x). Purpose-built for AI copilot / chatbot interfaces with streaming, message bubbles, sender input, suggestions, prompts, and thought processes. The React equivalent of TDesign Chat.
+description: Ant Design X — Alibaba's React AI/LLM conversation UI library (active v2.x). Purpose-built for AI copilot / chatbot interfaces with streaming, message bubbles, sender input, suggestions, prompts, and thought processes. The React equivalent of TDesign Chat. Use when building an AI copilot, chatbot, or LLM conversation UI in React.
 ---
 
 {% raw %}

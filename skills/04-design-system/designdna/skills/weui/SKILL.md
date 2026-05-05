@@ -1,6 +1,6 @@
 ---
 name: weui
-description: WeUI — Tencent's CSS-only style library for WeChat H5 pages and WeChat MiniProgram (27.4k + 15.3k stars, maintenance mode 2026). Demoted from "MiniProgram default" to "lightweight WeChat H5 webview styling". Use only for legacy WeChat H5 embedded pages. For MiniProgram component libraries, use Vant Weapp or TDesign MiniProgram.
+description: WeUI — Tencent's CSS-only style library for WeChat H5 pages and WeChat MiniProgram (27.4k + 15.3k stars, maintenance mode 2026). Demoted from "MiniProgram default" to "lightweight WeChat H5 webview styling". Use only for legacy WeChat H5 embedded pages. For MiniProgram component libraries, use Vant Weapp or TDesign MiniProgram. Use when building a native WeChat Mini Program UI (wxml/wxss).
 ---
 
 # WeUI — WeChat Style Library

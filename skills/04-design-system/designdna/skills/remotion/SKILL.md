@@ -1,6 +1,6 @@
 ---
 name: remotion
-description: Remotion — "Make videos programmatically with React" (43.6k stars, active). A React-based framework that lets developers create videos using React components, props, CSS, Canvas, and SVG. Use for programmatic video generation (explainer videos, personalized ads, data-driven videos, GitHub Unwrapped-style content). Covers install, core concepts (Composition, frames, useCurrentFrame), Remotion Player for embedding, and Lambda for cloud rendering.
+description: Remotion — "Make videos programmatically with React" (43.6k stars, active). A React-based framework that lets developers create videos using React components, props, CSS, Canvas, and SVG. Use for programmatic video generation (explainer videos, personalized ads, data-driven videos, GitHub Unwrapped-style content). Covers install, core concepts (Composition, frames, useCurrentFrame), Remotion Player for embedding, and Lambda for cloud rendering. Use when generating videos programmatically with React (data-driven demos, automated rendering, CI export).
 ---
 
 {% raw %}

@@ -1,6 +1,6 @@
 ---
 name: ant-design-pro
-description: Ant Design Pro — enterprise React admin scaffold + pro-components library. Scaffold (37k stars) gives a full B2B admin starter with layouts, routes, authentication, i18n. Pro-components (4k stars) provides high-level business components (ProTable, ProForm, ProLayout, ProDescriptions). Both active through 2026.
+description: Ant Design Pro — enterprise React admin scaffold + pro-components library. Scaffold (37k stars) gives a full B2B admin starter with layouts, routes, authentication, i18n. Pro-components (4k stars) provides high-level business components (ProTable, ProForm, ProLayout, ProDescriptions). Both active through 2026. Use when building a React desktop or B2B admin/dashboard UI.
 ---
 
 {% raw %}

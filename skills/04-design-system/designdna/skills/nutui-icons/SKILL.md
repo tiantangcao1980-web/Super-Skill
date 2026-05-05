@@ -1,6 +1,6 @@
 ---
 name: nutui-icons
-description: NutUI official icon library skill — 500+ mobile-first glyphs for both Vue and React (two sibling packages, tree-shakeable). Covers install, on-demand import, custom sizing/color, SVG output, and alternatives (Lucide, Tabler) when NutUI doesn't have a glyph.
+description: NutUI official icon library skill — 500+ mobile-first glyphs for both Vue and React (two sibling packages, tree-shakeable). Covers install, on-demand import, custom sizing/color, SVG output, and alternatives (Lucide, Tabler) when NutUI doesn't have a glyph. Use when building a React mobile H5 / Taro Mini Program UI.
 ---
 
 # NutUI Icons — Mobile Icon Library

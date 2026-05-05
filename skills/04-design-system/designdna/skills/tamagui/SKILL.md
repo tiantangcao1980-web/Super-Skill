@@ -1,6 +1,6 @@
 ---
 name: tamagui
-description: Tamagui — universal React UI library that compiles to React Native + web from the same source (10k+ stars, active). Zero-runtime styles via compile-time optimization. Best for shared React + React Native codebases. Covers install, core components, theme tokens, and the compiler setup.
+description: Tamagui — universal React UI library that compiles to React Native + web from the same source (10k+ stars, active). Zero-runtime styles via compile-time optimization. Best for shared React + React Native codebases. Covers install, core components, theme tokens, and the compiler setup. Use when building cross-platform iOS/Android native UI in React Native.
 ---
 
 {% raw %}

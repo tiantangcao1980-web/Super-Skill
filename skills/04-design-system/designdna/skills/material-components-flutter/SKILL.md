@@ -1,6 +1,6 @@
 ---
 name: material-components-flutter
-description: Material Components for Flutter — historically a standalone repo, now consolidated into the Flutter SDK itself. The `package:flutter/material` bundled with Flutter is the continuation of this work. See `flutter-material` skill for the current path.
+description: Material Components for Flutter — historically a standalone repo, now consolidated into the Flutter SDK itself. The `package:flutter/material` bundled with Flutter is the continuation of this work. See `flutter-material` skill for the current path. Use when building cross-platform iOS/Android/Web/desktop UI in Flutter.
 ---
 
 # Material Components for Flutter — now part of Flutter SDK

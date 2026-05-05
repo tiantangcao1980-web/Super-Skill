@@ -1,6 +1,6 @@
 ---
 name: material-components-ios
-description: Material Components for iOS (MDC-iOS) — Google's Material Design library for UIKit. Archived 2025-12 but still usable for existing projects. Covers installation, component reference, theming, and migration guidance to SwiftUI/Apple HIG for new projects.
+description: Material Components for iOS (MDC-iOS) — Google's Material Design library for UIKit. Archived 2025-12 but still usable for existing projects. Covers installation, component reference, theming, and migration guidance to SwiftUI/Apple HIG for new projects. Use when building iOS native UI in UIKit.
 ---
 
 # Material Components for iOS (MDC-iOS)

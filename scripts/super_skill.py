@@ -1845,6 +1845,229 @@ def cmd_live_evals(args: argparse.Namespace) -> int:
     return EXIT_OK if ok else EXIT_RUNTIME
 
 
+# --- llm-eval: end-to-end real LLM round trip through intent-contract ---
+#               → implementation → output-quality-gate
+#
+# Goal: prove the canonical contract → output → gate loop works against a real
+# (or stubbed) language model, not just file-structure graders.
+
+LLM_DEFAULT_PROMPT = (
+    "Implement a Python function add(a, b) that returns a + b, with one unit test."
+)
+
+
+def llm_load_skill_body(name: str) -> str:
+    matches = list(SKILLS_ROOT.rglob(f"{name}/SKILL.md"))
+    if not matches:
+        raise FileNotFoundError(f"canonical skill not found: {name}")
+    text = matches[0].read_text(encoding="utf-8")
+    # Strip the SKILL.md frontmatter — keep body as the system context.
+    body = re.sub(r"^---\s*\n.*?\n---\s*\n", "", text, count=1, flags=re.S)
+    if len(body) > 6000:
+        body = body[:6000] + "\n\n[...truncated for token budget]"
+    return body
+
+
+def llm_call_stub(stage: str, system: str, user: str) -> dict:
+    """Deterministic offline pseudo-LLM. Validates that the harness wires the
+    skill body, user input, and stage tag through without touching network."""
+    digest = hashlib_sha1(f"{stage}|{system}|{user}")[:10]
+    if stage == "contract":
+        body = textwrap.dedent(f"""\
+            ## Intent Contract (stub)
+            - Goal: {user[:120].strip()}
+            - Acceptance:
+              - The deliverable matches the user goal.
+              - One unit test is included if the goal mentions code.
+              - Output is a single self-contained snippet.
+            - Out of scope: framework choice changes, deployment.
+            - Evidence: passing test + one-line summary.
+            - Trace: stub-{digest}
+            """)
+    elif stage == "implementation":
+        body = textwrap.dedent(f"""\
+            def add(a, b):
+                return a + b
+
+
+            def test_add():
+                assert add(1, 2) == 3
+                assert add(-1, 1) == 0
+            """)
+    elif stage == "gate":
+        body = json.dumps(
+            {
+                "matches_intent": True,
+                "evidence_present": True,
+                "missing": [],
+                "score": 8,
+                "verdict": "pass",
+                "trace": f"stub-{digest}",
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    else:
+        body = "{}"
+    return {"text": body, "model": "stub-deterministic-v1", "tokens_in": len(system) + len(user), "tokens_out": len(body)}
+
+
+def hashlib_sha1(s: str) -> str:
+    import hashlib
+    return hashlib.sha1(s.encode("utf-8")).hexdigest()
+
+
+def llm_call_anthropic(stage: str, system: str, user: str, model: str) -> dict:
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise RuntimeError("ANTHROPIC_API_KEY is not set; export it or use --provider stub")
+    import urllib.request
+    payload = {
+        "model": model,
+        "max_tokens": 2048,
+        "system": system,
+        "messages": [{"role": "user", "content": user}],
+    }
+    req = urllib.request.Request(
+        "https://api.anthropic.com/v1/messages",
+        method="POST",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "x-api-key": api_key,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        body = json.loads(resp.read().decode("utf-8"))
+    text_parts = [b.get("text", "") for b in body.get("content", []) if b.get("type") == "text"]
+    text = "\n".join(text_parts).strip()
+    usage = body.get("usage", {})
+    return {
+        "text": text,
+        "model": body.get("model", model),
+        "tokens_in": usage.get("input_tokens", 0),
+        "tokens_out": usage.get("output_tokens", 0),
+    }
+
+
+def llm_call(provider: str, stage: str, system: str, user: str, model: str) -> dict:
+    if provider == "stub":
+        return llm_call_stub(stage, system, user)
+    if provider == "anthropic":
+        return llm_call_anthropic(stage, system, user, model)
+    raise ValueError(f"unsupported provider: {provider}")
+
+
+def llm_grade_contract(text: str) -> dict:
+    needed = ("goal", "acceptance", "evidence")
+    found = [n for n in needed if re.search(n, text, re.I)]
+    return {"required": list(needed), "found": found, "ok": len(found) == len(needed)}
+
+
+def llm_grade_gate(text: str) -> dict:
+    try:
+        payload = json.loads(text)
+        ok = bool(payload.get("matches_intent")) and payload.get("verdict") in ("pass", "warn")
+        return {"parsed": True, "verdict": payload.get("verdict"), "score": payload.get("score"), "ok": ok}
+    except Exception:
+        # Lenient fallback: look for verdict keyword.
+        m = re.search(r"verdict[\"'\s:]*([a-z]+)", text, re.I)
+        verdict = m.group(1).lower() if m else None
+        return {"parsed": False, "verdict": verdict, "score": None, "ok": verdict in ("pass", "warn")}
+
+
+def cmd_llm_eval(args: argparse.Namespace) -> int:
+    provider = args.provider
+    if provider == "auto":
+        provider = "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "stub"
+    model = args.model or {
+        "anthropic": "claude-haiku-4-5-20251001",
+        "stub": "stub-deterministic-v1",
+    }.get(provider, "stub-deterministic-v1")
+    user_prompt = args.prompt or LLM_DEFAULT_PROMPT
+
+    try:
+        intent_skill = llm_load_skill_body("intent-contract")
+        gate_skill = llm_load_skill_body("output-quality-gate")
+    except FileNotFoundError as exc:
+        emit_json(False, {"message": str(exc)}, code="USAGE")
+        return EXIT_USAGE
+
+    # Phase 1: contract
+    contract_call = llm_call(
+        provider,
+        "contract",
+        system=(
+            "You apply the Super Skill `intent-contract` skill below. Output a "
+            "compact contract (Goal, Acceptance, Out of scope, Evidence) for the "
+            "user request. Do not implement anything yet.\n\n" + intent_skill
+        ),
+        user=user_prompt,
+        model=model,
+    )
+    contract_grade = llm_grade_contract(contract_call["text"])
+
+    # Phase 2: implementation against the contract
+    impl_call = llm_call(
+        provider,
+        "implementation",
+        system=(
+            "You implement the deliverable that satisfies the contract below. "
+            "Return only the final code or text, no commentary."
+        ),
+        user=f"Contract:\n{contract_call['text']}\n\nOriginal request: {user_prompt}",
+        model=model,
+    )
+
+    # Phase 3: output-quality-gate
+    gate_call = llm_call(
+        provider,
+        "gate",
+        system=(
+            "You apply the Super Skill `output-quality-gate` skill below. Score "
+            "the deliverable against the contract. Respond with strict JSON: "
+            '{"matches_intent": bool, "evidence_present": bool, "missing": [str], '
+            '"score": int(0..10), "verdict": "pass"|"warn"|"fail", "trace": str}. '
+            "No prose.\n\n" + gate_skill
+        ),
+        user=f"Contract:\n{contract_call['text']}\n\nDeliverable:\n{impl_call['text']}",
+        model=model,
+    )
+    gate_grade = llm_grade_gate(gate_call["text"])
+
+    overall_ok = contract_grade["ok"] and gate_grade["ok"]
+    payload = {
+        "provider": provider,
+        "model": model,
+        "user_prompt": user_prompt,
+        "phases": [
+            {"stage": "contract", "tokens_in": contract_call.get("tokens_in"), "tokens_out": contract_call.get("tokens_out"), "grade": contract_grade},
+            {"stage": "implementation", "tokens_in": impl_call.get("tokens_in"), "tokens_out": impl_call.get("tokens_out")},
+            {"stage": "gate", "tokens_in": gate_call.get("tokens_in"), "tokens_out": gate_call.get("tokens_out"), "grade": gate_grade},
+        ],
+        "ok": overall_ok,
+    }
+    if args.show_outputs:
+        payload["outputs"] = {
+            "contract": contract_call["text"],
+            "implementation": impl_call["text"],
+            "gate": gate_call["text"],
+        }
+    if args.json:
+        emit_json(overall_ok, payload, code="LLM_EVAL_FAILED" if not overall_ok else None)
+    else:
+        print(f"llm-eval: provider={provider} model={model}")
+        print(f"  prompt: {user_prompt[:80]}")
+        for ph in payload["phases"]:
+            line = f"  [{ph['stage']:14s}] tokens_in={ph.get('tokens_in')} tokens_out={ph.get('tokens_out')}"
+            if ph.get("grade"):
+                line += f" grade={ph['grade']}"
+            print(line)
+        print(f"overall: {'PASS' if overall_ok else 'FAIL'}")
+    return EXIT_OK if overall_ok else EXIT_RUNTIME
+
+
 def profile_manifest_report() -> tuple[list[dict], list[dict]]:
     errors: list[dict] = []
     warnings: list[dict] = []
@@ -2352,6 +2575,8 @@ def cmd_describe(args: argparse.Namespace) -> int:
             {"name": "live-evals", "purpose": "Run local live validation projects with deterministic graders in temporary workspaces"},
             {"name": "vendor", "purpose": "Summarize vendored Cowork domain ecosystem skills"},
             {"name": "catalog", "purpose": "Generate catalog/skill-index.json and catalog/skill-index.md"},
+            {"name": "adapt", "purpose": "Generate per-tool runtime wrappers for Cursor/Trae/Windsurf/OpenCode/Claude Code/Codex/OpenClaw/Hermes"},
+            {"name": "llm-eval", "purpose": "Run a real (or stubbed) intent-contract → implementation → output-quality-gate round trip"},
             {"name": "doctor", "purpose": "Check local tools used by Super Skill"},
         ],
         "profiles": sorted(PROFILE_STAGE_PREFIXES),
@@ -2487,6 +2712,276 @@ def count_design_brands() -> int:
     return len([p for p in root.iterdir() if p.is_dir()]) if root.exists() else 0
 
 
+# --- adapt: generate per-tool runtime wrappers ----------------------------
+
+ADAPT_TOOLS = (
+    "cursor",
+    "trae",
+    "windsurf",
+    "opencode",
+    "claude-code",
+    "codex",
+    "openclaw",
+    "hermes",
+)
+
+
+def adapt_default_target(tool: str, project: Path) -> Path:
+    if tool == "cursor":
+        return project / ".cursor" / "rules" / "super-skill.mdc"
+    if tool == "trae":
+        return project / ".trae" / "rules" / "super-skill.md"
+    if tool == "windsurf":
+        return project / ".windsurfrules"
+    if tool == "opencode":
+        return project / "opencode.json"
+    if tool == "claude-code":
+        return project / "CLAUDE.md"
+    if tool == "openclaw":
+        return project / "skills" / "super-skill-bridge" / "SKILL.md"
+    if tool in ("codex", "hermes"):
+        # No file emitted; commands delegate to install/memory-plugin.
+        return project
+    raise ValueError(f"unsupported tool: {tool}")
+
+
+def adapt_skill_summary(skills: list[Skill], max_skills: int = 40) -> list[dict]:
+    items = []
+    for s in skills:
+        desc = (s.description or "").replace("\n", " ").strip()
+        if len(desc) > 220:
+            desc = desc[:217].rstrip() + "..."
+        items.append({"name": s.name, "stage": s.stage, "description": desc})
+    return items[:max_skills]
+
+
+def adapt_render_cursor(skills: list[Skill], canonical: Path) -> str:
+    summary = adapt_skill_summary(skills)
+    lines = [
+        "---",
+        "description: Super Skill bridge — auto-loaded canonical skills from a sibling repo.",
+        "globs: ['**/*']",
+        "alwaysApply: true",
+        "---",
+        "",
+        "# Super Skill Bridge (Cursor)",
+        "",
+        f"Canonical repo: `{canonical}`",
+        "",
+        "When a request matches one of the skills below, follow that skill's `SKILL.md`",
+        "(under `skills/<stage>/<name>/SKILL.md` in the canonical repo). Do not duplicate",
+        "the skill body here — the canonical file is the source of truth. Trigger semantics",
+        "are encoded in each skill's frontmatter `description`.",
+        "",
+        "## Available skills",
+        "",
+    ]
+    by_stage: dict[str, list[dict]] = {}
+    for it in summary:
+        by_stage.setdefault(it["stage"], []).append(it)
+    for stage in sorted(by_stage):
+        lines.append(f"### {STAGES.get(stage, stage)}")
+        lines.append("")
+        for it in by_stage[stage]:
+            lines.append(f"- **{it['name']}** — {it['description']}")
+        lines.append("")
+    lines += [
+        "## Memory & dream-replay",
+        "",
+        "Use `agent-memory-dream-loop` to capture lessons after substantial work, repeated failures,",
+        "or user corrections. Never store raw prompt/response. Off switch: `SUPER_SKILL_MEMORY_DISABLED=1`.",
+        "",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def adapt_render_trae(skills: list[Skill], canonical: Path) -> str:
+    # Trae rules are similar to Cursor's plain markdown — reuse, drop frontmatter.
+    body = adapt_render_cursor(skills, canonical)
+    body = re.sub(r"^---.*?---\n+", "", body, flags=re.S)
+    return "# Super Skill Bridge (Trae)\n\n" + body[len("# Super Skill Bridge (Cursor)\n\n"):]
+
+
+def adapt_render_windsurf(skills: list[Skill], canonical: Path) -> str:
+    summary = adapt_skill_summary(skills)
+    lines = [
+        "# Super Skill Bridge (Windsurf)",
+        "",
+        f"Canonical repo: {canonical}",
+        "",
+        "Treat each skill listed below as an implicit trigger. When the user request matches",
+        "a skill description, follow the canonical `SKILL.md`. Do not duplicate skill body here.",
+        "",
+    ]
+    for it in summary:
+        lines.append(f"- {it['name']}: {it['description']}")
+    lines.append("")
+    lines.append("Memory: route through agent-memory-dream-loop; never store raw prompts; respect SUPER_SKILL_MEMORY_DISABLED=1.")
+    return "\n".join(lines) + "\n"
+
+
+def adapt_render_opencode(skills: list[Skill], canonical: Path) -> dict:
+    return {
+        "$schema": "https://opencode.ai/config.schema.json",
+        "instructions": [
+            f"Super Skill bridge active. Canonical repo: {canonical}",
+            "Use skills under canonical 'skills/<stage>/<name>/SKILL.md' as the source of truth.",
+            "Memory uses agent-memory-dream-loop. Off switch: SUPER_SKILL_MEMORY_DISABLED=1.",
+        ],
+        "rules": [
+            f"{it['name']}: {it['description']}" for it in adapt_skill_summary(skills, max_skills=80)
+        ],
+    }
+
+
+def adapt_render_claude_code(skills: list[Skill], canonical: Path) -> str:
+    lines = [
+        "# Super Skill (Claude Code)",
+        "",
+        f"Canonical repo: `{canonical}`",
+        "",
+        "Skills are installed as symlinks under `~/.claude/skills/`. Claude Code auto-loads",
+        "skill descriptions for implicit triggering. To (re)install:",
+        "",
+        f"    {canonical}/bin/super-skill install --profile all --target ~/.claude/skills --force",
+        "",
+        "## Operating rules",
+        "",
+        "- Front-load trigger keywords in user requests to help Claude Code pick the right skill.",
+        "- Memory candidates land in `.super-skill/memory/inbox/` per project; review before promoting.",
+        "- Off switch: `SUPER_SKILL_MEMORY_DISABLED=1`.",
+        "- Protected skills (never auto-archive): see `manifests/skill-lifecycle-policy.json`.",
+        "",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def adapt_render_openclaw(skills: list[Skill], canonical: Path) -> str:
+    lines = [
+        "---",
+        "name: super-skill-bridge",
+        "description: Bridge skill that points OpenClaw at the canonical Super Skill repo. Use when an OpenClaw workspace needs Super Skill capabilities without copying the full lifecycle into the workspace.",
+        "---",
+        "",
+        "# Super Skill Bridge (OpenClaw)",
+        "",
+        f"Canonical repo: `{canonical}`",
+        "",
+        "Install canonical skills into the workspace skills directory:",
+        "",
+        f"    {canonical}/bin/super-skill install --profile all --target ./skills --force --mode symlink",
+        "",
+        "or globally:",
+        "",
+        f"    {canonical}/bin/super-skill install --profile all --target ~/.openclaw/skills --force",
+        "",
+        "## Routing",
+        "",
+        "Treat each installed skill's frontmatter description as the implicit trigger.",
+        "Memory uses canonical `agent-memory-dream-loop`; never store raw prompts.",
+        "",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def adapt_codex_instructions(canonical: Path) -> list[str]:
+    return [
+        f"cd '{canonical}' && bin/super-skill install --profile all --target ~/.codex/skills --with-memory-plugin --force",
+        "After install, verify hooks: ~/.codex/config.toml should reference the memory plugin.",
+        "Off switch: SUPER_SKILL_MEMORY_DISABLED=1",
+    ]
+
+
+def adapt_hermes_instructions(canonical: Path) -> list[str]:
+    return [
+        f"cd '{canonical}' && bin/super-skill install --profile hermes --target ~/.hermes/skills --force",
+        "The 'hermes' profile excludes Hermes-native skills to avoid mirroring duplicates.",
+        "Verify with: bin/super-skill plan --profile hermes --json",
+    ]
+
+
+def cmd_adapt(args: argparse.Namespace) -> int:
+    tool = args.tool
+    project = Path(args.project).resolve()
+    canonical = ROOT
+    skills = discover_skills("all")
+
+    files: list[dict] = []
+    notes: list[str] = []
+    target = adapt_default_target(tool, project) if args.target is None else Path(args.target).resolve()
+
+    if tool == "cursor":
+        files.append({"path": str(target), "content": adapt_render_cursor(skills, canonical)})
+    elif tool == "trae":
+        files.append({"path": str(target), "content": adapt_render_trae(skills, canonical)})
+    elif tool == "windsurf":
+        files.append({"path": str(target), "content": adapt_render_windsurf(skills, canonical)})
+    elif tool == "opencode":
+        # Merge with existing opencode.json if present.
+        existing: dict = {}
+        if target.exists():
+            try:
+                existing = json.loads(target.read_text(encoding="utf-8"))
+            except Exception as exc:
+                notes.append(f"existing opencode.json could not be parsed: {exc}; will overwrite")
+        merged = dict(existing)
+        adapter_payload = adapt_render_opencode(skills, canonical)
+        # Preserve user keys; only set/overwrite our own.
+        merged["$schema"] = adapter_payload["$schema"]
+        instr = list(merged.get("instructions") or [])
+        for line in adapter_payload["instructions"]:
+            if line not in instr:
+                instr.append(line)
+        merged["instructions"] = instr
+        merged["rules"] = adapter_payload["rules"]
+        files.append({"path": str(target), "content": json.dumps(merged, ensure_ascii=False, indent=2) + "\n"})
+    elif tool == "claude-code":
+        files.append({"path": str(target), "content": adapt_render_claude_code(skills, canonical)})
+    elif tool == "openclaw":
+        files.append({"path": str(target), "content": adapt_render_openclaw(skills, canonical)})
+    elif tool == "codex":
+        notes.extend(adapt_codex_instructions(canonical))
+    elif tool == "hermes":
+        notes.extend(adapt_hermes_instructions(canonical))
+    else:
+        emit_json(False, {"message": f"unsupported tool: {tool}"}, code="USAGE")
+        return EXIT_USAGE
+
+    written = []
+    if not args.dry_run:
+        for f in files:
+            p = Path(f["path"])
+            p.parent.mkdir(parents=True, exist_ok=True)
+            if p.exists() and not args.force:
+                notes.append(f"skipped existing file (use --force to overwrite): {p}")
+                continue
+            p.write_text(f["content"], encoding="utf-8")
+            written.append(str(p))
+
+    payload = {
+        "tool": tool,
+        "project": str(project),
+        "canonical": str(canonical),
+        "skills_count": len(skills),
+        "files": [{"path": f["path"], "bytes": len(f["content"])} for f in files],
+        "written": written,
+        "notes": notes,
+        "dry_run": args.dry_run,
+    }
+    if args.json:
+        emit_json(True, payload)
+    else:
+        print(f"adapter: {tool}")
+        print(f"canonical: {canonical}")
+        print(f"target project: {project}")
+        for f in files:
+            kind = "would write" if args.dry_run else ("wrote" if f["path"] in written else "skipped")
+            print(f"  {kind}: {f['path']} ({len(f['content'])} bytes)")
+        for n in notes:
+            print(f"  note: {n}")
+    return EXIT_OK
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="super-skill",
@@ -2587,6 +3082,29 @@ def build_parser() -> argparse.ArgumentParser:
     cat_p.add_argument("--dry-run", action="store_true")
     cat_p.add_argument("--json", action="store_true")
     cat_p.set_defaults(func=cmd_catalog)
+
+    adapt_p = sub.add_parser(
+        "adapt",
+        help="generate per-tool runtime wrappers (cursor/trae/windsurf/opencode/claude-code/codex/openclaw/hermes)",
+    )
+    adapt_p.add_argument("--tool", choices=ADAPT_TOOLS, required=True)
+    adapt_p.add_argument("--project", default=".", help="project root that should receive the wrapper (default: cwd)")
+    adapt_p.add_argument("--target", default=None, help="explicit output path (default: tool-specific convention)")
+    adapt_p.add_argument("--force", action="store_true", help="overwrite existing wrapper files")
+    adapt_p.add_argument("--dry-run", action="store_true")
+    adapt_p.add_argument("--json", action="store_true")
+    adapt_p.set_defaults(func=cmd_adapt)
+
+    llm_p = sub.add_parser(
+        "llm-eval",
+        help="run a real (or stubbed) intent-contract → implementation → output-quality-gate round trip",
+    )
+    llm_p.add_argument("--prompt", default=None, help="user task prompt (default: built-in calculator example)")
+    llm_p.add_argument("--provider", choices=["auto", "stub", "anthropic"], default="auto")
+    llm_p.add_argument("--model", default=None, help="provider-specific model id (default: provider best-fit)")
+    llm_p.add_argument("--show-outputs", action="store_true", help="include phase outputs in the JSON payload")
+    llm_p.add_argument("--json", action="store_true")
+    llm_p.set_defaults(func=cmd_llm_eval)
 
     return parser
 

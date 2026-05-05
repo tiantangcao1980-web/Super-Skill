@@ -1,5 +1,11 @@
 # Super Skill
 
+[![CI](https://github.com/tiantangcao1980-web/Super-Skill/actions/workflows/ci.yml/badge.svg)](https://github.com/tiantangcao1980-web/Super-Skill/actions/workflows/ci.yml)
+[![Quality](https://github.com/tiantangcao1980-web/Super-Skill/actions/workflows/quality.yml/badge.svg)](https://github.com/tiantangcao1980-web/Super-Skill/actions/workflows/quality.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Skills](https://img.shields.io/badge/skills-113-blue)](catalog/skill-index.md)
+[![Profiles](https://img.shields.io/badge/profiles-core%20%7C%20dev%20%7C%20design%20%7C%20hermes%20%7C%20all-green)](manifests/install-profiles.json)
+
 Super Skill 是一个面向 AI coding agent 的全流程技能集合：从用户意图、上下文工程、市场/用户调研，到需求分析、产品规格、设计系统、接口与开发、测试验证、交付增长、运维知识沉淀，形成一套可安装、可验证、可继续扩展的 skills 生态。
 
 它的目标不是简单增加技能数量，而是提升 LLM 输入和输出质量：把用户期待转成可验收契约，把大上下文压缩成高信号上下文包，把 agent 输出重新拉回用户目标、证据和质量门。
@@ -98,6 +104,19 @@ bin/super-skill install --profile hermes
 
 # 生成索引
 bin/super-skill catalog
+
+# 生成跨工具适配 wrapper（Cursor/Trae/Windsurf/OpenCode/Claude Code/OpenClaw）
+bin/super-skill adapt --tool cursor --project .
+bin/super-skill adapt --tool windsurf --project .
+bin/super-skill adapt --tool opencode --project .
+bin/super-skill adapt --tool claude-code --project .
+# Codex / Hermes 通过 install 命令落地，adapt 仅打印对应安装指令
+bin/super-skill adapt --tool codex
+bin/super-skill adapt --tool hermes
+
+# 跑真实 LLM 端到端循环：intent-contract → implementation → output-quality-gate
+bin/super-skill llm-eval --provider stub                    # 离线 stub，CI 安全
+ANTHROPIC_API_KEY=sk-... bin/super-skill llm-eval --provider anthropic --prompt "建一个待办列表 API"
 ```
 
 Profiles:

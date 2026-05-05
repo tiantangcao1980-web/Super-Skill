@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-description: Bootstrap 5 — classic CSS + JS component framework (174k stars, v5.3+, active). Mature, battle-tested for enterprise admin, internal tools, marketing sites. Ships with Bootstrap Icons. Vanilla-JS (no React/Vue dep). Best for projects wanting "install a theme and ship" speed. v4 is security-only. Includes install, grid, components, SASS customization.
+description: Bootstrap 5 — classic CSS + JS component framework (174k stars, v5.3+, active). Mature, battle-tested for enterprise admin, internal tools, marketing sites. Ships with Bootstrap Icons. Vanilla-JS (no React/Vue dep). Best for projects wanting "install a theme and ship" speed. v4 is security-only. Includes install, grid, components, SASS customization. Use when building marketing pages, internal admin tools, or sites where speed-to-ship matters more than custom theme.
 ---
 
 # Bootstrap 5 — Classic CSS Framework

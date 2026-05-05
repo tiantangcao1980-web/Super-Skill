@@ -1,6 +1,6 @@
 ---
 name: taro-ui
-description: Taro UI component library skill for Taro 2.x/3.x React projects. Covers 50+ components (Button, Modal, Form, Tabs, SwipeAction, etc.) with usage snippets and props reference. ⚠️ MAINTENANCE MODE — last meaningful release 2024-08; Taro 4.x support lags. New projects on Taro 4+ should use `nutui-react` skill instead.
+description: Taro UI component library skill for Taro 2.x/3.x React projects. Covers 50+ components (Button, Modal, Form, Tabs, SwipeAction, etc.) with usage snippets and props reference. ⚠️ MAINTENANCE MODE — last meaningful release 2024-08; Taro 4.x support lags. New projects on Taro 4+ should use `nutui-react` skill instead. Use when targeting multiple Mini Program vendors + H5 + native from one React/Vue codebase.
 ---
 
 # Taro UI — Component Library for Taro React

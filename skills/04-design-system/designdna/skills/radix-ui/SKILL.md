@@ -1,6 +1,6 @@
 ---
 name: radix-ui
-description: Radix UI — two sibling libraries. Radix Primitives (18.8k stars) is unstyled, accessible React primitives (Dialog, Popover, Tooltip, Select, etc.) used by shadcn/ui and thousands of custom design systems. Radix Themes (8.3k stars, v3.3) is an opinionated styled layer on Primitives with 12-step color scales. Both active 2026.
+description: Radix UI — two sibling libraries. Radix Primitives (18.8k stars) is unstyled, accessible React primitives (Dialog, Popover, Tooltip, Select, etc.) used by shadcn/ui and thousands of custom design systems. Radix Themes (8.3k stars, v3.3) is an opinionated styled layer on Primitives with 12-step color scales. Both active 2026. Use when building a React desktop or B2B admin/dashboard UI.
 ---
 
 # Radix UI — Primitives + Themes

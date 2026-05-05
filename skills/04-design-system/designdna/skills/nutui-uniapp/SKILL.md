@@ -1,6 +1,6 @@
 ---
 name: nutui-uniapp
-description: NutUI UniApp v1 component library skill — community-maintained port of NutUI for UniApp + Vue 3 projects (553 stars, 2026-04 active). Compiles to H5, all 9 MiniProgram vendors, iOS/Android via UniApp. Includes installation for Vite and Vue CLI setups, component reference, easycom auto-import, theme tokens.
+description: NutUI UniApp v1 component library skill — community-maintained port of NutUI for UniApp + Vue 3 projects (553 stars, 2026-04 active). Compiles to H5, all 9 MiniProgram vendors, iOS/Android via UniApp. Includes installation for Vite and Vue CLI setups, component reference, easycom auto-import, theme tokens. Use when targeting WeChat / Alipay / ByteDance Mini Programs + H5 + iOS/Android via Vue 3.
 ---
 
 # NutUI UniApp — UniApp + Vue 3 port of NutUI

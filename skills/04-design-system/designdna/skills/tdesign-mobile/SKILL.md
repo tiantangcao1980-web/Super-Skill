@@ -1,6 +1,6 @@
 ---
 name: tdesign-mobile
-description: TDesign Mobile component libraries for Vue 3 and React — Tencent's mobile H5 component libraries (tdesign-mobile-vue v1.13.x + tdesign-mobile-react v0.22.x, active). Covers mobile-optimized components (Tabbar, NavBar, ActionSheet, SwipeCell, etc.) with responsive sizing, safe-area behavior, and TDesign token parity.
+description: TDesign Mobile component libraries for Vue 3 and React — Tencent's mobile H5 component libraries (tdesign-mobile-vue v1.13.x + tdesign-mobile-react v0.22.x, active). Covers mobile-optimized components (Tabbar, NavBar, ActionSheet, SwipeCell, etc.) with responsive sizing, safe-area behavior, and TDesign token parity. Use when building a cross-framework mobile H5 UI (Vue or React).
 ---
 
 # TDesign Mobile — Vue 3 & React Mobile H5

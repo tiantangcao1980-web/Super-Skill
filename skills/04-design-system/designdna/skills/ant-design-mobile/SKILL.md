@@ -1,6 +1,6 @@
 ---
 name: ant-design-mobile
-description: Ant Design Mobile (antd-mobile) — Alibaba's React mobile H5 component library (11k stars, v5.x, active). Mobile-optimized components (Tabs, List, Form, Swiper, Popup, SafeArea) with iOS/Android adaptive styling. Includes install, catalog, theme tokens, and RN/H5 target distinctions.
+description: Ant Design Mobile (antd-mobile) — Alibaba's React mobile H5 component library (11k stars, v5.x, active). Mobile-optimized components (Tabs, List, Form, Swiper, Popup, SafeArea) with iOS/Android adaptive styling. Includes install, catalog, theme tokens, and RN/H5 target distinctions. Use when building a React mobile H5 / Taro Mini Program UI.
 ---
 
 # Ant Design Mobile — React Mobile H5

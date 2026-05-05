@@ -1,6 +1,6 @@
 ---
 name: uniapp
-description: UniApp — DCloud's cross-platform framework (41.5k stars, v5.07, active). Compile Vue 3 to 9 MiniProgram vendors + H5 + iOS/Android + HarmonyOS. UniApp X variant (UTS-based, near-native) recommended for WeChat + HarmonyOS + native iOS/Android. Covers install, uni-ui components, pages.json, easycom, platform-conditional compilation.
+description: UniApp — DCloud's cross-platform framework (41.5k stars, v5.07, active). Compile Vue 3 to 9 MiniProgram vendors + H5 + iOS/Android + HarmonyOS. UniApp X variant (UTS-based, near-native) recommended for WeChat + HarmonyOS + native iOS/Android. Covers install, uni-ui components, pages.json, easycom, platform-conditional compilation. Use when targeting WeChat / Alipay / ByteDance Mini Programs + H5 + iOS/Android via Vue 3.
 ---
 
 # UniApp — DCloud Cross-Platform Framework

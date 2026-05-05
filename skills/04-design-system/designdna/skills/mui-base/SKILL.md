@@ -1,6 +1,6 @@
 ---
 name: mui-base
-description: MUI Base UI (`@base-ui-components/react`) — MUI's headless React primitives library (9.1k stars, v1.1 stable, active). Alternative to Radix Primitives. Unstyled, accessible components (Dialog, Popover, Select, Menu, etc.) to build your own design system.
+description: MUI Base UI (`@base-ui-components/react`) — MUI's headless React primitives library (9.1k stars, v1.1 stable, active). Alternative to Radix Primitives. Unstyled, accessible components (Dialog, Popover, Select, Menu, etc.) to build your own design system. Use when building a React desktop or B2B admin/dashboard UI.
 ---
 
 # MUI Base UI — Headless React Primitives

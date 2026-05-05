@@ -1,6 +1,6 @@
 ---
 name: tdesign-miniprogram
-description: TDesign WeChat MiniProgram component library skill — Tencent's official native WeChat MP component library (v1.14.x, active). Covers 60+ components matching TDesign's cross-platform visual DNA. Includes npm install, component catalog, theme tokens, retail starter template, and WeChat Developer Tools integration.
+description: TDesign WeChat MiniProgram component library skill — Tencent's official native WeChat MP component library (v1.14.x, active). Covers 60+ components matching TDesign's cross-platform visual DNA. Includes npm install, component catalog, theme tokens, retail starter template, and WeChat Developer Tools integration. Use when building a native WeChat Mini Program UI (wxml/wxss).
 ---
 
 # TDesign MiniProgram — WeChat MiniProgram Library

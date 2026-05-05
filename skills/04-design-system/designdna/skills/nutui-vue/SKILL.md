@@ -1,6 +1,6 @@
 ---
 name: nutui-vue
-description: NutUI 4 Vue 3 component library skill — JD's flagship mobile-first component library (6.5k stars, actively maintained). Covers 70+ components across basics, forms, navigation, feedback, layout, and business patterns. Optimized for mobile H5 + Taro MiniPrograms. Includes installation, component reference, theme tokens, and on-demand imports.
+description: NutUI 4 Vue 3 component library skill — JD's flagship mobile-first component library (6.5k stars, actively maintained). Covers 70+ components across basics, forms, navigation, feedback, layout, and business patterns. Optimized for mobile H5 + Taro MiniPrograms. Includes installation, component reference, theme tokens, and on-demand imports. Use when building a Vue 3 mobile H5 / Taro Mini Program UI.
 ---
 
 # NutUI Vue 3 — JD Mobile Component Library

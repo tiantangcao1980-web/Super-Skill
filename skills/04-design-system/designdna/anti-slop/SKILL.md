@@ -1,6 +1,6 @@
 ---
 name: anti-slop
-description: Bias correction layer that prevents AI coding agents from generating the generic, lookalike "AI slop" UI (centered heroes, Inter font, 3-card grids, John Doe avatars, 99.99% metrics, purple gradients). Combine with any brand DNA for taste-corrected output.
+description: Bias correction layer that prevents AI coding agents from generating the generic, lookalike "AI slop" UI (centered heroes, Inter font, 3-card grids, John Doe avatars, 99.99% metrics, purple gradients). Use when generating any landing page, marketing site, dashboard, hero section, pricing page, or component library, especially without a strong brand DNA — combine with designdna or any brand system for taste-corrected output.
 ---
 
 # Anti-Slop Skill — AI Bias Correction for UI

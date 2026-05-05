@@ -1,6 +1,6 @@
 ---
 name: shadcn-ui
-description: shadcn/ui — copy-paste React component library built on Radix Primitives + Tailwind CSS (80k+ stars, de-facto modern React standard 2024-2026). Not a traditional npm library — you own the code after CLI adds it. Includes setup, CLI commands, 40+ components, theming via CSS variables, dark mode.
+description: shadcn/ui — copy-paste React component library built on Radix Primitives + Tailwind CSS (80k+ stars, de-facto modern React standard 2024-2026). Not a traditional npm library — you own the code after CLI adds it. Includes setup, CLI commands, 40+ components, theming via CSS variables, dark mode. Use when building a React desktop or B2B admin/dashboard UI.
 ---
 
 # shadcn/ui — Own-Your-Components React UI

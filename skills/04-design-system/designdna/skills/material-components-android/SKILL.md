@@ -1,6 +1,6 @@
 ---
 name: material-components-android
-description: Material Components for Android (MDC-Android) — Google's Material Design implementation for the View / XML UI system on Android (17k stars, v1.14-beta with M3 Expressive, 🟢 active 2026). Use for legacy View-system Android apps. ⚠️ New Compose projects should use `androidx.compose.material3` instead.
+description: Material Components for Android (MDC-Android) — Google's Material Design implementation for the View / XML UI system on Android (17k stars, v1.14-beta with M3 Expressive, 🟢 active 2026). Use for legacy View-system Android apps. ⚠️ New Compose projects should use `androidx.compose.material3` instead. Use when building Android native UI in the View/XML system.
 ---
 
 # Material Components for Android (MDC-Android)

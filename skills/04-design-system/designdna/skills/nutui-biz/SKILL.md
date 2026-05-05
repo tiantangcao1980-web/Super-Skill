@@ -1,6 +1,6 @@
 ---
 name: nutui-biz
-description: NutUI Biz business components skill — e-commerce domain components for NutUI React (address, SKU, coupon, invoice, order list). ⚠️ MAINTENANCE MODE — last major release 2023-03, minor fixes through 2025-01. Still usable but not actively developed. For new projects, copy components out as starting points rather than npm-depending on them.
+description: NutUI Biz business components skill — e-commerce domain components for NutUI React (address, SKU, coupon, invoice, order list). ⚠️ MAINTENANCE MODE — last major release 2023-03, minor fixes through 2025-01. Still usable but not actively developed. For new projects, copy components out as starting points rather than npm-depending on them. Use when building a React mobile H5 / Taro Mini Program UI.
 ---
 
 {% raw %}

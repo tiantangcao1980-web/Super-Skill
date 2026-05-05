@@ -1,6 +1,6 @@
 ---
 name: chakra-ui
-description: Chakra UI v3 — accessible React component library rebuilt on Panda CSS for zero-runtime styles (40k stars, active 2026). v3 is a breaking rewrite from v2 with new API (Field vs FormControl, style props via recipe). Covers install, v2 vs v3 differences, component patterns, and theme customization.
+description: Chakra UI v3 — accessible React component library rebuilt on Panda CSS for zero-runtime styles (40k stars, active 2026). v3 is a breaking rewrite from v2 with new API (Field vs FormControl, style props via recipe). Covers install, v2 vs v3 differences, component patterns, and theme customization. Use when building a React desktop or B2B admin/dashboard UI.
 ---
 
 {% raw %}

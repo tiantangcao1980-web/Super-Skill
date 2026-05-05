@@ -1,6 +1,6 @@
 ---
 name: tdesign-vue-next
-description: TDesign Vue 3 desktop component library skill — Tencent's flagship Vue 3 enterprise library (2.1k stars, active, v1.19.x). Covers 60+ desktop components for B2B admin/dashboard. Includes installation with on-demand imports, component catalog, TDesign design tokens/CSS variables, Starter templates, dark mode, and Tencent-ecosystem integration patterns.
+description: TDesign Vue 3 desktop component library skill — Tencent's flagship Vue 3 enterprise library (2.1k stars, active, v1.19.x). Covers 60+ desktop components for B2B admin/dashboard. Includes installation with on-demand imports, component catalog, TDesign design tokens/CSS variables, Starter templates, dark mode, and Tencent-ecosystem integration patterns. Use when building a Vue 3 desktop or enterprise admin UI.
 ---
 
 {% raw %}

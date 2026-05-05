@@ -1,6 +1,6 @@
 ---
 name: react-bits
-description: React Bits — "the largest, most creative" React animated component library by David Haz (38.3k stars, active). 110+ animated components across text animations, UI elements, and backgrounds (including Three.js 3D effects). Distributed via shadcn CLI / jsrepo / manual copy. 4 technology variants per component (JS-CSS, JS-Tailwind, TS-CSS, TS-Tailwind). Perfect for memorable landing pages and marketing sites.
+description: React Bits — "the largest, most creative" React animated component library by David Haz (38.3k stars, active). 110+ animated components across text animations, UI elements, and backgrounds (including Three.js 3D effects). Distributed via shadcn CLI / jsrepo / manual copy. 4 technology variants per component (JS-CSS, JS-Tailwind, TS-CSS, TS-Tailwind). Perfect for memorable landing pages and marketing sites. Use when building a React desktop or B2B admin/dashboard UI.
 ---
 
 # React Bits — Animated React Components

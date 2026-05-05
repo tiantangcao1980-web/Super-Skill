@@ -1,6 +1,6 @@
 ---
 name: tdesign-chat
-description: TDesign Vue Next Chat — Tencent's official AI/LLM conversation UI component package for Vue 3 (part of tdesign-vue-next monorepo, active v0.5.x). Covers Chatbot/Chat primitives, streaming message rendering, Markdown + code-block support, AG-UI or custom SSE service protocols, tool-call/thinking UI, and AI copilot interface patterns.
+description: TDesign Vue Next Chat — Tencent's official AI/LLM conversation UI component package for Vue 3 (part of tdesign-vue-next monorepo, active v0.5.x). Covers Chatbot/Chat primitives, streaming message rendering, Markdown + code-block support, AG-UI or custom SSE service protocols, tool-call/thinking UI, and AI copilot interface patterns. Use when building an AI copilot, chatbot, or LLM conversation UI in React.
 ---
 
 # TDesign Chat — Vue 3 AI Conversation UI

@@ -1,6 +1,6 @@
 ---
 name: flutter-material
-description: Flutter Material 3 — Google's cross-platform UI toolkit with built-in Material 3 components (`package:flutter/material`, bundled with Flutter SDK). Recommended path since `material-components-flutter` was archived in 2023. Covers widget catalog, ThemeData tokens, dynamic color, and Material 3 migration notes.
+description: Flutter Material 3 — Google's cross-platform UI toolkit with built-in Material 3 components (`package:flutter/material`, bundled with Flutter SDK). Recommended path since `material-components-flutter` was archived in 2023. Covers widget catalog, ThemeData tokens, dynamic color, and Material 3 migration notes. Use when building cross-platform iOS/Android/Web/desktop UI in Flutter.
 ---
 
 # Flutter Material 3 — SDK Built-in UI

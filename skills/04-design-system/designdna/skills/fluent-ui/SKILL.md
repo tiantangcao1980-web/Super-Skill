@@ -1,6 +1,6 @@
 ---
 name: fluent-ui
-description: Microsoft Fluent UI — Fluent 2 design language implementation. `@fluentui/react-components` v9 (React, active, used by Teams/Copilot) + `@fluentui/web-components` v3 RC (framework-agnostic). Use for Microsoft 365 plugin integration, Teams apps, enterprise apps wanting Fluent aesthetic. ⚠️ v8 (`@fluentui/react` / Fabric) is maintenance-only.
+description: Microsoft Fluent UI — Fluent 2 design language implementation. `@fluentui/react-components` v9 (React, active, used by Teams/Copilot) + `@fluentui/web-components` v3 RC (framework-agnostic). Use for Microsoft 365 plugin integration, Teams apps, enterprise apps wanting Fluent aesthetic. ⚠️ v8 (`@fluentui/react` / Fabric) is maintenance-only. Use when building a React desktop or B2B admin/dashboard UI.
 ---
 
 # Fluent UI — Microsoft Design Language

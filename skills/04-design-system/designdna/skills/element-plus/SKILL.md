@@ -1,6 +1,6 @@
 ---
 name: element-plus
-description: Element Plus — Vue 3 flagship desktop component library from Eleme/Ele.me (26k stars, active). Chinese-localized, mature, most-used Vue 3 B2B admin library in China. Covers 60+ components with full Vue 3 Composition API, theme tokens, and SFC-optimized imports.
+description: Element Plus — Vue 3 flagship desktop component library from Eleme/Ele.me (26k stars, active). Chinese-localized, mature, most-used Vue 3 B2B admin library in China. Covers 60+ components with full Vue 3 Composition API, theme tokens, and SFC-optimized imports. Use when building a Vue 3 desktop or enterprise admin UI.
 ---
 
 {% raw %}

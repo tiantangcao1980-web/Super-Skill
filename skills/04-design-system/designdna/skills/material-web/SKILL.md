@@ -1,6 +1,6 @@
 ---
 name: material-web
-description: Material Web — Google's framework-agnostic Lit-based Web Components implementation of Material 3 (~9k stars, currently in maintenance mode). Safe for existing projects. For new React projects, MUI is usually the stronger path (see `mui-material` skill).
+description: Material Web — Google's framework-agnostic Lit-based Web Components implementation of Material 3 (~9k stars, currently in maintenance mode). Safe for existing projects. For new React projects, MUI is usually the stronger path (see `mui-material` skill). Use when building a React desktop or B2B admin/dashboard UI.
 ---
 
 # Material Web (@material/web)

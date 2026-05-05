@@ -1,6 +1,6 @@
 ---
 name: security-review
-description: Run a comprehensive security review on code
+description: Run a comprehensive security audit covering OWASP Top 10, hardcoded secrets, unsafe patterns, dependency vulnerabilities, authentication/authorization gaps, and crypto misuse. Use when auditing code before release, reviewing sensitive changes (auth, payments, data handling), responding to a security incident, or asked for "security review", "security audit", "vulnerability scan", or "安全审查/安全审计".
 ---
 
 # Security Review Skill

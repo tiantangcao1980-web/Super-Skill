@@ -1,6 +1,6 @@
 ---
 name: gpt-image-2
-description: OpenAI GPT Image 2 skill for production visual asset generation and editing. Covers Image API vs Responses API selection, prompt-to-asset workflows, high-fidelity edits, output sizing, compression, moderation, cost controls, and DesignDNA-ready asset handoff.
+description: OpenAI GPT Image 2 skill for production visual asset generation and editing. Covers Image API vs Responses API selection, prompt-to-asset workflows, high-fidelity edits, output sizing, compression, moderation, cost controls, and DesignDNA-ready asset handoff. Use when generating marketing/product visuals, editing brand assets, batch-producing illustrations or social-media images, or replacing stock photography with on-brand AI-generated imagery.
 ---
 
 {% raw %}

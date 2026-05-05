@@ -1,6 +1,6 @@
 ---
 name: nutui-templates
-description: NutUI official page templates skill — JD-style Vue 3 and React page/layout templates for mobile H5 and Taro MiniProgram (152 stars, active). Covers template taxonomy (home / product / order / checkout / me), how to scaffold from a template, and integration with NutUI Vue / React.
+description: NutUI official page templates skill — JD-style Vue 3 and React page/layout templates for mobile H5 and Taro MiniProgram (152 stars, active). Covers template taxonomy (home / product / order / checkout / me), how to scaffold from a template, and integration with NutUI Vue / React. Use when building a React mobile H5 / Taro Mini Program UI.
 ---
 
 {% raw %}

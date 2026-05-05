@@ -1,6 +1,6 @@
 ---
 name: apple-hig
-description: Apple Human Interface Guidelines skill — spec (not code library) for iOS / iPadOS / macOS / visionOS / watchOS / tvOS native apps. Use as design token source for SwiftUI or as visual reference when replicating Apple aesthetics on the web. Includes SF Pro typography, spacing scale, corner radius tokens, dynamic system colors, Liquid Glass materials (WWDC 2025), and HIG principles.
+description: Apple Human Interface Guidelines skill — spec (not code library) for iOS / iPadOS / macOS / visionOS / watchOS / tvOS native apps. Use as design token source for SwiftUI or as visual reference when replicating Apple aesthetics on the web. Includes SF Pro typography, spacing scale, corner radius tokens, dynamic system colors, Liquid Glass materials (WWDC 2025), and HIG principles. Use when designing for or replicating Apple platform native aesthetics (iOS/macOS/visionOS/watchOS/tvOS).
 ---
 
 # Apple Human Interface Guidelines — Design Spec Reference

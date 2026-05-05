@@ -1,6 +1,6 @@
 ---
 name: ant-design-vue
-description: Ant Design Vue (antdv) — community Vue 3 port of Ant Design (20k stars, v4.x, active). Visual and API parity with React antd. For Vue 3 B2B admin apps wanting antd's design language. Covers installation, component catalog, v3 → v4 migration, on-demand imports, and theme tokens.
+description: Ant Design Vue (antdv) — community Vue 3 port of Ant Design (20k stars, v4.x, active). Visual and API parity with React antd. For Vue 3 B2B admin apps wanting antd's design language. Covers installation, component catalog, v3 → v4 migration, on-demand imports, and theme tokens. Use when building a React desktop or B2B admin/dashboard UI.
 ---
 
 {% raw %}

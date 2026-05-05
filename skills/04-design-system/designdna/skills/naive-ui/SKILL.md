@@ -1,6 +1,6 @@
 ---
 name: naive-ui
-description: Naive UI — modern TypeScript-first Vue 3 component library (17k stars, active, endorsed by Evan You). No CSS file to import (CSS-in-JS), full TS types, flexible theming via JS config. 80+ components. Best for Vue 3 teams wanting typed API and modern-flexible theming without CSS overhead.
+description: Naive UI — modern TypeScript-first Vue 3 component library (17k stars, active, endorsed by Evan You). No CSS file to import (CSS-in-JS), full TS types, flexible theming via JS config. 80+ components. Best for Vue 3 teams wanting typed API and modern-flexible theming without CSS overhead. Use when building a Vue 3 desktop or enterprise admin UI.
 ---
 
 # Naive UI — Vue 3 TypeScript-First

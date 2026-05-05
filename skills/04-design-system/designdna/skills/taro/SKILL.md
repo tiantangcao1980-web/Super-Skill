@@ -1,6 +1,6 @@
 ---
 name: taro
-description: Taro cross-platform framework skill — compile React/Vue/Nerv to 7+ MiniProgram vendors (WeChat, Alipay, ByteDance, Baidu, QQ, JD, Kuaishou) + H5 + React Native + HarmonyOS from one codebase. Includes project setup, config, compilation targets, and common pitfalls. For UI components, pair with `nutui-react` or `nutui-vue` skill.
+description: Taro cross-platform framework skill — compile React/Vue/Nerv to 7+ MiniProgram vendors (WeChat, Alipay, ByteDance, Baidu, QQ, JD, Kuaishou) + H5 + React Native + HarmonyOS from one codebase. Includes project setup, config, compilation targets, and common pitfalls. For UI components, pair with `nutui-react` or `nutui-vue` skill. Use when targeting multiple Mini Program vendors + H5 + native from one React/Vue codebase.
 ---
 
 # Taro — Cross-Platform MiniProgram Framework

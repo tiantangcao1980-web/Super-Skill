@@ -237,6 +237,67 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertFalse(payload["ok"])
         self.assertEqual(payload["error"]["code"], "LIVE_EVALS_FAILED")
 
+    def test_adapt_dry_run_emits_file_per_tool(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            for tool in ("cursor", "trae", "windsurf", "opencode", "claude-code", "openclaw"):
+                data = run_cli("adapt", "--tool", tool, "--project", td, "--dry-run")
+                self.assertEqual(data["tool"], tool)
+                self.assertEqual(data["dry_run"], True)
+                self.assertEqual(data["written"], [])
+                self.assertEqual(len(data["files"]), 1)
+                self.assertGreater(data["files"][0]["bytes"], 100)
+
+    def test_adapt_real_write_creates_files(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            data = run_cli("adapt", "--tool", "cursor", "--project", td)
+            self.assertEqual(len(data["written"]), 1)
+            wrote = Path(data["written"][0])
+            self.assertTrue(wrote.exists())
+            content = wrote.read_text(encoding="utf-8")
+            self.assertIn("Super Skill Bridge (Cursor)", content)
+            self.assertIn("agent-memory-dream-loop", content)
+
+    def test_adapt_codex_and_hermes_emit_instructions(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            for tool in ("codex", "hermes"):
+                data = run_cli("adapt", "--tool", tool, "--project", td)
+                self.assertEqual(data["written"], [])
+                self.assertGreater(len(data["notes"]), 0)
+                joined = " ".join(data["notes"])
+                self.assertIn("super-skill install", joined)
+
+    def test_adapt_does_not_overwrite_without_force(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            run_cli("adapt", "--tool", "cursor", "--project", td)
+            data = run_cli("adapt", "--tool", "cursor", "--project", td)
+            # Second run should skip because file exists.
+            joined_notes = " ".join(data["notes"])
+            self.assertIn("skipped existing", joined_notes)
+            self.assertEqual(data["written"], [])
+            # With --force it overwrites.
+            data2 = run_cli("adapt", "--tool", "cursor", "--project", td, "--force")
+            self.assertEqual(len(data2["written"]), 1)
+
+    def test_llm_eval_stub_passes_full_loop(self) -> None:
+        data = run_cli("llm-eval", "--provider", "stub")
+        self.assertEqual(data["provider"], "stub")
+        self.assertEqual(len(data["phases"]), 3)
+        stages = [p["stage"] for p in data["phases"]]
+        self.assertEqual(stages, ["contract", "implementation", "gate"])
+        contract_grade = data["phases"][0]["grade"]
+        self.assertTrue(contract_grade["ok"])
+        self.assertEqual(set(contract_grade["found"]), {"goal", "acceptance", "evidence"})
+        gate_grade = data["phases"][2]["grade"]
+        self.assertTrue(gate_grade["ok"])
+        self.assertEqual(gate_grade["verdict"], "pass")
+        self.assertTrue(data["ok"])
+
+    def test_llm_eval_stub_with_show_outputs_includes_payload(self) -> None:
+        data = run_cli("llm-eval", "--provider", "stub", "--show-outputs", "--prompt", "make a counter")
+        self.assertIn("outputs", data)
+        self.assertIn("contract", data["outputs"])
+        self.assertIn("Intent Contract", data["outputs"]["contract"])
+
 
 if __name__ == "__main__":
     unittest.main()

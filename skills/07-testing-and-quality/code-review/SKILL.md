@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: Run a comprehensive code review
+description: Run a comprehensive code review with severity-rated feedback on quality, security, maintainability, and test coverage. Use when reviewing a pull request, auditing a diff before merge, evaluating recently changed files, or asked for "code review", "review my code", "review PR", or "审查代码".
 ---
 
 # Code Review Skill

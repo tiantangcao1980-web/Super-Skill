@@ -1,6 +1,6 @@
 ---
 name: ant-design
-description: Ant Design (antd) React component library skill — Alibaba's flagship enterprise React UI (97k+ stars, v6.x, active). The de-facto standard for B2B admin/dashboard in China and widely used globally. Covers 60+ components with Form/Table patterns, v6 CSS-variable theming, App/ConfigProvider usage, @ant-design/cli, and v5 → v6 migration notes.
+description: Ant Design (antd) React component library skill — Alibaba's flagship enterprise React UI (97k+ stars, v6.x, active). The de-facto standard for B2B admin/dashboard in China and widely used globally. Covers 60+ components with Form/Table patterns, v6 CSS-variable theming, App/ConfigProvider usage, @ant-design/cli, and v5 → v6 migration notes. Use when building a React desktop or B2B admin/dashboard UI.
 ---
 
 {% raw %}

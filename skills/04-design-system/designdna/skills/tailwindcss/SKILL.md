@@ -1,6 +1,6 @@
 ---
 name: tailwindcss
-description: Tailwind CSS v4 — utility-first CSS framework (87k+ stars, active). The dominant CSS choice for modern React/Vue/Svelte projects. v4 uses Oxide engine (much faster) and native CSS `@theme` directive. Covers install, v3 → v4 migration, design token customization, and common UI patterns.
+description: Tailwind CSS v4 — utility-first CSS framework (87k+ stars, active). The dominant CSS choice for modern React/Vue/Svelte projects. v4 uses Oxide engine (much faster) and native CSS `@theme` directive. Covers install, v3 → v4 migration, design token customization, and common UI patterns. Use when building a React desktop or B2B admin/dashboard UI.
 ---
 
 # Tailwind CSS v4 — Utility-First CSS

@@ -1,6 +1,6 @@
 ---
 name: mui-x
-description: MUI X — enterprise React components for MUI (v9, active, MIT + Pro/Premium tiers). DataGrid (most capable React table), Charts, DatePicker Pro (range, multi-input), TreeView. Pair with `mui-material` skill. Community tier covers 80% of needs; Pro unlocks column pinning, row grouping, Excel export; Premium adds aggregation, clipboard, row reordering.
+description: MUI X — enterprise React components for MUI (v9, active, MIT + Pro/Premium tiers). DataGrid (most capable React table), Charts, DatePicker Pro (range, multi-input), TreeView. Pair with `mui-material` skill. Community tier covers 80% of needs; Pro unlocks column pinning, row grouping, Excel export; Premium adds aggregation, clipboard, row reordering. Use when building a React desktop or B2B admin/dashboard UI.
 ---
 
 {% raw %}
