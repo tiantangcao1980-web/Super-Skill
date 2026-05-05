@@ -1,0 +1,235 @@
+#!/usr/bin/env python3
+"""Minimal MCP server that exposes Super Skill commands as tools.
+
+This is an intentionally tiny, stdlib-only implementation of the Model Context
+Protocol over stdio (JSON-RPC 2.0). It is sufficient to be loaded by Claude
+Desktop / Claude Code / Cursor / any MCP-aware client and call:
+
+  - autopilot(prompt, provider="stub", project=".", run_id=None, ...)
+  - resume(project=".", run_id=None, list=False, ...)
+  - llm_eval(prompt=None, provider="stub")
+
+The tools wrap `bin/super-skill` via subprocess. We deliberately do not
+re-implement the CLI here — the canonical surface stays the CLI so behavior is
+identical for human and MCP clients.
+
+Protocol notes (subset of MCP we implement):
+  - initialize → {protocolVersion, capabilities, serverInfo}
+  - notifications/initialized (no reply)
+  - tools/list → {tools: [...]}
+  - tools/call → {content: [{type:"text", text:"..."}], isError?}
+  - shutdown → {} (graceful close)
+
+Anything else returns method-not-found per JSON-RPC.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+from typing import Any
+
+REPO_ROOT = Path(__file__).resolve().parents[2].parent  # plugins/<name>/scripts/ -> repo root
+SUPER_SKILL_BIN = REPO_ROOT / "bin" / "super-skill"
+SCRIPT_PATH = REPO_ROOT / "scripts" / "super_skill.py"
+
+PROTOCOL_VERSION = "2024-11-05"
+
+
+def emit(payload: dict) -> None:
+    sys.stdout.write(json.dumps(payload, ensure_ascii=False) + "\n")
+    sys.stdout.flush()
+
+
+def reply(req_id: Any, result: dict | None = None, error: dict | None = None) -> None:
+    out: dict[str, Any] = {"jsonrpc": "2.0", "id": req_id}
+    if error is not None:
+        out["error"] = error
+    else:
+        out["result"] = result or {}
+    emit(out)
+
+
+def call_super_skill(argv: list[str], timeout: int = 120) -> dict:
+    """Subprocess into bin/super-skill, return parsed JSON if --json was passed."""
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT_PATH), *argv, "--json"],
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        check=False,
+    )
+    try:
+        body = json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        body = {"ok": False, "error": {"code": "BAD_OUTPUT", "stdout_tail": proc.stdout[-400:], "stderr_tail": proc.stderr[-400:]}}
+    body["_returncode"] = proc.returncode
+    return body
+
+
+TOOLS = [
+    {
+        "name": "autopilot",
+        "description": (
+            "Run the Super Skill autonomous closed-loop harness end-to-end "
+            "(intent → spec → design → ralph-loop impl → simplifier → quality gate "
+            "→ memory candidate). Produces checkpointed artifacts under "
+            "<project>/.super-skill/autopilot/<run-id>/. Use 'stub' provider for "
+            "deterministic offline runs; use 'anthropic' (env ANTHROPIC_API_KEY) for "
+            "real LLM."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "prompt": {"type": "string", "description": "User request that drives the run"},
+                "provider": {"type": "string", "enum": ["auto", "stub", "anthropic"], "default": "stub"},
+                "project": {"type": "string", "default": ".", "description": "Workspace root"},
+                "run_id": {"type": "string", "description": "Optional explicit run id"},
+                "max_ralph_rounds": {"type": "integer", "default": 20},
+                "skip": {"type": "string", "description": "Comma-separated phase ids to skip"},
+                "force": {"type": "boolean", "default": False},
+                "dry_run": {"type": "boolean", "default": False},
+            },
+            "required": ["prompt"],
+        },
+    },
+    {
+        "name": "resume",
+        "description": "Resume the latest (or named) autopilot run. With list=true, only report pending vs completed phases.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "project": {"type": "string", "default": "."},
+                "run_id": {"type": "string"},
+                "list": {"type": "boolean", "default": False},
+                "provider": {"type": "string", "enum": ["auto", "stub", "anthropic"], "default": "stub"},
+                "max_ralph_rounds": {"type": "integer", "default": 20},
+                "skip": {"type": "string"},
+                "dry_run": {"type": "boolean", "default": False},
+            },
+        },
+    },
+    {
+        "name": "llm_eval",
+        "description": "Run a real (or stubbed) intent-contract → implementation → output-quality-gate round trip and report token usage + grader results.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "prompt": {"type": "string"},
+                "provider": {"type": "string", "enum": ["auto", "stub", "anthropic"], "default": "stub"},
+                "show_outputs": {"type": "boolean", "default": False},
+            },
+        },
+    },
+]
+
+
+def build_argv_autopilot(args: dict) -> list[str]:
+    argv = ["autopilot", "--prompt", str(args.get("prompt", ""))]
+    argv += ["--provider", args.get("provider", "stub")]
+    argv += ["--project", args.get("project", ".")]
+    if args.get("run_id"): argv += ["--run-id", args["run_id"]]
+    if args.get("max_ralph_rounds") is not None: argv += ["--max-ralph-rounds", str(args["max_ralph_rounds"])]
+    if args.get("skip"): argv += ["--skip", args["skip"]]
+    if args.get("force"): argv += ["--force"]
+    if args.get("dry_run"): argv += ["--dry-run"]
+    return argv
+
+
+def build_argv_resume(args: dict) -> list[str]:
+    argv = ["resume", "--project", args.get("project", ".")]
+    argv += ["--provider", args.get("provider", "stub")]
+    if args.get("run_id"): argv += ["--run-id", args["run_id"]]
+    if args.get("list"): argv += ["--list"]
+    if args.get("max_ralph_rounds") is not None: argv += ["--max-ralph-rounds", str(args["max_ralph_rounds"])]
+    if args.get("skip"): argv += ["--skip", args["skip"]]
+    if args.get("dry_run"): argv += ["--dry-run"]
+    return argv
+
+
+def build_argv_llm_eval(args: dict) -> list[str]:
+    argv = ["llm-eval", "--provider", args.get("provider", "stub")]
+    if args.get("prompt"): argv += ["--prompt", args["prompt"]]
+    if args.get("show_outputs"): argv += ["--show-outputs"]
+    return argv
+
+
+TOOL_DISPATCH = {
+    "autopilot": build_argv_autopilot,
+    "resume": build_argv_resume,
+    "llm_eval": build_argv_llm_eval,
+}
+
+
+def handle_tools_call(req_id: Any, params: dict) -> None:
+    name = params.get("name")
+    args = params.get("arguments") or {}
+    builder = TOOL_DISPATCH.get(name)
+    if not builder:
+        reply(req_id, error={"code": -32601, "message": f"unknown tool: {name}"})
+        return
+    try:
+        argv = builder(args)
+    except Exception as exc:
+        reply(req_id, error={"code": -32602, "message": f"invalid arguments: {exc}"})
+        return
+    body = call_super_skill(argv)
+    is_error = not bool(body.get("ok"))
+    text = json.dumps(body, ensure_ascii=False, indent=2)
+    reply(req_id, result={"content": [{"type": "text", "text": text}], "isError": is_error})
+
+
+def handle_request(message: dict) -> None:
+    method = message.get("method")
+    req_id = message.get("id")
+    params = message.get("params") or {}
+
+    if method == "initialize":
+        reply(req_id, result={
+            "protocolVersion": PROTOCOL_VERSION,
+            "capabilities": {"tools": {}},
+            "serverInfo": {"name": "super-skill-mcp-server", "version": "0.1.0"},
+        })
+        return
+    if method == "notifications/initialized":
+        return  # no reply
+    if method == "tools/list":
+        reply(req_id, result={"tools": TOOLS})
+        return
+    if method == "tools/call":
+        handle_tools_call(req_id, params)
+        return
+    if method == "shutdown":
+        reply(req_id, result={})
+        return
+    if method == "ping":
+        reply(req_id, result={})
+        return
+
+    if req_id is None:
+        return  # notification we don't handle
+    reply(req_id, error={"code": -32601, "message": f"method not found: {method}"})
+
+
+def main() -> int:
+    for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            message = json.loads(line)
+        except json.JSONDecodeError as exc:
+            emit({"jsonrpc": "2.0", "error": {"code": -32700, "message": f"parse error: {exc}"}, "id": None})
+            continue
+        try:
+            handle_request(message)
+        except Exception as exc:  # pragma: no cover - defensive
+            emit({"jsonrpc": "2.0", "id": message.get("id"), "error": {"code": -32603, "message": f"internal error: {exc}"}})
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

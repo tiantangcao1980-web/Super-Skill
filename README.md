@@ -140,8 +140,27 @@ ANTHROPIC_API_KEY=sk-... bin/super-skill llm-eval --provider anthropic --prompt 
 bin/super-skill autopilot --provider stub --prompt "Build a Python add(a,b)"
 ANTHROPIC_API_KEY=sk-... bin/super-skill autopilot --provider anthropic --project ./build \
     --prompt "Build a TODO list API with tests" --max-ralph-rounds 20
-# 跳过某阶段：--skip 03-design,07-memory；强制重跑：--force；指定运行 id：--run-id ...
+# Phase 4 真跑生成的 Python（unittest / bare-tests / py-compile），失败 stderr 回喂 ralph-loop
+
+# 续跑被中断的 run（默认最新；--list 只看 pending vs completed 不重跑）
+bin/super-skill resume --project ./build --list
+bin/super-skill resume --project ./build
+
+# 把 run.json 渲染成单页 HTML 时间线（自包含、无依赖）
+bin/super-skill visualize --project ./build
+# 输出：<project>/.super-skill/autopilot/<run-id>/timeline.html
+
+# MCP server 化：让 Claude Desktop / Cursor 直接像调函数一样触发
+python3 plugins/super-skill-mcp-server/scripts/mcp_server.py
+# 配置参考：plugins/super-skill-mcp-server/README.md
 ```
+
+### 完整 demo（含 sample 产物）
+
+`examples/autopilot-demo/` 内含：
+
+- `run-real-autopilot.sh` — 设了 `ANTHROPIC_API_KEY` 走真实 API；没设自动 fallback 到 stub
+- `sample-run/` — 一次 stub 跑出来的 7 阶段产物 + run.json + timeline.html，作为"成品长什么样"的参考
 
 Profiles:
 

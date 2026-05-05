@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang='en'><head><meta charset='utf-8'><title>Autopilot · 20260505-172630-134-18fe4b</title>
+<style>
+        :root { --bg:#0F172A; --fg:#F1F5F9; --muted:#94A3B8; --pill-fg:#0F172A; }
+        body { background:var(--bg); color:var(--fg); font-family: 'Source Serif Pro','Charter','Iowan Old Style',Georgia,serif; max-width:960px; margin:2rem auto; padding:0 1rem; }
+        h1 { font-size:2.2rem; margin:0 0 0.4rem; }
+        .meta { color:var(--muted); font-family: 'JetBrains Mono','Menlo',monospace; font-size:.85rem; margin-bottom:2rem; }
+        .verdict { font-size:1.4rem; font-weight:700; padding:0.4rem 1rem; border-radius:0.4rem; color:var(--pill-fg); }
+        .timeline { display:grid; gap:1rem; }
+        .phase { background:rgba(255,255,255,0.04); border-left:4px solid var(--muted); padding:0.8rem 1.2rem; border-radius:0 0.4rem 0.4rem 0; }
+        .phase header { display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap; }
+        .phase header h3 { margin:0; flex:1 1 100%; font-size:1.05rem; }
+        .pill { color:var(--pill-fg); padding:0.15rem 0.55rem; border-radius:1rem; font-size:0.75rem; font-family: 'JetBrains Mono',monospace; font-weight:600; }
+        dl { display:grid; grid-template-columns: max-content 1fr; gap:0.2rem 0.8rem; margin:0.6rem 0; font-size:0.9rem; }
+        dt { color:var(--muted); }
+        code { font-family: 'JetBrains Mono',monospace; font-size:0.85em; }
+        details.attempts { margin-top:0.6rem; }
+        details summary { cursor:pointer; color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:0.8rem; }
+        table { width:100%; border-collapse:collapse; margin-top:0.4rem; font-family:'JetBrains Mono',monospace; font-size:0.78rem; }
+        th, td { text-align:left; padding:0.3rem 0.5rem; border-bottom:1px solid rgba(255,255,255,0.08); vertical-align:top; }
+        pre { margin:0; white-space:pre-wrap; word-break:break-word; max-width:36ch; }
+    </style></head><body>
+<h1>Autopilot run</h1>
+<div class='meta'>
+  <span class='verdict' style='background:#14B8A6'>PASS</span>
+  &nbsp;run-id <code>20260505-172630-134-18fe4b</code>
+  · provider <code>stub</code>
+  · model <code>stub-deterministic-v1</code>
+  · started 2026-05-05 17:26:30
+  · failed-phase <code>—</code>
+</div>
+<p style='color:var(--muted);font-style:italic;'>“Build a calculator”</p>
+<section class='timeline'><article class='phase'><header><h3>01-intent · Intent Contract</h3><span class='pill' style='background:#14B8A6'>ok</span><span class='pill' style='background:#14B8A6'>ok</span></header><dl><dt>skill</dt><dd><code>intent-contract</code></dd><dt>tokens</dt><dd>in=1605 · out=352</dd><dt>output</dt><dd><code>01-intent-contract.md</code></dd></dl></article><article class='phase'><header><h3>02-spec · Product Spec</h3><span class='pill' style='background:#14B8A6'>ok</span></header><dl><dt>skill</dt><dd><code>product-spec</code></dd><dt>tokens</dt><dd>in=3508 · out=375</dd><dt>output</dt><dd><code>02-product-spec.md</code></dd></dl></article><article class='phase'><header><h3>03-design · Design Direction</h3><span class='pill' style='background:#14B8A6'>ok</span></header><dl><dt>skill</dt><dd><code>design-templates</code></dd><dt>tokens</dt><dd>in=5111 · out=363</dd><dt>output</dt><dd><code>03-design.md</code></dd></dl></article><article class='phase'><header><h3>04-impl · Implementation (Ralph loop)</h3><span class='pill' style='background:#14B8A6'>ok</span></header><dl><dt>skill</dt><dd><code>ralph-loop</code></dd><dt>tokens</dt><dd>in=7306 · out=320</dd><dt>output</dt><dd><code>04-implementation.md</code></dd></dl><details class='attempts'><summary>Ralph attempts</summary><table><thead><tr><th>#</th><th>kind</th><th>rc</th><th>ok</th><th>tokens_out</th><th>stderr_tail</th></tr></thead><tbody><tr><td>1</td><td>bare-tests</td><td>0</td><td>✓</td><td>320</td><td><pre></pre></td></tr></tbody></table></details></article><article class='phase'><header><h3>05-simplify · Code Simplifier</h3><span class='pill' style='background:#14B8A6'>ok</span></header><dl><dt>skill</dt><dd><code>code-simplifier</code></dd><dt>tokens</dt><dd>in=5088 · out=103</dd><dt>output</dt><dd><code>05-simplified.md</code></dd></dl></article><article class='phase'><header><h3>06-gate · Output Quality Gate</h3><span class='pill' style='background:#14B8A6'>ok</span><span class='pill' style='background:#14B8A6'>verdict=pass score=8</span></header><dl><dt>skill</dt><dd><code>output-quality-gate</code></dd><dt>tokens</dt><dd>in=3132 · out=138</dd><dt>output</dt><dd><code>06-quality-gate.json</code></dd></dl></article><article class='phase'><header><h3>07-memory · Memory Candidate</h3><span class='pill' style='background:#14B8A6'>ok</span></header><dl><dt>skill</dt><dd><code>agent-memory-dream-loop</code></dd><dt>tokens</dt><dd>in=7390 · out=358</dd><dt>output</dt><dd><code>07-memory-candidate.md</code></dd></dl></article></section>
+</body></html>

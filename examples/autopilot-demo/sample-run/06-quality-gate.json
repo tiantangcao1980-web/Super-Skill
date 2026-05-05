@@ -1,0 +1,8 @@
+{
+  "matches_intent": true,
+  "evidence_present": true,
+  "missing": [],
+  "score": 8,
+  "verdict": "pass",
+  "trace": "stub-f107dbd4b4"
+}

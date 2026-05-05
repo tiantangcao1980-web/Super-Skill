@@ -12,6 +12,20 @@ ROOT = Path(__file__).resolve().parents[1]
 CLI = ROOT / "scripts" / "super_skill.py"
 
 
+def _load_super_skill_module():
+    """Load scripts/super_skill.py once, register it in sys.modules so unittest
+    can resolve __module__ for any classes defined there."""
+    if "super_skill" in sys.modules:
+        return sys.modules["super_skill"]
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("super_skill", ROOT / "scripts" / "super_skill.py")
+    mod = importlib.util.module_from_spec(spec)
+    assert spec and spec.loader
+    sys.modules["super_skill"] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
 def run_cli(*args: str) -> dict:
     proc = subprocess.run(
         [sys.executable, str(CLI), *args, "--json"],
@@ -364,6 +378,126 @@ class SuperSkillCliTests(unittest.TestCase):
         proj = data["projects"][0]
         self.assertEqual(proj["project"], "autopilot-end-to-end")
         self.assertTrue(proj["ok"])
+
+    def test_autopilot_phase4_runs_real_python_tests(self) -> None:
+        """Phase-4 ralph loop should record kind=bare-tests/unittest/py-compile,
+        not just a length heuristic. Stub's candidate has bare def test_*()."""
+        with tempfile.TemporaryDirectory() as td:
+            data = run_cli("autopilot", "--provider", "stub", "--project", td, "--prompt", "add a,b")
+            phase4 = next(p for p in data["phases"] if p["phase"] == "04-impl")
+            attempts = phase4["ralph_attempts"]
+            self.assertGreaterEqual(len(attempts), 1)
+            kinds = {a["test_kind"] for a in attempts}
+            # Stub emits bare def test_* style; runner picks bare-tests.
+            self.assertIn("bare-tests", kinds)
+            self.assertEqual(attempts[-1]["test_returncode"], 0)
+            self.assertTrue(attempts[-1]["ok"])
+
+    def test_autopilot_python_runner_detects_broken_code(self) -> None:
+        """Direct test of the Phase-4 sandbox runner — failure path."""
+        mod = _load_super_skill_module()
+        with tempfile.TemporaryDirectory() as td:
+            broken = "def test_thing():\n    assert 1 == 2  # always fails\n"
+            res = mod.autopilot_run_python_tests(broken, Path(td) / "broken")
+            self.assertFalse(res["ok"])
+            self.assertEqual(res["kind"], "bare-tests")
+            self.assertNotEqual(res["returncode"], 0)
+            self.assertIn("FAIL", res.get("stderr_tail", ""))
+
+            syntax_err = "def lol(:\n    pass\n"
+            res2 = mod.autopilot_run_python_tests(syntax_err, Path(td) / "broken2")
+            self.assertFalse(res2["ok"])
+            self.assertIn(res2["kind"], {"py-compile", "bare-tests"})
+
+            ok_code = "def add(a,b): return a+b\n\ndef test_add():\n    assert add(1,2) == 3\n"
+            res3 = mod.autopilot_run_python_tests(ok_code, Path(td) / "ok")
+            self.assertTrue(res3["ok"])
+            self.assertEqual(res3["kind"], "bare-tests")
+
+    def test_resume_list_reports_completed_and_pending(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            first = run_cli("autopilot", "--provider", "stub", "--project", td, "--prompt", "Build add(a,b)")
+            run_id = first["run_id"]
+            data = run_cli("resume", "--project", td, "--run-id", run_id, "--list")
+            self.assertEqual(data["run_id"], run_id)
+            self.assertEqual(len(data["completed_phases"]), 7)
+            self.assertEqual(data["pending_phases"], [])
+
+    def test_resume_picks_latest_run_by_default(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            first = run_cli("autopilot", "--provider", "stub", "--project", td, "--prompt", "First")
+            second = run_cli("autopilot", "--provider", "stub", "--project", td, "--prompt", "Second")
+            data = run_cli("resume", "--project", td, "--list")
+            # Latest is `second` because run ids sort lexicographically by timestamp.
+            self.assertEqual(data["run_id"], second["run_id"])
+
+    def test_mcp_server_responds_to_initialize_and_tools_list(self) -> None:
+        ROOT = Path(__file__).resolve().parents[1]
+        server = ROOT / "plugins" / "super-skill-mcp-server" / "scripts" / "mcp_server.py"
+        dialogue = "\n".join([
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{}}}',
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}',
+            '{"jsonrpc":"2.0","id":3,"method":"shutdown"}',
+        ]) + "\n"
+        proc = subprocess.run(
+            [sys.executable, str(server)],
+            input=dialogue, capture_output=True, text=True, timeout=15, check=False,
+        )
+        lines = [json.loads(l) for l in proc.stdout.splitlines() if l.strip()]
+        self.assertEqual(len(lines), 3)
+        self.assertEqual(lines[0]["result"]["serverInfo"]["name"], "super-skill-mcp-server")
+        tool_names = [t["name"] for t in lines[1]["result"]["tools"]]
+        self.assertIn("autopilot", tool_names)
+        self.assertIn("resume", tool_names)
+        self.assertIn("llm_eval", tool_names)
+
+    def test_mcp_server_dispatches_autopilot_dry_run(self) -> None:
+        ROOT = Path(__file__).resolve().parents[1]
+        server = ROOT / "plugins" / "super-skill-mcp-server" / "scripts" / "mcp_server.py"
+        with tempfile.TemporaryDirectory() as td:
+            dialogue = "\n".join([
+                '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{}}}',
+                json.dumps({
+                    "jsonrpc": "2.0", "id": 2, "method": "tools/call",
+                    "params": {"name": "autopilot", "arguments": {"prompt": "p", "provider": "stub", "project": td, "dry_run": True}},
+                }),
+            ]) + "\n"
+            proc = subprocess.run(
+                [sys.executable, str(server)],
+                input=dialogue, capture_output=True, text=True, timeout=30, check=False,
+            )
+            lines = [json.loads(l) for l in proc.stdout.splitlines() if l.strip()]
+            call_reply = lines[1]
+            self.assertFalse(call_reply["result"].get("isError"))
+            inner = json.loads(call_reply["result"]["content"][0]["text"])
+            self.assertTrue(inner["ok"])
+            self.assertEqual(len(inner["data"]["phases_planned"]), 7)
+
+    def test_visualize_renders_html_for_latest_run(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            run_cli("autopilot", "--provider", "stub", "--project", td, "--prompt", "render me")
+            data = run_cli("visualize", "--project", td)
+            html_path = Path(data["output"])
+            self.assertTrue(html_path.exists())
+            html = html_path.read_text(encoding="utf-8")
+            self.assertIn("Autopilot run", html)
+            self.assertIn("Intent Contract", html)
+            self.assertIn("Output Quality Gate", html)
+            self.assertIn("Ralph attempts", html)
+
+    def test_visualize_uses_explicit_run_id(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            first = run_cli("autopilot", "--provider", "stub", "--project", td, "--prompt", "first")
+            data = run_cli("visualize", "--project", td, "--run-id", first["run_id"])
+            self.assertIn(first["run_id"], data["output"])
+
+    def test_autopilot_extract_code_picks_largest_fenced_block(self) -> None:
+        mod = _load_super_skill_module()
+        text = "Intro\n```python\ndef tiny(): pass\n```\nMiddle\n```python\ndef bigger():\n    return 42\n\nclass T:\n    pass\n```\nDone."
+        lang, code = mod.autopilot_extract_code(text)
+        self.assertEqual(lang, "python")
+        self.assertIn("bigger", code)
+        self.assertNotIn("tiny", code)
 
 
 if __name__ == "__main__":

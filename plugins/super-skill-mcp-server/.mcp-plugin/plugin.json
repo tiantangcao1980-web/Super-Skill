@@ -1,0 +1,21 @@
+{
+  "name": "super-skill-mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server that exposes Super Skill autopilot, resume, and llm-eval as tools.",
+  "author": {
+    "name": "Super Skill",
+    "url": "https://github.com/tiantangcao1980-web/Super-Skill"
+  },
+  "homepage": "https://github.com/tiantangcao1980-web/Super-Skill",
+  "license": "MIT",
+  "transport": "stdio",
+  "command": "python3",
+  "args": [
+    "./scripts/mcp_server.py"
+  ],
+  "tools": [
+    "autopilot",
+    "resume",
+    "llm_eval"
+  ]
+}
