@@ -50,6 +50,12 @@ ANTHROPIC_API_KEY=sk-... bin/super-skill autopilot --provider anthropic \
 
 # Resume a run (idempotent — completed phases are skipped unless --force).
 bin/super-skill autopilot --run-id 20260505-142110-f2771f --project ./build
+
+# Iterate on a prior run with new feedback. Each phase sees the prior version
+# alongside the feedback and produces an UPDATED artifact, not a fresh one.
+# run.json captures parent_run_id + full lineage chain.
+bin/super-skill autopilot --based-on <parent-run-id> --project ./build \
+    --feedback "User reports the rejection message is too terse; expand it and add a 4xx error code."
 ```
 
 Workspace layout: `<project>/.super-skill/autopilot/<run-id>/00-research.md …
@@ -82,6 +88,15 @@ explicitly carrying over.
 **Wrong: shipping without phase 7.** Delivery is the phase that turns "code that
 works on my laptop" into "code with a Dockerfile, a CI workflow, a kill switch,
 and a rollback plan". Skipping it leaves the project at MVP-prototype quality.
+
+**Wrong: re-running autopilot from scratch when you mean to iterate.** A new
+autopilot run with the same prompt produces a fresh contract that may drift
+from the original intent. Use `--based-on <parent-run-id> --feedback "..."`
+so each phase sees the prior version and is told to *update* it.
+
+**Wrong: feeding the prior implementation back as the new prompt.** That makes
+the contract describe code instead of intent. Iterate-mode loads prior artifacts
+into context automatically — your `--feedback` is the only thing that changes.
 
 ## Trace requirement
 

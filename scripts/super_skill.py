@@ -1919,6 +1919,11 @@ def llm_call_stub(stage: str, system: str, user: str) -> dict:
     """
     digest = hashlib_sha1(f"{stage}|{system}|{user}")[:10]
     request = user[:160].replace("\n", " ").strip()
+    # Iteration marker: stub stays deterministic but proves the iteration
+    # context reached the phase. Real-LLM mode can ignore this — the model is
+    # expected to actually rework the artifact based on the prior version.
+    is_iteration = "Prior version of this phase" in user
+    iteration_note = "\n_(Iteration: rebuilt on top of prior run; feedback applied above.)_\n" if is_iteration else ""
 
     if stage == "00-research":
         body = textwrap.dedent(f"""\
@@ -2044,6 +2049,12 @@ def llm_call_stub(stage: str, system: str, user: str) -> dict:
             """)
     else:
         body = "{}"
+    # Only annotate prose phases. Appending markdown would corrupt:
+    #   - 04-impl / 05-simplify (raw Python — would fail the test runner)
+    #   - 06-gate / "gate" (strict JSON — would fail the JSON parser)
+    structured_stages = {"implementation", "04-impl", "05-simplify", "gate", "06-gate"}
+    if iteration_note and body and body != "{}" and stage not in structured_stages:
+        body = body.rstrip() + "\n" + iteration_note
     return {"text": body, "model": "stub-deterministic-v1", "tokens_in": len(system) + len(user), "tokens_out": len(body)}
 
 
@@ -2266,7 +2277,16 @@ def autopilot_run_phase(
     prior_artifacts: dict[str, str],
     workspace: Path,
     force: bool,
+    iteration: dict | None = None,
 ) -> dict:
+    """Run one autopilot phase.
+
+    `iteration`, when provided, is the iterate-mode context:
+        {"parent_run_id": str, "feedback": str, "parent_artifacts": dict[str,str]}
+    The parent run's artifact for the SAME phase is fed in as a 'Prior version'
+    so the LLM produces an incremental update rather than re-deriving from
+    scratch. The user's new feedback is front-loaded as the first context line.
+    """
     phase_id, label, canonical, filename, system_prefix = phase
     out_path = workspace / filename
     if out_path.exists() and not force:
@@ -2284,6 +2304,16 @@ def autopilot_run_phase(
 
     skill_body = llm_load_skill_body(canonical)
     context_lines = [f"User request: {user_prompt}"]
+    if iteration:
+        if iteration.get("feedback"):
+            context_lines.append(f"\n=== New feedback (drives this iteration) ===\n{iteration['feedback']}")
+        prior_for_phase = (iteration.get("parent_artifacts") or {}).get(phase_id)
+        if prior_for_phase:
+            snippet = prior_for_phase if len(prior_for_phase) <= 4000 else prior_for_phase[:4000] + "\n[...truncated]"
+            context_lines.append(
+                f"\n=== Prior version of this phase (run {iteration.get('parent_run_id','?')}) ===\n{snippet}\n"
+                "Produce an UPDATED version that addresses the new feedback while staying anchored to the prior intent."
+            )
     for label_, content in prior_artifacts.items():
         snippet = content if len(content) <= 4000 else content[:4000] + "\n[...truncated]"
         context_lines.append(f"\n--- {label_} ---\n{snippet}")
@@ -2307,6 +2337,26 @@ def autopilot_run_phase(
     }
 
 
+def autopilot_load_parent_run(project: Path, parent_run_id: str) -> dict:
+    """Load a prior run's artifacts (keyed by phase id) and journal."""
+    parent_dir = autopilot_workspace(project, parent_run_id)
+    if not parent_dir.exists():
+        raise FileNotFoundError(f"parent run not found: {parent_dir}")
+    journal_path = parent_dir / "run.json"
+    journal = read_json_file(journal_path) if journal_path.exists() else {}
+    parent_artifacts: dict[str, str] = {}
+    for phase_id, _label, _skill, filename, _prefix in AUTOPILOT_PHASES:
+        path = parent_dir / filename
+        if path.exists():
+            parent_artifacts[phase_id] = path.read_text(encoding="utf-8")
+    return {
+        "parent_run_id": parent_run_id,
+        "parent_workspace": str(parent_dir),
+        "parent_journal": journal,
+        "parent_artifacts": parent_artifacts,
+    }
+
+
 def cmd_autopilot(args: argparse.Namespace) -> int:
     provider = args.provider
     if provider == "auto":
@@ -2316,9 +2366,30 @@ def cmd_autopilot(args: argparse.Namespace) -> int:
         "stub": "stub-deterministic-v1",
     }.get(provider, "stub-deterministic-v1")
 
-    user_prompt = args.prompt or "Build a small Python CLI that adds two numbers and ships with one unit test."
     project = Path(args.project).resolve()
     project.mkdir(parents=True, exist_ok=True)
+
+    # Iterate mode: load parent run's artifacts + journal so each phase sees a
+    # "Prior version" alongside the new feedback.
+    iteration = None
+    parent_run_id = getattr(args, "based_on", None)
+    feedback = getattr(args, "feedback", None) or ""
+    if parent_run_id:
+        try:
+            parent_ctx = autopilot_load_parent_run(project, parent_run_id)
+        except FileNotFoundError as exc:
+            emit_json(False, {"message": str(exc)}, code="USAGE") if args.json else print(str(exc))
+            return EXIT_USAGE
+        iteration = {
+            "parent_run_id": parent_run_id,
+            "feedback": feedback,
+            "parent_artifacts": parent_ctx["parent_artifacts"],
+        }
+        # If user did not supply a prompt, inherit from parent for continuity.
+        inherited_prompt = parent_ctx["parent_journal"].get("user_prompt")
+        user_prompt = args.prompt or inherited_prompt or "Iterate on the prior run."
+    else:
+        user_prompt = args.prompt or "Build a small Python CLI that adds two numbers and ships with one unit test."
 
     run_id = args.run_id or autopilot_run_id()
     workspace = autopilot_workspace(project, run_id)
@@ -2358,7 +2429,8 @@ def cmd_autopilot(args: argparse.Namespace) -> int:
             for attempt in range(1, args.max_ralph_rounds + 1):
                 local_force = args.force or attempt > 1
                 result = autopilot_run_phase(
-                    phase, provider, model, user_prompt, artifacts, workspace, force=local_force
+                    phase, provider, model, user_prompt, artifacts, workspace,
+                    force=local_force, iteration=iteration,
                 )
                 # First-line grader: non-empty / non-trivial output.
                 length_ok = bool(result["text"].strip()) and len(result["text"]) > 20
@@ -2402,7 +2474,10 @@ def cmd_autopilot(args: argparse.Namespace) -> int:
                 break
             continue
 
-        result = autopilot_run_phase(phase, provider, model, user_prompt, artifacts, workspace, force=args.force)
+        result = autopilot_run_phase(
+            phase, provider, model, user_prompt, artifacts, workspace,
+            force=args.force, iteration=iteration,
+        )
         phase_results.append(result)
         artifacts[phase[1]] = result["text"]
 
@@ -2422,6 +2497,24 @@ def cmd_autopilot(args: argparse.Namespace) -> int:
                 failed_phase = phase_id
                 break
 
+    # Build lineage chain: walk parent_run_id pointers backwards.
+    lineage: list[str] = []
+    if iteration:
+        lineage.append(parent_run_id)
+        cursor = parent_run_id
+        seen = {cursor, run_id}
+        while True:
+            try:
+                journal = read_json_file(autopilot_workspace(project, cursor) / "run.json")
+            except (FileNotFoundError, json.JSONDecodeError):
+                break
+            ancestor = journal.get("parent_run_id")
+            if not ancestor or ancestor in seen:
+                break
+            seen.add(ancestor)
+            lineage.append(ancestor)
+            cursor = ancestor
+
     # Persist the run journal.
     run_journal = {
         "run_id": run_id,
@@ -2430,6 +2523,9 @@ def cmd_autopilot(args: argparse.Namespace) -> int:
         "model": model,
         "user_prompt": user_prompt,
         "started_at": int(time.time()),
+        "parent_run_id": parent_run_id if iteration else None,
+        "feedback": feedback if iteration else None,
+        "lineage": lineage,
         "phases": [
             {k: v for k, v in pr.items() if k != "text"}
             for pr in phase_results
@@ -2482,6 +2578,9 @@ def autopilot_render_html(journal: dict, run_dir: Path) -> str:
     failed = journal.get("failed_phase") or "—"
     started = journal.get("started_at")
     started_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(started)) if started else "—"
+    parent_run_id = journal.get("parent_run_id")
+    feedback = journal.get("feedback") or ""
+    lineage = journal.get("lineage") or []
 
     phase_cards: list[str] = []
     for ph in journal.get("phases", []):
@@ -2564,9 +2663,28 @@ def autopilot_render_html(journal: dict, run_dir: Path) -> str:
     """
     user_prompt = esc(journal.get("user_prompt", "")[:200])
     run_id = esc(journal.get("run_id", run_dir.name))
+
+    lineage_block = ""
+    if parent_run_id or lineage:
+        chain_items = [f"<code>{esc(run_id)}</code> <em>(this run)</em>"]
+        for ancestor in [parent_run_id] + [a for a in lineage if a != parent_run_id]:
+            if ancestor:
+                chain_items.append(f"<code>{esc(ancestor)}</code>")
+        chain = " ← ".join(chain_items)
+        feedback_html = f"<p style='color:var(--muted);'><strong>Feedback:</strong> “{esc(feedback)}”</p>" if feedback else ""
+        lineage_block = (
+            "<section class='lineage'>"
+            f"<h2>Lineage</h2><p>{chain}</p>{feedback_html}"
+            "</section>"
+        )
+
     return f"""<!doctype html>
 <html lang='en'><head><meta charset='utf-8'><title>Autopilot · {run_id}</title>
-<style>{css}</style></head><body>
+<style>{css}
+.lineage {{ background:rgba(20,184,166,0.08); border-left:4px solid #14B8A6; padding:0.6rem 1rem; border-radius:0 0.4rem 0.4rem 0; margin:0 0 1.2rem; }}
+.lineage h2 {{ font-size:0.95rem; color:var(--muted); margin:0 0 0.4rem; font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:0.06em; }}
+.lineage p {{ margin:0; font-family:'JetBrains Mono',monospace; font-size:0.82rem; }}
+</style></head><body>
 <h1>Autopilot run</h1>
 <div class='meta'>
   <span class='verdict' style='background:{badge_color}'>{verdict}</span>
@@ -2577,6 +2695,7 @@ def autopilot_render_html(journal: dict, run_dir: Path) -> str:
   · failed-phase <code>{esc(failed)}</code>
 </div>
 <p style='color:var(--muted);font-style:italic;'>“{user_prompt}”</p>
+{lineage_block}
 <section class='timeline'>{''.join(phase_cards)}</section>
 </body></html>
 """
@@ -3818,10 +3937,14 @@ def build_parser() -> argparse.ArgumentParser:
     auto_p.add_argument("--project", default=".", help="project root that owns the run workspace")
     auto_p.add_argument("--run-id", default=None, help="explicit run id (default: timestamped)")
     auto_p.add_argument("--max-ralph-rounds", type=int, default=20)
-    auto_p.add_argument("--skip", default=None, help="comma-separated phase ids to skip (e.g. '03-design,07-memory')")
+    auto_p.add_argument("--skip", default=None, help="comma-separated phase ids to skip (e.g. '03-design,08-memory')")
     auto_p.add_argument("--force", action="store_true", help="regenerate phase artifacts even if present")
     auto_p.add_argument("--dry-run", action="store_true")
     auto_p.add_argument("--show-outputs", action="store_true")
+    auto_p.add_argument("--based-on", dest="based_on", default=None,
+        help="parent run id; in iterate mode each phase sees prior version + new feedback")
+    auto_p.add_argument("--feedback", default=None,
+        help="new feedback to drive the iteration (use with --based-on)")
     auto_p.add_argument("--json", action="store_true")
     auto_p.set_defaults(func=cmd_autopilot)
 

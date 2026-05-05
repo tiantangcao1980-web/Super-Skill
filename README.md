@@ -149,6 +149,12 @@ bin/super-skill resume --project ./build
 # 把 run.json 渲染成单页 HTML 时间线（自包含、无依赖）
 bin/super-skill visualize --project ./build
 # 输出：<project>/.super-skill/autopilot/<run-id>/timeline.html
+# 如果该 run 是 iterate-mode 的子代，timeline 顶部会渲染 Lineage 链
+
+# 跨 run 迭代：把上一次 run 的全部产物 + 你的反馈喂给新 run，每阶段产 UPDATED 版本
+# parent_run_id / lineage / feedback 全部进 run.json 留底
+bin/super-skill autopilot --based-on <parent-run-id> --project ./build \
+    --feedback "Reviewers say the error message is too terse; expand it and add a 4xx error code"
 
 # MCP server 化：让 Claude Desktop / Cursor 直接像调函数一样触发
 python3 plugins/super-skill-mcp-server/scripts/mcp_server.py

@@ -495,6 +495,85 @@ class SuperSkillCliTests(unittest.TestCase):
             data = run_cli("visualize", "--project", td, "--run-id", first["run_id"])
             self.assertIn(first["run_id"], data["output"])
 
+    def test_autopilot_iterate_links_parent_and_records_feedback(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            parent = run_cli("autopilot", "--provider", "stub", "--project", td, "--prompt", "Build add(a,b)")
+            self.assertTrue(parent["ok"])
+            self.assertIsNone(parent["parent_run_id"])
+            self.assertEqual(parent["lineage"], [])
+
+            child = run_cli(
+                "autopilot", "--provider", "stub", "--project", td,
+                "--based-on", parent["run_id"],
+                "--feedback", "Add float support",
+            )
+            self.assertTrue(child["ok"])
+            self.assertEqual(child["parent_run_id"], parent["run_id"])
+            self.assertEqual(child["feedback"], "Add float support")
+            self.assertEqual(child["lineage"], [parent["run_id"]])
+            # Child inherits parent's prompt when --prompt is omitted.
+            self.assertEqual(child["user_prompt"], parent["user_prompt"])
+
+    def test_autopilot_iterate_three_generations_record_full_lineage(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            r1 = run_cli("autopilot", "--provider", "stub", "--project", td, "--prompt", "v1")
+            r2 = run_cli("autopilot", "--provider", "stub", "--project", td,
+                         "--based-on", r1["run_id"], "--feedback", "Add A")
+            r3 = run_cli("autopilot", "--provider", "stub", "--project", td,
+                         "--based-on", r2["run_id"], "--feedback", "Add B")
+            self.assertEqual(r3["parent_run_id"], r2["run_id"])
+            self.assertEqual(r3["lineage"], [r2["run_id"], r1["run_id"]])
+
+    def test_autopilot_iterate_marker_lands_on_prose_phases_only(self) -> None:
+        """Stub appends an iteration marker to prose artifacts so we can prove
+        the iteration context reaches each phase. It must NOT corrupt the
+        Python (phase 4/5) or strict JSON (phase 6) artifacts."""
+        with tempfile.TemporaryDirectory() as td:
+            parent = run_cli("autopilot", "--provider", "stub", "--project", td, "--prompt", "Build add(a,b)")
+            child = run_cli(
+                "autopilot", "--provider", "stub", "--project", td,
+                "--based-on", parent["run_id"], "--feedback", "Float support",
+            )
+            self.assertTrue(child["ok"])
+            child_dir = Path(child["workspace"])
+            for prose in ("00-research.md", "01-intent-contract.md", "02-product-spec.md",
+                          "03-design.md", "07-delivery.md", "08-memory-candidate.md"):
+                self.assertIn(
+                    "Iteration:", (child_dir / prose).read_text(encoding="utf-8"),
+                    f"{prose} missing iteration marker",
+                )
+            for structured in ("04-implementation.md", "05-simplified.md", "06-quality-gate.json"):
+                self.assertNotIn(
+                    "Iteration:", (child_dir / structured).read_text(encoding="utf-8"),
+                    f"{structured} must NOT contain iteration marker (would corrupt parser)",
+                )
+
+    def test_autopilot_iterate_rejects_unknown_parent(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            proc = subprocess.run(
+                [sys.executable, str(CLI), "autopilot",
+                 "--provider", "stub", "--project", td,
+                 "--based-on", "20260101-000000-000-deadbe",
+                 "--feedback", "x", "--json"],
+                cwd=ROOT, capture_output=True, text=True, timeout=30, check=False,
+            )
+            self.assertNotEqual(proc.returncode, 0)
+            payload = json.loads(proc.stdout)
+            self.assertFalse(payload["ok"])
+
+    def test_visualize_renders_lineage_when_present(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            parent = run_cli("autopilot", "--provider", "stub", "--project", td, "--prompt", "v1")
+            child = run_cli(
+                "autopilot", "--provider", "stub", "--project", td,
+                "--based-on", parent["run_id"], "--feedback", "iterate me please",
+            )
+            data = run_cli("visualize", "--project", td, "--run-id", child["run_id"])
+            html = Path(data["output"]).read_text(encoding="utf-8")
+            self.assertIn("Lineage", html)
+            self.assertIn(parent["run_id"], html)
+            self.assertIn("iterate me please", html)
+
     def test_autopilot_extract_code_picks_largest_fenced_block(self) -> None:
         mod = _load_super_skill_module()
         text = "Intro\n```python\ndef tiny(): pass\n```\nMiddle\n```python\ndef bigger():\n    return 42\n\nclass T:\n    pass\n```\nDone."
