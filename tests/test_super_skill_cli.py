@@ -312,14 +312,15 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertIn("contract", data["outputs"])
         self.assertIn("Intent Contract", data["outputs"]["contract"])
 
-    def test_autopilot_dry_run_lists_seven_phases(self) -> None:
+    def test_autopilot_dry_run_lists_nine_phases(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             data = run_cli("autopilot", "--provider", "stub", "--project", td, "--dry-run")
-            self.assertEqual(len(data["phases_planned"]), 7)
+            self.assertEqual(len(data["phases_planned"]), 9)
             ids = [p["id"] for p in data["phases_planned"]]
             self.assertEqual(
                 ids,
-                ["01-intent", "02-spec", "03-design", "04-impl", "05-simplify", "06-gate", "07-memory"],
+                ["00-research", "01-intent", "02-spec", "03-design", "04-impl",
+                 "05-simplify", "06-gate", "07-delivery", "08-memory"],
             )
 
     def test_autopilot_stub_full_run_passes_all_phases(self) -> None:
@@ -327,7 +328,7 @@ class SuperSkillCliTests(unittest.TestCase):
             data = run_cli("autopilot", "--provider", "stub", "--project", td, "--prompt", "Build add(a,b)")
             self.assertTrue(data["ok"])
             self.assertIsNone(data["failed_phase"])
-            self.assertEqual(len(data["phases"]), 7)
+            self.assertEqual(len(data["phases"]), 9)
             phase_by_id = {p["phase"]: p for p in data["phases"]}
             self.assertTrue(phase_by_id["01-intent"]["grade"]["ok"])
             self.assertTrue(phase_by_id["06-gate"]["grade"]["ok"])
@@ -335,6 +336,9 @@ class SuperSkillCliTests(unittest.TestCase):
             workspace = Path(data["workspace"])
             self.assertTrue(workspace.exists())
             self.assertTrue((workspace / "run.json").exists())
+            # Research and delivery artifacts must exist on disk too.
+            self.assertTrue((workspace / "00-research.md").exists())
+            self.assertTrue((workspace / "07-delivery.md").exists())
 
     def test_autopilot_resume_skips_existing_phases(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -352,9 +356,9 @@ class SuperSkillCliTests(unittest.TestCase):
 
     def test_autopilot_skip_phase(self) -> None:
         with tempfile.TemporaryDirectory() as td:
-            data = run_cli("autopilot", "--provider", "stub", "--project", td, "--skip", "07-memory")
+            data = run_cli("autopilot", "--provider", "stub", "--project", td, "--skip", "08-memory")
             stages = [p["phase"] for p in data["phases"]]
-            self.assertNotIn("07-memory", stages)
+            self.assertNotIn("08-memory", stages)
 
     def test_autopilot_memory_candidate_does_not_echo_prompt(self) -> None:
         marker_phrase = "marker-do-not-leak-9f1c2"
@@ -365,7 +369,7 @@ class SuperSkillCliTests(unittest.TestCase):
             )
             self.assertTrue(data["ok"])
             workspace = Path(data["workspace"])
-            mem = (workspace / "07-memory-candidate.md").read_text(encoding="utf-8")
+            mem = (workspace / "08-memory-candidate.md").read_text(encoding="utf-8")
             self.assertNotIn(
                 marker_phrase, mem,
                 "memory candidate must not echo raw user prompt — Hermes principle violated",
@@ -420,7 +424,7 @@ class SuperSkillCliTests(unittest.TestCase):
             run_id = first["run_id"]
             data = run_cli("resume", "--project", td, "--run-id", run_id, "--list")
             self.assertEqual(data["run_id"], run_id)
-            self.assertEqual(len(data["completed_phases"]), 7)
+            self.assertEqual(len(data["completed_phases"]), 9)
             self.assertEqual(data["pending_phases"], [])
 
     def test_resume_picks_latest_run_by_default(self) -> None:
@@ -471,7 +475,7 @@ class SuperSkillCliTests(unittest.TestCase):
             self.assertFalse(call_reply["result"].get("isError"))
             inner = json.loads(call_reply["result"]["content"][0]["text"])
             self.assertTrue(inner["ok"])
-            self.assertEqual(len(inner["data"]["phases_planned"]), 7)
+            self.assertEqual(len(inner["data"]["phases_planned"]), 9)
 
     def test_visualize_renders_html_for_latest_run(self) -> None:
         with tempfile.TemporaryDirectory() as td:

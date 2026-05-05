@@ -1914,13 +1914,29 @@ def llm_call_stub(stage: str, system: str, user: str) -> dict:
 
     Stage ids understood:
       - llm-eval: contract / implementation / gate
-      - autopilot: 01-intent / 02-spec / 03-design / 04-impl / 05-simplify /
-        06-gate / 07-memory
+      - autopilot: 00-research / 01-intent / 02-spec / 03-design / 04-impl /
+        05-simplify / 06-gate / 07-delivery / 08-memory
     """
     digest = hashlib_sha1(f"{stage}|{system}|{user}")[:10]
     request = user[:160].replace("\n", " ").strip()
 
-    if stage in ("contract", "01-intent"):
+    if stage == "00-research":
+        body = textwrap.dedent(f"""\
+            ## Research Note (stub)
+            - Problem statement: derived from request shape; one user-facing pain
+              point to validate before designing.
+            - Target users: primary segment plus one adjacent segment for
+              acceptance-test framing.
+            - Competitor landscape: 2-3 closest tools that solve the same job;
+              call out what each one omits.
+            - Key assumptions to validate:
+              - Users actually do this enough to pay attention to a tool.
+              - The fastest path through the workflow is shorter than the status quo.
+              - The deliverable can be measured against an objective acceptance.
+            - Open questions: budget, deadline, deployment surface, audit constraints.
+            - Trace: stub-{digest}
+            """)
+    elif stage in ("contract", "01-intent"):
         body = textwrap.dedent(f"""\
             ## Intent Contract (stub)
             - Goal: {request}
@@ -1991,15 +2007,37 @@ def llm_call_stub(stage: str, system: str, user: str) -> dict:
             ensure_ascii=False,
             indent=2,
         )
-    elif stage == "07-memory":
+    elif stage == "07-delivery":
+        body = textwrap.dedent(f"""\
+            ## Delivery Plan (stub)
+            - Dockerfile sketch:
+              FROM python:3.11-slim
+              WORKDIR /app
+              COPY . .
+              CMD ["python", "-m", "candidate"]
+            - CI workflow outline (.github/workflows/ci.yml):
+              jobs.test runs `python -m unittest discover` on push and PR; deploy
+              job gated on test job and only fires on tags `v*`.
+            - Feature flag + kill switch:
+              env-var DELIVERY_KILL=1 short-circuits the entry point so a runaway
+              release can be turned off without redeploy.
+            - Observability hooks:
+              structured JSON logs to stdout; counter for matched-vs-rejected;
+              error log carries the trace id from earlier phases.
+            - Rollback plan:
+              previous container tag stays warm; revert by re-pointing the alias.
+            - Release notes (draft): "Initial MVP slice. See run.json trace stub-{digest}."
+            - Trace: stub-{digest}
+            """)
+    elif stage in ("07-memory", "08-memory"):
         # Hermes principle: memory candidates must NOT echo the raw user prompt
         # — that's how prompts leak across sessions. Reference the run by trace
         # only and let the reviewer pull the originating prompt from run.json.
         body = textwrap.dedent(f"""\
             Type: episodic
             Scope: project
-            Claim: Autopilot harness produced a green deliverable for one task (see run.json for originating intent).
-            Evidence: trace=stub-{digest}; phases=7; rolled back at: none
+            Claim: Autopilot harness produced a green research → delivery loop for one task (see run.json for originating intent).
+            Evidence: trace=stub-{digest}; phases=9; rolled back at: none
             Use when: A future request resembles this contract shape.
             Do not use when: The deliverable was unverified or contained secrets.
             Expiry: review within 14 days
@@ -2083,6 +2121,8 @@ def llm_grade_gate(text: str) -> dict:
 
 AUTOPILOT_PHASES = [
     # (id, label, canonical_skill, output_filename, system_prefix)
+    ("00-research", "Research",             "requirement-analysis",   "00-research.md",
+        "Apply `requirement-analysis` (and draw on `user-research`/`market-research` framings if relevant). Output a compact research note with sections: Problem statement, Target users, Competitor landscape (1-3 bullets), Key assumptions to validate, Open questions, Trace. No solution proposed yet."),
     ("01-intent",   "Intent Contract",      "intent-contract",        "01-intent-contract.md",
         "Apply the Super Skill `intent-contract` skill below. Produce a compact contract with sections Goal, Acceptance, Out of scope, Evidence, Trace. No implementation."),
     ("02-spec",     "Product Spec",         "product-spec",           "02-product-spec.md",
@@ -2096,7 +2136,9 @@ AUTOPILOT_PHASES = [
     ("06-gate",     "Output Quality Gate",  "output-quality-gate",    "06-quality-gate.json",
         "Apply `output-quality-gate`. Score the simplified deliverable against the original contract. Strict JSON only: "
         '{"matches_intent": bool, "evidence_present": bool, "missing": [str], "score": int(0..10), "verdict": "pass"|"warn"|"fail", "trace": str}.'),
-    ("07-memory",   "Memory Candidate",     "agent-memory-dream-loop","07-memory-candidate.md",
+    ("07-delivery", "Delivery Plan",        "deployment-patterns",    "07-delivery.md",
+        "Apply `deployment-patterns` (and draw on `experiment-driven-delivery`/`observability-triage-loop` for rollout + monitoring). Output a delivery plan with: Dockerfile sketch (or non-containerized equivalent), CI workflow outline (.github/workflows/ci.yml shape), Feature flag + kill switch plan, Observability hooks (logs / metrics / errors), Rollback plan, Release notes draft, Trace."),
+    ("08-memory",   "Memory Candidate",     "agent-memory-dream-loop","08-memory-candidate.md",
         "Apply `agent-memory-dream-loop`. Produce ONE reviewable memory candidate as plain text. Include Type, Scope, Claim, Evidence, Use when, Do not use when, Expiry. Never include raw user prompt or raw model response — summarise."),
 ]
 

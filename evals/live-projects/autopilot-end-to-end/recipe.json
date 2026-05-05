@@ -1,14 +1,16 @@
 {
   "project": "autopilot-end-to-end",
-  "description": "Run bin/super-skill autopilot in stub mode against an empty workspace and verify the 7-phase closed loop produces every artifact, the run journal is green, the quality gate passes, and the memory candidate is review-only (no raw user prompt).",
+  "description": "Run bin/super-skill autopilot in stub mode against an empty workspace and verify the 9-phase research-to-delivery loop produces every artifact, the run journal is green, the quality gate passes, the delivery plan is present, and the memory candidate is review-only (no raw user prompt).",
   "required_skills": [
     "autopilot",
+    "requirement-analysis",
     "intent-contract",
     "product-spec",
     "design-templates",
     "ralph-loop",
     "code-simplifier",
     "output-quality-gate",
+    "deployment-patterns",
     "agent-memory-dream-loop",
     "harness-engineering",
     "checkpoint-rollback-safety"
@@ -17,15 +19,21 @@
     "required_files": [
       "README.md",
       ".super-skill/autopilot/*/run.json",
+      ".super-skill/autopilot/*/00-research.md",
       ".super-skill/autopilot/*/01-intent-contract.md",
       ".super-skill/autopilot/*/02-product-spec.md",
       ".super-skill/autopilot/*/03-design.md",
       ".super-skill/autopilot/*/04-implementation.md",
       ".super-skill/autopilot/*/05-simplified.md",
       ".super-skill/autopilot/*/06-quality-gate.json",
-      ".super-skill/autopilot/*/07-memory-candidate.md"
+      ".super-skill/autopilot/*/07-delivery.md",
+      ".super-skill/autopilot/*/08-memory-candidate.md"
     ],
     "required_content": [
+      {
+        "path": ".super-skill/autopilot/*/00-research.md",
+        "patterns": ["problem statement", "target users", "assumptions", "trace"]
+      },
       {
         "path": ".super-skill/autopilot/*/01-intent-contract.md",
         "patterns": ["goal", "acceptance", "evidence", "trace"]
@@ -35,7 +43,11 @@
         "patterns": ["\"verdict\": \"pass\"", "\"matches_intent\": true"]
       },
       {
-        "path": ".super-skill/autopilot/*/07-memory-candidate.md",
+        "path": ".super-skill/autopilot/*/07-delivery.md",
+        "patterns": ["dockerfile", "ci workflow", "kill switch", "rollback", "release notes"]
+      },
+      {
+        "path": ".super-skill/autopilot/*/08-memory-candidate.md",
         "patterns": ["use when", "do not use when", "expiry"]
       },
       {
@@ -45,7 +57,7 @@
     ],
     "forbidden_content": [
       {
-        "path": ".super-skill/autopilot/*/07-memory-candidate.md",
+        "path": ".super-skill/autopilot/*/08-memory-candidate.md",
         "patterns": [
           "raw prompt",
           "secret prompt verbatim",

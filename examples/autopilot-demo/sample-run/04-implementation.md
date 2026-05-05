@@ -1,5 +1,5 @@
 def add(a, b):
-    """Implements: User request: Build a calculator  --- Intent Contract --- ## Intent Contract (st"""
+    """Implements: User request: Build a calculator  --- Research --- ## Research Note (stub) - Pro"""
     return a + b
 
 

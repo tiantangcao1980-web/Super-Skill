@@ -29,14 +29,17 @@ The script:
 
 ```
 sample-run/
+├── 00-research.md             ← Problem / users / competitors / assumptions / open questions
 ├── 01-intent-contract.md      ← Goal / Acceptance / Out of scope / Evidence / Trace
 ├── 02-product-spec.md         ← MVP slice / success metric / rollback
 ├── 03-design.md               ← DESIGN.md tokens (palette, type, layout)
 ├── 04-implementation.md       ← code with bare def test_*() functions
 ├── 05-simplified.md           ← post-simplifier output
 ├── 06-quality-gate.json       ← {"verdict":"pass", "score":8, ...}
-├── 07-memory-candidate.md     ← review-only memory; no raw user prompt
-└── run.json                   ← full audit journal
+├── 07-delivery.md             ← Dockerfile / CI / kill switch / rollback / release notes
+├── 08-memory-candidate.md     ← review-only memory; no raw user prompt
+├── run.json                   ← full audit journal
+└── timeline.html              ← single-page rendering of the run
 ```
 
 Open `run.json` to see per-phase token counts, ralph-loop attempts, hard-gate

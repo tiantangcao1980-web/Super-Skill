@@ -1,18 +1,27 @@
 {
-  "run_id": "20260505-172630-134-18fe4b",
-  "workspace": "/private/tmp/sst-demo-test/.super-skill/autopilot/20260505-172630-134-18fe4b",
+  "run_id": "20260505-202506-508-c3eb37",
+  "workspace": "/private/tmp/sst-new-sample/.super-skill/autopilot/20260505-202506-508-c3eb37",
   "provider": "stub",
   "model": "stub-deterministic-v1",
   "user_prompt": "Build a calculator",
-  "started_at": 1777973190,
+  "started_at": 1777983906,
   "phases": [
+    {
+      "phase": "00-research",
+      "label": "Research",
+      "skill": "requirement-analysis",
+      "output": "/private/tmp/sst-new-sample/.super-skill/autopilot/20260505-202506-508-c3eb37/00-research.md",
+      "tokens_in": 3075,
+      "tokens_out": 656,
+      "skipped": false
+    },
     {
       "phase": "01-intent",
       "label": "Intent Contract",
       "skill": "intent-contract",
-      "output": "/private/tmp/sst-demo-test/.super-skill/autopilot/20260505-172630-134-18fe4b/01-intent-contract.md",
-      "tokens_in": 1605,
-      "tokens_out": 352,
+      "output": "/private/tmp/sst-new-sample/.super-skill/autopilot/20260505-202506-508-c3eb37/01-intent-contract.md",
+      "tokens_in": 2280,
+      "tokens_out": 480,
       "skipped": false,
       "grade": {
         "required": [
@@ -32,8 +41,8 @@
       "phase": "02-spec",
       "label": "Product Spec",
       "skill": "product-spec",
-      "output": "/private/tmp/sst-demo-test/.super-skill/autopilot/20260505-172630-134-18fe4b/02-product-spec.md",
-      "tokens_in": 3508,
+      "output": "/private/tmp/sst-new-sample/.super-skill/autopilot/20260505-202506-508-c3eb37/02-product-spec.md",
+      "tokens_in": 4311,
       "tokens_out": 375,
       "skipped": false
     },
@@ -41,8 +50,8 @@
       "phase": "03-design",
       "label": "Design Direction",
       "skill": "design-templates",
-      "output": "/private/tmp/sst-demo-test/.super-skill/autopilot/20260505-172630-134-18fe4b/03-design.md",
-      "tokens_in": 5111,
+      "output": "/private/tmp/sst-new-sample/.super-skill/autopilot/20260505-202506-508-c3eb37/03-design.md",
+      "tokens_in": 5914,
       "tokens_out": 363,
       "skipped": false
     },
@@ -50,8 +59,8 @@
       "phase": "04-impl",
       "label": "Implementation (Ralph loop)",
       "skill": "ralph-loop",
-      "output": "/private/tmp/sst-demo-test/.super-skill/autopilot/20260505-172630-134-18fe4b/04-implementation.md",
-      "tokens_in": 7306,
+      "output": "/private/tmp/sst-new-sample/.super-skill/autopilot/20260505-202506-508-c3eb37/04-implementation.md",
+      "tokens_in": 8109,
       "tokens_out": 320,
       "skipped": false,
       "ralph_attempts": [
@@ -71,8 +80,8 @@
       "phase": "05-simplify",
       "label": "Code Simplifier",
       "skill": "code-simplifier",
-      "output": "/private/tmp/sst-demo-test/.super-skill/autopilot/20260505-172630-134-18fe4b/05-simplified.md",
-      "tokens_in": 5088,
+      "output": "/private/tmp/sst-new-sample/.super-skill/autopilot/20260505-202506-508-c3eb37/05-simplified.md",
+      "tokens_in": 5891,
       "tokens_out": 103,
       "skipped": false
     },
@@ -80,8 +89,8 @@
       "phase": "06-gate",
       "label": "Output Quality Gate",
       "skill": "output-quality-gate",
-      "output": "/private/tmp/sst-demo-test/.super-skill/autopilot/20260505-172630-134-18fe4b/06-quality-gate.json",
-      "tokens_in": 3132,
+      "output": "/private/tmp/sst-new-sample/.super-skill/autopilot/20260505-202506-508-c3eb37/06-quality-gate.json",
+      "tokens_in": 3935,
       "tokens_out": 138,
       "skipped": false,
       "grade": {
@@ -93,12 +102,21 @@
       }
     },
     {
-      "phase": "07-memory",
+      "phase": "07-delivery",
+      "label": "Delivery Plan",
+      "skill": "deployment-patterns",
+      "output": "/private/tmp/sst-new-sample/.super-skill/autopilot/20260505-202506-508-c3eb37/07-delivery.md",
+      "tokens_in": 6650,
+      "tokens_out": 788,
+      "skipped": false
+    },
+    {
+      "phase": "08-memory",
       "label": "Memory Candidate",
       "skill": "agent-memory-dream-loop",
-      "output": "/private/tmp/sst-demo-test/.super-skill/autopilot/20260505-172630-134-18fe4b/07-memory-candidate.md",
-      "tokens_in": 7390,
-      "tokens_out": 358,
+      "output": "/private/tmp/sst-new-sample/.super-skill/autopilot/20260505-202506-508-c3eb37/08-memory-candidate.md",
+      "tokens_in": 9005,
+      "tokens_out": 371,
       "skipped": false
     }
   ],

@@ -6,7 +6,7 @@
 [![Skills](https://img.shields.io/badge/skills-114-blue)](catalog/skill-index.md)
 [![Profiles](https://img.shields.io/badge/profiles-core%20%7C%20dev%20%7C%20design%20%7C%20hermes%20%7C%20all-green)](manifests/install-profiles.json)
 
-> **Thesis.** AI coding agents fail in four predictable ways: they don't do what the user actually wanted (input quality), they ramble (output quality), the code doesn't run (verification), and yesterday's lesson never reaches today's session (memory). Super Skill is a 114-skill collection plus a runnable harness CLI built around exactly those four failure modes — every skill front-loads its trigger condition, every loop has a hard quality gate, and the autonomous closed loop (`bin/super-skill autopilot`) drives one prompt through intent → spec → design → ralph-loop implementation → simplifier → quality gate → reviewable memory candidate, with every artifact checkpointed on disk.
+> **Thesis.** AI coding agents fail in four predictable ways: they don't do what the user actually wanted (input quality), they ramble (output quality), the code doesn't run (verification), and yesterday's lesson never reaches today's session (memory). Super Skill is a 114-skill collection plus a runnable harness CLI built around exactly those four failure modes — every skill front-loads its trigger condition, every loop has a hard quality gate, and the autonomous closed loop (`bin/super-skill autopilot`) drives one prompt through **research → intent → spec → design → ralph-loop implementation → simplifier → quality gate → delivery plan → reviewable memory candidate** (9 phases), with every artifact checkpointed on disk.
 
 ## ⚡ Quick start (autonomous closed loop)
 
@@ -19,7 +19,7 @@ ANTHROPIC_API_KEY=sk-... bin/super-skill autopilot --provider anthropic \
     --prompt "Build a TODO list API with tests" --project ./build
 ```
 
-Each phase loads the canonical SKILL.md as its system prompt, calls the LLM (or stub), and writes a checkpoint under `<project>/.super-skill/autopilot/<run-id>/`. Phases 1 (intent contract) and 6 (output quality gate) are hard exits. Phase 4 wraps `ralph-loop` for iterative implementation. Phase 7 produces a Hermes-style reviewable memory candidate without ever echoing the raw prompt.
+Each phase loads the canonical SKILL.md as its system prompt, calls the LLM (or stub), and writes a checkpoint under `<project>/.super-skill/autopilot/<run-id>/`. Phases 1 (intent contract) and 6 (output quality gate) are hard exits. Phase 4 wraps `ralph-loop` for iterative implementation and **actually runs the generated Python via unittest / bare-tests / py-compile**, feeding stderr back into the next attempt. Phase 7 produces a delivery plan (Dockerfile + CI workflow + kill switch + rollback). Phase 8 produces a Hermes-style reviewable memory candidate without ever echoing the raw prompt.
 
 ## What's inside
 
