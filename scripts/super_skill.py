@@ -1973,32 +1973,118 @@ def llm_call_stub(stage: str, system: str, user: str) -> dict:
             - Trace: stub-{digest}
             """)
     elif stage in ("implementation", "04-impl"):
-        body = textwrap.dedent(f"""\
-            def add(a, b):
-                \"\"\"Implements: {request[:80]}\"\"\"
-                return a + b
+        # Stub picks a language from prompt keywords so the multi-language
+        # sandbox can be exercised end-to-end. Default = Python.
+        target_lang = "python"
+        lc = user.lower()
+        if any(k in lc for k in (" javascript", " node.js", "node ", " js ", "javascript ")):
+            target_lang = "javascript"
+        elif any(k in lc for k in ("bash ", " shell", "shell script")):
+            target_lang = "bash"
+        elif any(k in lc for k in ("golang", " go ", " go function")):
+            target_lang = "go"
+        if target_lang == "python":
+            body = textwrap.dedent(f"""\
+                ```python
+                def add(a, b):
+                    \"\"\"Implements: {request[:80]}\"\"\"
+                    return a + b
 
 
-            def test_add():
-                assert add(1, 2) == 3
-                assert add(-1, 1) == 0
+                def test_add():
+                    assert add(1, 2) == 3
+                    assert add(-1, 1) == 0
+                ```
+                """)
+        elif target_lang == "javascript":
+            body = textwrap.dedent(f"""\
+                ```javascript
+                function add(a, b) {{
+                    // Implements: {request[:80]}
+                    return a + b;
+                }}
 
+                function test_add() {{
+                    if (add(1, 2) !== 3) throw new Error('1+2 should be 3');
+                    if (add(-1, 1) !== 0) throw new Error('-1+1 should be 0');
+                }}
+                ```
+                """)
+        elif target_lang == "bash":
+            body = textwrap.dedent(f"""\
+                ```bash
+                #!/usr/bin/env bash
+                # Implements: {request[:80]}
+                set -euo pipefail
 
-            # Exit conditions met:
-            # - acceptance items pass
-            # - one unit test present
-            # - implementation is self-contained
-            """)
+                add() {{
+                    echo $(( $1 + $2 ))
+                }}
+
+                test_add() {{
+                    [ "$(add 1 2)" = "3" ] || {{ echo "FAIL 1+2" >&2; exit 1; }}
+                    [ "$(add -1 1)" = "0" ] || {{ echo "FAIL -1+1" >&2; exit 1; }}
+                }}
+
+                test_add
+                ```
+                """)
+        elif target_lang == "go":
+            body = textwrap.dedent(f"""\
+                ```go
+                package candidate
+
+                import "testing"
+
+                func Add(a, b int) int {{ return a + b }}
+
+                func TestAdd(t *testing.T) {{
+                    if Add(1, 2) != 3 {{ t.Fatalf("1+2 != 3") }}
+                    if Add(-1, 1) != 0 {{ t.Fatalf("-1+1 != 0") }}
+                }}
+                ```
+                """)
     elif stage == "05-simplify":
-        body = textwrap.dedent(f"""\
-            def add(a, b):
-                return a + b
+        # 05 has the same language-detection rule as 04 — must produce a
+        # functional version of the same artifact, just simplified.
+        target_lang = "python"
+        lc = user.lower()
+        if any(k in lc for k in (" javascript", " node.js", "node ", " js ", "javascript ")):
+            target_lang = "javascript"
+        elif any(k in lc for k in ("bash ", " shell", "shell script")):
+            target_lang = "bash"
+        if target_lang == "javascript":
+            body = textwrap.dedent("""\
+                ```javascript
+                function add(a, b) { return a + b; }
+                function test_add() {
+                    if (add(1, 2) !== 3) throw new Error('1+2');
+                    if (add(-1, 1) !== 0) throw new Error('-1+1');
+                }
+                ```
+                """)
+        elif target_lang == "bash":
+            body = textwrap.dedent("""\
+                ```bash
+                #!/usr/bin/env bash
+                set -euo pipefail
+                add() { echo $(( $1 + $2 )); }
+                [ "$(add 1 2)" = "3" ] || exit 1
+                [ "$(add -1 1)" = "0" ] || exit 1
+                ```
+                """)
+        else:
+            body = textwrap.dedent(f"""\
+                ```python
+                def add(a, b):
+                    return a + b
 
 
-            def test_add():
-                assert add(1, 2) == 3
-                assert add(-1, 1) == 0
-            """)
+                def test_add():
+                    assert add(1, 2) == 3
+                    assert add(-1, 1) == 0
+                ```
+                """)
     elif stage in ("gate", "06-gate"):
         body = json.dumps(
             {
@@ -2167,20 +2253,66 @@ def autopilot_workspace(project: Path, run_id: str) -> Path:
 
 
 CODE_BLOCK_RE = re.compile(r"```(\w+)?\s*\n(.*?)```", re.S)
+# Match optional file headers above a fenced block. Accepts these shapes:
+#   ### file: src/main.py     |   File: src/main.py     |   `src/main.py`
+FILE_HEADER_RE = re.compile(
+    r"(?:^|\n)\s*(?:#+\s*)?(?:[Ff]ile\s*:\s*|`)([\w./\-]+\.[a-zA-Z0-9]+)`?\s*\n+```(\w+)?\s*\n(.*?)```",
+    re.S,
+)
+
+
+LANG_EXT = {
+    "python": "py", "py": "py",
+    "javascript": "js", "js": "js", "node": "js",
+    "typescript": "ts", "ts": "ts",
+    "bash": "sh", "shell": "sh", "sh": "sh",
+    "go": "go", "golang": "go",
+}
 
 
 def autopilot_extract_code(text: str) -> tuple[str | None, str]:
     """Extract the largest fenced code block + its language hint. If no fences,
-    treat the whole text as a candidate. Returns (lang_hint, code)."""
+    treat the whole text as a candidate. Returns (lang_hint, code).
+
+    For multi-file extraction, see autopilot_extract_files."""
     blocks = CODE_BLOCK_RE.findall(text)
     if blocks:
-        # Pick the longest block.
         lang, code = max(blocks, key=lambda b: len(b[1]))
         return (lang.lower() if lang else None, code.strip())
-    # Heuristic: if the body looks like Python (def/class/import), use it.
     if re.search(r"^\s*(def |class |import |from \w+ import)", text, re.M):
         return ("python", text.strip())
     return (None, text.strip())
+
+
+def autopilot_extract_files(text: str) -> list[tuple[str, str | None, str]]:
+    """Return a list of (path, lang_hint, code) tuples.
+
+    Recognises 'file: <path>' headers immediately above fenced blocks. If no
+    headers are present, falls back to the legacy single-block extraction and
+    synthesises a path of `candidate.<ext>` based on the language hint.
+    """
+    headed = FILE_HEADER_RE.findall(text)
+    if headed:
+        return [(p.strip(), (lang.lower() if lang else None), code.strip()) for p, lang, code in headed]
+    lang, code = autopilot_extract_code(text)
+    if not code:
+        return []
+    ext = LANG_EXT.get(lang or "", "py")
+    return [(f"candidate.{ext}", lang, code)]
+
+
+def autopilot_dominant_language(files: list[tuple[str, str | None, str]]) -> str | None:
+    """Pick the language to run tests against. Prefers explicit lang hint,
+    falls back to file extension."""
+    for path, lang, _code in files:
+        if lang:
+            return lang
+        if "." in path:
+            ext = path.rsplit(".", 1)[1].lower()
+            for k, v in LANG_EXT.items():
+                if v == ext:
+                    return k
+    return None
 
 
 def autopilot_run_python_tests(code: str, workdir: Path, timeout: int = 30) -> dict:
@@ -2236,14 +2368,165 @@ def autopilot_run_python_tests(code: str, workdir: Path, timeout: int = 30) -> d
         return {"ok": False, "kind": "exception", "error": str(exc)}
 
 
+def autopilot_run_javascript(code: str, workdir: Path, ext: str = "js", timeout: int = 30) -> dict:
+    """Verify JavaScript/TypeScript: write candidate.<ext>, run with node.
+
+    Strategy: if code defines bare `function test_<name>()` or `test('name', ...)`
+    helpers, generate a runner that calls them. Otherwise just `node candidate.js`
+    (must execute without uncaught error)."""
+    if not shutil.which("node"):
+        return {"ok": True, "kind": "skipped", "reason": "node not on PATH"}
+    workdir.mkdir(parents=True, exist_ok=True)
+    candidate = workdir / f"candidate.{ext}"
+    candidate.write_text(code + "\n", encoding="utf-8")
+    bare_tests = re.findall(r"^\s*(?:export\s+)?function\s+(test_\w+)\s*\(\s*\)", code, re.M)
+    if bare_tests:
+        runner = workdir / "run_tests.js"
+        names = json.dumps(bare_tests)
+        runner.write_text(textwrap.dedent(f"""\
+            const mod = require('./{candidate.name}');
+            const names = {names};
+            let failed = 0;
+            for (const name of names) {{
+                try {{
+                    if (typeof mod[name] === 'function') mod[name]();
+                    else if (typeof globalThis[name] === 'function') globalThis[name]();
+                    else throw new Error('not exported');
+                }} catch (e) {{
+                    failed++;
+                    process.stderr.write(`FAIL ${{name}}: ${{e.message || e}}\\n`);
+                }}
+            }}
+            process.exit(failed ? 1 : 0);
+            """), encoding="utf-8")
+        # Re-write candidate to ensure tests are exported under module.exports.
+        export_block = "\nmodule.exports = { " + ", ".join(bare_tests) + " };\n"
+        candidate.write_text(code + export_block, encoding="utf-8")
+        argv = ["node", "run_tests.js"]
+        kind = "node-bare-tests"
+    else:
+        argv = ["node", candidate.name]
+        kind = "node-exec"
+    try:
+        proc = subprocess.run(argv, cwd=workdir, capture_output=True, text=True, timeout=timeout, check=False)
+        return {
+            "ok": proc.returncode == 0,
+            "kind": kind,
+            "returncode": proc.returncode,
+            "argv": argv,
+            "stdout_tail": proc.stdout[-800:],
+            "stderr_tail": proc.stderr[-800:],
+        }
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return {"ok": False, "kind": "exception", "error": str(exc)}
+
+
+def autopilot_run_bash(code: str, workdir: Path, timeout: int = 30) -> dict:
+    """Verify Bash: write candidate.sh, run `bash -n` (parse-check) and then
+    execute. Many shell scripts are side-effecting, so 'parse-check passed'
+    is the safest non-destructive default; we only execute if the code looks
+    like it terminates quickly (presence of `set -e` plus no obvious loops)."""
+    if not shutil.which("bash"):
+        return {"ok": True, "kind": "skipped", "reason": "bash not on PATH"}
+    workdir.mkdir(parents=True, exist_ok=True)
+    candidate = workdir / "candidate.sh"
+    candidate.write_text(code + "\n", encoding="utf-8")
+    try:
+        # Always parse-check.
+        parse = subprocess.run(["bash", "-n", str(candidate)], cwd=workdir, capture_output=True, text=True, timeout=timeout, check=False)
+        if parse.returncode != 0:
+            return {
+                "ok": False, "kind": "bash-parse",
+                "returncode": parse.returncode, "argv": ["bash", "-n", candidate.name],
+                "stdout_tail": parse.stdout[-800:], "stderr_tail": parse.stderr[-800:],
+            }
+        # Execute only if it looks safe.
+        is_safe_to_run = "set -e" in code or "set -euo pipefail" in code
+        is_safe_to_run = is_safe_to_run and not re.search(r"\b(rm\s+-rf|sudo|curl|wget|>\s*/dev|kill\s+-9)\b", code)
+        if not is_safe_to_run:
+            return {"ok": True, "kind": "bash-parse-only", "returncode": 0, "argv": ["bash", "-n", candidate.name],
+                    "stdout_tail": "", "stderr_tail": "skipped execution: script lacks `set -e` or contains potentially destructive commands"}
+        run = subprocess.run(["bash", str(candidate)], cwd=workdir, capture_output=True, text=True, timeout=timeout, check=False)
+        return {
+            "ok": run.returncode == 0, "kind": "bash-exec",
+            "returncode": run.returncode, "argv": ["bash", candidate.name],
+            "stdout_tail": run.stdout[-800:], "stderr_tail": run.stderr[-800:],
+        }
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return {"ok": False, "kind": "exception", "error": str(exc)}
+
+
+def autopilot_run_go(code: str, workdir: Path, timeout: int = 60) -> dict:
+    """Verify Go: write candidate.go, run `go vet` (then `go test ./...` if any
+    `func Test*(t *testing.T)` is present)."""
+    if not shutil.which("go"):
+        return {"ok": True, "kind": "skipped", "reason": "go not on PATH"}
+    workdir.mkdir(parents=True, exist_ok=True)
+    candidate = workdir / "candidate.go"
+    candidate.write_text(code + "\n", encoding="utf-8")
+    has_tests = bool(re.search(r"^\s*func\s+Test\w+\s*\(\s*\w+\s*\*testing\.T\s*\)", code, re.M))
+    try:
+        # `go vet` works without a module file in older versions; init a module first.
+        subprocess.run(["go", "mod", "init", "candidate"], cwd=workdir, capture_output=True, text=True, timeout=timeout, check=False)
+        if has_tests:
+            argv = ["go", "test", "./..."]
+            kind = "go-test"
+        else:
+            argv = ["go", "vet", "./..."]
+            kind = "go-vet"
+        proc = subprocess.run(argv, cwd=workdir, capture_output=True, text=True, timeout=timeout, check=False)
+        return {
+            "ok": proc.returncode == 0,
+            "kind": kind, "returncode": proc.returncode, "argv": argv,
+            "stdout_tail": proc.stdout[-800:], "stderr_tail": proc.stderr[-800:],
+        }
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return {"ok": False, "kind": "exception", "error": str(exc)}
+
+
 def autopilot_test_implementation(text: str, workdir: Path) -> dict:
-    """Best-effort verification of phase-4 output. Currently supports Python.
-    For other languages, returns a 'skipped' result with a reason — the ralph
-    loop falls back to its existing length heuristic so non-Python prompts
-    still complete."""
-    lang, code = autopilot_extract_code(text)
-    if lang in (None, "python", "py"):
-        return autopilot_run_python_tests(code, workdir)
+    """Verify phase-4 output. Multi-file aware; supports Python, JS/TS, Bash, Go.
+
+    For multi-file output (recognised by `file: <path>` headers above fenced
+    blocks), every file is written first, then the runner picks up the dominant
+    language and runs verification against the file at conventional name (Python
+    runs against the longest .py file written; JS uses candidate.js if present;
+    etc.).
+
+    For unknown languages or missing toolchains, returns kind=skipped with a
+    reason — the ralph loop's length heuristic still proceeds.
+    """
+    files = autopilot_extract_files(text)
+    if not files:
+        return {"ok": False, "kind": "skipped", "reason": "no extractable code"}
+
+    workdir.mkdir(parents=True, exist_ok=True)
+    written: list[Path] = []
+    for path, _lang, code in files:
+        target = workdir / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(code + "\n", encoding="utf-8")
+        written.append(target)
+
+    lang = autopilot_dominant_language(files)
+
+    if lang in ("python", "py"):
+        # Re-use the existing runner against the longest .py file in workdir.
+        py_files = sorted([p for p in written if p.suffix == ".py"], key=lambda p: -p.stat().st_size)
+        target = py_files[0] if py_files else written[0]
+        return autopilot_run_python_tests(target.read_text(encoding="utf-8"), workdir)
+    if lang in ("javascript", "js", "node"):
+        target = next((p for p in written if p.suffix == ".js"), written[0])
+        return autopilot_run_javascript(target.read_text(encoding="utf-8"), workdir, ext="js")
+    if lang in ("typescript", "ts"):
+        target = next((p for p in written if p.suffix == ".ts"), written[0])
+        return autopilot_run_javascript(target.read_text(encoding="utf-8"), workdir, ext="ts")
+    if lang in ("bash", "shell", "sh"):
+        target = next((p for p in written if p.suffix == ".sh"), written[0])
+        return autopilot_run_bash(target.read_text(encoding="utf-8"), workdir)
+    if lang in ("go", "golang"):
+        target = next((p for p in written if p.suffix == ".go"), written[0])
+        return autopilot_run_go(target.read_text(encoding="utf-8"), workdir)
     return {"ok": True, "kind": "skipped", "reason": f"unsupported language: {lang}"}
 
 

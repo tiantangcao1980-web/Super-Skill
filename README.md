@@ -3,10 +3,10 @@
 [![CI](https://github.com/tiantangcao1980-web/Super-Skill/actions/workflows/ci.yml/badge.svg)](https://github.com/tiantangcao1980-web/Super-Skill/actions/workflows/ci.yml)
 [![Quality](https://github.com/tiantangcao1980-web/Super-Skill/actions/workflows/quality.yml/badge.svg)](https://github.com/tiantangcao1980-web/Super-Skill/actions/workflows/quality.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Skills](https://img.shields.io/badge/skills-114-blue)](catalog/skill-index.md)
+[![Skills](https://img.shields.io/badge/skills-115-blue)](catalog/skill-index.md)
 [![Profiles](https://img.shields.io/badge/profiles-core%20%7C%20dev%20%7C%20design%20%7C%20hermes%20%7C%20all-green)](manifests/install-profiles.json)
 
-> **Thesis.** AI coding agents fail in four predictable ways: they don't do what the user actually wanted (input quality), they ramble (output quality), the code doesn't run (verification), and yesterday's lesson never reaches today's session (memory). Super Skill is a 114-skill collection plus a runnable harness CLI built around exactly those four failure modes — every skill front-loads its trigger condition, every loop has a hard quality gate, and the autonomous closed loop (`bin/super-skill autopilot`) drives one prompt through **research → intent → spec → design → ralph-loop implementation → simplifier → quality gate → delivery plan → reviewable memory candidate** (9 phases), with every artifact checkpointed on disk.
+> **Thesis.** AI coding agents fail in four predictable ways: they don't do what the user actually wanted (input quality), they ramble (output quality), the code doesn't run (verification), and yesterday's lesson never reaches today's session (memory). Super Skill is a 115-skill collection plus a runnable harness CLI built around exactly those four failure modes — every skill front-loads its trigger condition, every loop has a hard quality gate, and the autonomous closed loop (`bin/super-skill autopilot`) drives one prompt through **research → intent → spec → design → ralph-loop implementation (Python/JS/Bash/Go) → simplifier → quality gate → delivery plan → reviewable memory candidate** (9 phases), with every artifact checkpointed on disk and cross-run iteration via `--based-on / --feedback`.
 
 ## ⚡ Quick start (autonomous closed loop)
 

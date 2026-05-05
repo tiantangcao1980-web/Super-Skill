@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -560,6 +561,83 @@ class SuperSkillCliTests(unittest.TestCase):
             self.assertNotEqual(proc.returncode, 0)
             payload = json.loads(proc.stdout)
             self.assertFalse(payload["ok"])
+
+    def test_extract_files_recognises_file_headers(self) -> None:
+        mod = _load_super_skill_module()
+        text = (
+            "Two files:\n\n"
+            "### file: src/add.py\n```python\ndef add(a,b): return a+b\n```\n"
+            "### file: src/add.js\n```javascript\nfunction add(a,b){return a+b}\n```\n"
+        )
+        files = mod.autopilot_extract_files(text)
+        self.assertEqual(len(files), 2)
+        self.assertEqual(files[0][0], "src/add.py")
+        self.assertEqual(files[0][1], "python")
+        self.assertEqual(files[1][0], "src/add.js")
+        self.assertEqual(files[1][1], "javascript")
+        self.assertEqual(mod.autopilot_dominant_language(files), "python")
+
+    def test_extract_files_falls_back_to_single_block(self) -> None:
+        mod = _load_super_skill_module()
+        text = "```python\ndef foo(): pass\n```"
+        files = mod.autopilot_extract_files(text)
+        self.assertEqual(len(files), 1)
+        self.assertEqual(files[0][0], "candidate.py")
+        self.assertEqual(files[0][1], "python")
+
+    def test_javascript_runner_passes_and_fails(self) -> None:
+        mod = _load_super_skill_module()
+        if not shutil.which("node"):
+            self.skipTest("node not on PATH")
+        with tempfile.TemporaryDirectory() as td:
+            ok = mod.autopilot_run_javascript(
+                "function add(a,b){return a+b}\nfunction test_add(){if(add(1,2)!==3) throw new Error('x')}",
+                Path(td) / "ok",
+            )
+            self.assertTrue(ok["ok"])
+            self.assertEqual(ok["kind"], "node-bare-tests")
+            bad = mod.autopilot_run_javascript(
+                "function add(a,b){return a+b}\nfunction test_add(){if(add(1,2)!==99) throw new Error('boom')}",
+                Path(td) / "bad",
+            )
+            self.assertFalse(bad["ok"])
+            self.assertIn("FAIL", bad["stderr_tail"])
+
+    def test_bash_runner_parse_only_when_unsafe(self) -> None:
+        mod = _load_super_skill_module()
+        if not shutil.which("bash"):
+            self.skipTest("bash not on PATH")
+        with tempfile.TemporaryDirectory() as td:
+            res = mod.autopilot_run_bash("echo hello", Path(td))
+            self.assertTrue(res["ok"])
+            self.assertEqual(res["kind"], "bash-parse-only")
+
+    def test_bash_runner_executes_with_set_e(self) -> None:
+        mod = _load_super_skill_module()
+        if not shutil.which("bash"):
+            self.skipTest("bash not on PATH")
+        with tempfile.TemporaryDirectory() as td:
+            res = mod.autopilot_run_bash("set -euo pipefail\necho ok", Path(td))
+            self.assertTrue(res["ok"])
+            self.assertEqual(res["kind"], "bash-exec")
+
+    def test_unsupported_language_returns_skipped(self) -> None:
+        mod = _load_super_skill_module()
+        with tempfile.TemporaryDirectory() as td:
+            res = mod.autopilot_test_implementation("```rust\nfn main(){}\n```", Path(td))
+            self.assertEqual(res["kind"], "skipped")
+            self.assertIn("rust", res.get("reason", "").lower())
+
+    def test_autopilot_end_to_end_javascript_via_stub(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            data = run_cli(
+                "autopilot", "--provider", "stub", "--project", td,
+                "--prompt", "Build a JavaScript add(a,b) with one bare test_add() function",
+            )
+            self.assertTrue(data["ok"])
+            phase4 = next(p for p in data["phases"] if p["phase"] == "04-impl")
+            self.assertEqual(phase4["ralph_attempts"][-1]["test_kind"], "node-bare-tests")
+            self.assertTrue(phase4["ralph_attempts"][-1]["ok"])
 
     def test_visualize_renders_lineage_when_present(self) -> None:
         with tempfile.TemporaryDirectory() as td:
