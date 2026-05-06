@@ -645,6 +645,46 @@ class SuperSkillCliTests(unittest.TestCase):
             self.assertEqual(phase4["ralph_attempts"][-1]["test_kind"], "node-bare-tests")
             self.assertTrue(phase4["ralph_attempts"][-1]["ok"])
 
+    def test_summary_aggregates_runs_and_fanouts(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            # Two parents + one iterate + one fanout (3 tracks) → 6 runs total + 1 fanout.
+            p1 = run_cli("autopilot", "--provider", "stub", "--project", td, "--prompt", "v1")
+            run_cli("autopilot", "--provider", "stub", "--project", td,
+                    "--based-on", p1["run_id"], "--feedback", "Add docstring")
+            run_cli("fanout", "--provider", "stub", "--project", td,
+                    "--prompt", "Build", "--tracks", "fe,be,docs")
+            data = run_cli("summary", "--project", td, "--json")
+            stats = data["stats"]
+            self.assertGreaterEqual(stats["runs_total"], 5)
+            self.assertGreaterEqual(stats["iterations"], 1)
+            self.assertEqual(stats["fanouts"], 1)
+            self.assertGreaterEqual(stats["runs_passed"], 5)
+            self.assertEqual(stats["pass_rate"], 1.0)
+            # Lineage: parent should appear in roots, child should appear in
+            # children[parent_id].
+            self.assertIn(p1["run_id"], data["lineage"]["roots"])
+            self.assertIn(p1["run_id"], data["lineage"]["children"])
+
+    def test_summary_writes_html_dashboard(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            run_cli("autopilot", "--provider", "stub", "--project", td, "--prompt", "Build add(a,b)")
+            data = run_cli("summary", "--project", td)
+            html_path = Path(data["output"])
+            self.assertTrue(html_path.exists())
+            html = html_path.read_text(encoding="utf-8")
+            self.assertIn("Project summary", html)
+            self.assertIn("autopilot runs", html)
+            self.assertIn("Phase pass-rate", html)
+            self.assertIn("Consistency trend", html)
+
+    def test_summary_handles_empty_project(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            data = run_cli("summary", "--project", td, "--json")
+            self.assertEqual(data["stats"]["runs_total"], 0)
+            self.assertEqual(data["stats"]["fanouts"], 0)
+            self.assertIsNone(data["stats"]["pass_rate"])
+            self.assertIsNone(data.get("latest_run"))
+
     def test_autopilot_hitl_pauses_after_named_phase(self) -> None:
         """--hitl 02-business-case should pause the run after that phase
         (writing pending.json) and leave the remaining phases unrun."""

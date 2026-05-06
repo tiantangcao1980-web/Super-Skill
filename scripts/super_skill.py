@@ -3444,6 +3444,287 @@ def fanout_render_html(journal: dict) -> str:
 """
 
 
+# --- summary: project-level dashboard across all runs and fanouts ---------
+#
+# Aggregates every run.json under .super-skill/autopilot/ and every
+# fanout.json under .super-skill/fanout/ into one structured report. The
+# JSON form drives CI / scripts; the HTML form is a single-page dashboard
+# with: total runs, pass rate, latest run, lineage trees, fanout cards,
+# per-phase pass-rate stats, and consistency-ratio trend across recent runs.
+
+def summary_collect(project: Path) -> dict:
+    runs: list[dict] = []
+    autopilot_root = project / ".super-skill" / "autopilot"
+    if autopilot_root.exists():
+        for d in sorted(autopilot_root.iterdir(), key=lambda p: p.name):
+            if not d.is_dir():
+                continue
+            jp = d / "run.json"
+            if not jp.exists():
+                continue
+            try:
+                runs.append(read_json_file(jp))
+            except Exception:
+                pass
+
+    fanouts: list[dict] = []
+    fanout_root_dir = project / ".super-skill" / "fanout"
+    if fanout_root_dir.exists():
+        for d in sorted(fanout_root_dir.iterdir(), key=lambda p: p.name):
+            if not d.is_dir():
+                continue
+            jp = d / "fanout.json"
+            if not jp.exists():
+                continue
+            try:
+                fanouts.append(read_json_file(jp))
+            except Exception:
+                pass
+
+    # Lineage trees: roots are runs without parent_run_id; children are runs
+    # whose parent_run_id matches a known run id.
+    by_id = {r["run_id"]: r for r in runs if r.get("run_id")}
+    children: dict[str, list[str]] = {}
+    for r in runs:
+        parent = r.get("parent_run_id")
+        if parent and parent in by_id:
+            children.setdefault(parent, []).append(r["run_id"])
+    roots = [r["run_id"] for r in runs if not r.get("parent_run_id")]
+
+    # Phase-level stats: how often did each phase pass / fail / skip across
+    # all completed runs? Useful for spotting brittle phases.
+    phase_stats: dict[str, dict[str, int]] = {}
+    for r in runs:
+        for ph in r.get("phases", []):
+            pid = ph.get("phase")
+            if not pid:
+                continue
+            row = phase_stats.setdefault(pid, {"runs": 0, "skipped": 0, "ralph_failed": 0, "grade_failed": 0})
+            row["runs"] += 1
+            if ph.get("skipped"):
+                row["skipped"] += 1
+            if ph.get("ralph_passed") is False:
+                row["ralph_failed"] += 1
+            grade = ph.get("grade") or {}
+            if grade and grade.get("ok") is False:
+                row["grade_failed"] += 1
+
+    # Consistency trend: ratio per (run_id, phase_id), only post-intent.
+    consistency_trend: list[dict] = []
+    for r in runs[-10:]:  # last 10 runs is plenty for a sparkline
+        for ph in r.get("phases", []):
+            c = ph.get("consistency") or {}
+            if c.get("skipped") or c.get("ratio") is None:
+                continue
+            consistency_trend.append({
+                "run_id": r.get("run_id"),
+                "phase": ph.get("phase"),
+                "ratio": c.get("ratio"),
+            })
+
+    total = len(runs)
+    passed = sum(1 for r in runs if r.get("ok"))
+    paused = sum(1 for r in runs if r.get("paused"))
+    iterations = sum(1 for r in runs if r.get("parent_run_id"))
+
+    return {
+        "project": str(project),
+        "generated_at": int(time.time()),
+        "stats": {
+            "runs_total": total,
+            "runs_passed": passed,
+            "runs_paused": paused,
+            "iterations": iterations,
+            "fanouts": len(fanouts),
+            "pass_rate": round(passed / total, 2) if total else None,
+        },
+        "latest_run": runs[-1] if runs else None,
+        "runs": runs,
+        "fanouts": fanouts,
+        "lineage": {
+            "roots": roots,
+            "children": children,
+        },
+        "phase_stats": phase_stats,
+        "consistency_trend": consistency_trend,
+    }
+
+
+def summary_render_html(report: dict) -> str:
+    def esc(s: str) -> str:
+        return (str(s) if s is not None else "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+    stats = report.get("stats", {})
+    project = report.get("project", "")
+    latest = report.get("latest_run") or {}
+
+    # Recent runs table
+    rows = []
+    for r in (report.get("runs") or [])[-15:][::-1]:
+        ok = bool(r.get("ok"))
+        color = "#14B8A6" if ok else "#F97316"
+        verdict = "PASS" if ok else "FAIL"
+        if r.get("paused"):
+            color = "#EAB308"; verdict = "PAUSED"
+        parent = r.get("parent_run_id") or "—"
+        ws = r.get("workspace") or ""
+        link = f"<a href='{esc(ws)}/timeline.html'>view</a>" if ws else ""
+        prompt_short = (r.get("user_prompt") or "")[:80]
+        rows.append(
+            f"<tr><td><code>{esc(r.get('run_id',''))}</code></td>"
+            f"<td><span class='pill' style='background:{color}'>{verdict}</span></td>"
+            f"<td>{len(r.get('phases', []))}/12</td>"
+            f"<td><code>{esc(parent)}</code></td>"
+            f"<td><code>{esc(r.get('fanout_id') or r.get('track_name') or '—')}</code></td>"
+            f"<td>{link}</td>"
+            f"<td class='prompt'>{esc(prompt_short)}</td></tr>"
+        )
+
+    # Fanout cards
+    fan_cards = []
+    for f in (report.get("fanouts") or [])[-6:][::-1]:
+        ok = f.get("ok")
+        color = "#14B8A6" if ok else "#F97316"
+        track_chips = " ".join(
+            f"<span class='chip' style='background:{('#14B8A6' if t.get('ok') else '#F97316')}'>{esc(t['track'])}</span>"
+            for t in f.get("tracks", [])
+        )
+        fan_cards.append(
+            f"<article class='fanout'>"
+            f"<header><h3>{esc(f.get('fanout_id',''))}</h3>"
+            f"<span class='pill' style='background:{color}'>{'ok' if ok else 'fail'}</span></header>"
+            f"<p style='color:var(--muted);font-size:.85rem;'>{esc((f.get('user_prompt') or '')[:120])}</p>"
+            f"<p>{track_chips}</p>"
+            f"<small>{f.get('duration_seconds','?')}s · {len(f.get('tracks',[]))} tracks</small>"
+            f"</article>"
+        )
+
+    # Phase stats table
+    phase_rows = []
+    for pid, row in sorted((report.get("phase_stats") or {}).items()):
+        total = row["runs"]
+        if total == 0:
+            continue
+        fails = row["ralph_failed"] + row["grade_failed"]
+        pct = round(100 * (total - fails - row["skipped"]) / total, 1) if total else 0
+        phase_rows.append(
+            f"<tr><td><code>{esc(pid)}</code></td>"
+            f"<td>{total}</td>"
+            f"<td>{row['skipped']}</td>"
+            f"<td>{fails}</td>"
+            f"<td>{pct}%</td></tr>"
+        )
+
+    # Consistency trend list
+    trend_items = []
+    for t in (report.get("consistency_trend") or [])[-25:]:
+        ratio = t.get("ratio") or 0
+        bar = "▮" * int(ratio * 10) + "▯" * (10 - int(ratio * 10))
+        trend_items.append(
+            f"<li><code>{esc(t['phase']):>20}</code> "
+            f"<span class='bar'>{bar}</span> "
+            f"<small>{ratio} · run {esc((t['run_id'] or '')[:30])}</small></li>"
+        )
+
+    css = (
+        ":root { --bg:#0F172A; --fg:#F1F5F9; --muted:#94A3B8; --pill-fg:#0F172A; --teal:#14B8A6; }"
+        " body { background:var(--bg); color:var(--fg); font-family:'Source Serif Pro',Georgia,serif; max-width:1100px; margin:1.5rem auto; padding:0 1rem; }"
+        " h1 { font-size:1.8rem; margin:0 0 0.3rem; }"
+        " .meta { color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:0.85rem; margin-bottom:1.5rem; }"
+        " .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:0.6rem; margin:1rem 0 1.5rem; }"
+        " .stat { background:rgba(255,255,255,0.04); padding:0.6rem 0.9rem; border-radius:0.4rem; }"
+        " .stat-num { font-size:1.6rem; font-weight:700; color:var(--teal); font-family:'JetBrains Mono',monospace; }"
+        " .stat-label { font-size:0.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; }"
+        " section { margin:2rem 0; }"
+        " section h2 { font-size:0.95rem; color:var(--muted); margin:0 0 0.6rem; font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:0.06em; }"
+        " table { width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:0.78rem; }"
+        " th, td { text-align:left; padding:0.4rem 0.5rem; border-bottom:1px solid rgba(255,255,255,0.08); vertical-align:top; }"
+        " th { color:var(--muted); font-weight:500; }"
+        " .pill { padding:0.15rem 0.55rem; border-radius:1rem; font-size:0.7rem; color:var(--pill-fg); font-weight:600; }"
+        " .chip { padding:0.1rem 0.5rem; border-radius:0.3rem; font-size:0.7rem; color:var(--pill-fg); margin-right:0.25rem; display:inline-block; margin-bottom:0.25rem; }"
+        " .grid { display:grid; gap:0.8rem; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); }"
+        " .fanout { background:rgba(255,255,255,0.04); padding:0.6rem 0.9rem; border-radius:0.4rem; }"
+        " .fanout h3 { margin:0; font-size:0.9rem; font-family:'JetBrains Mono',monospace; }"
+        " .fanout header { display:flex; align-items:center; gap:0.6rem; margin-bottom:0.4rem; }"
+        " ul.trend { list-style:none; padding:0; font-family:'JetBrains Mono',monospace; font-size:0.78rem; }"
+        " ul.trend li { padding:0.15rem 0; }"
+        " .bar { color:var(--teal); letter-spacing:1px; }"
+        " td.prompt { color:var(--muted); max-width:30ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }"
+        " a { color:var(--teal); }"
+        " code { font-family:'JetBrains Mono',monospace; font-size:0.85em; }"
+    )
+
+    return f"""<!doctype html>
+<html lang='en'><head><meta charset='utf-8'><title>Super Skill · Project Summary</title>
+<style>{css}</style></head><body>
+<h1>Project summary</h1>
+<div class='meta'>{esc(project)} · generated {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(report.get('generated_at', time.time())))}</div>
+
+<div class='stats'>
+  <div class='stat'><div class='stat-num'>{stats.get('runs_total',0)}</div><div class='stat-label'>autopilot runs</div></div>
+  <div class='stat'><div class='stat-num'>{stats.get('runs_passed',0)}</div><div class='stat-label'>passed</div></div>
+  <div class='stat'><div class='stat-num'>{stats.get('runs_paused',0)}</div><div class='stat-label'>paused (HITL)</div></div>
+  <div class='stat'><div class='stat-num'>{stats.get('iterations',0)}</div><div class='stat-label'>iterations</div></div>
+  <div class='stat'><div class='stat-num'>{stats.get('fanouts',0)}</div><div class='stat-label'>fanouts</div></div>
+  <div class='stat'><div class='stat-num'>{int((stats.get('pass_rate') or 0) * 100)}%</div><div class='stat-label'>pass rate</div></div>
+</div>
+
+<section><h2>Latest run</h2>
+{('<p>No runs yet.</p>' if not latest else f"<p><code>{esc(latest.get('run_id',''))}</code> &middot; {len(latest.get('phases', []))}/12 phases &middot; <strong>{'PASS' if latest.get('ok') else 'FAIL'}</strong>{' (paused)' if latest.get('paused') else ''}</p><p style='color:var(--muted);font-style:italic;'>“{esc((latest.get('user_prompt') or '')[:200])}”</p>")}
+</section>
+
+<section><h2>Recent runs</h2>
+<table><thead><tr><th>run-id</th><th>verdict</th><th>phases</th><th>parent</th><th>fanout / track</th><th></th><th>prompt</th></tr></thead>
+<tbody>{''.join(rows) if rows else '<tr><td colspan=7>No runs.</td></tr>'}</tbody></table>
+</section>
+
+<section><h2>Recent fanouts</h2>
+{f"<div class='grid'>{''.join(fan_cards)}</div>" if fan_cards else '<p>No fanouts yet.</p>'}
+</section>
+
+<section><h2>Phase pass-rate (across all runs)</h2>
+<table><thead><tr><th>phase</th><th>runs</th><th>skipped</th><th>fails</th><th>pass %</th></tr></thead>
+<tbody>{''.join(phase_rows) if phase_rows else '<tr><td colspan=5>No phase data.</td></tr>'}</tbody></table>
+</section>
+
+<section><h2>Consistency trend (last 25 phases)</h2>
+{f"<ul class='trend'>{''.join(trend_items)}</ul>" if trend_items else '<p>No consistency data yet.</p>'}
+</section>
+
+</body></html>
+"""
+
+
+def cmd_summary(args: argparse.Namespace) -> int:
+    project = Path(args.project).resolve()
+    report = summary_collect(project)
+
+    out_path = Path(args.output) if args.output else project / ".super-skill" / "summary.html"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    html = summary_render_html(report)
+    out_path.write_text(html, encoding="utf-8")
+
+    # JSON form folds the structured report into the payload alongside the
+    # write target so callers get both the dashboard file and the data.
+    if args.json:
+        emit_json(True, {
+            "project": str(project),
+            "output": str(out_path),
+            "stats": report["stats"],
+            "lineage": report["lineage"],
+            "phase_stats": report["phase_stats"],
+            "consistency_trend": report["consistency_trend"],
+            "latest_run": report["latest_run"],
+            "fanouts_count": len(report["fanouts"]),
+        })
+    else:
+        s = report["stats"]
+        print(f"summary: {project}")
+        print(f"  runs={s['runs_total']} passed={s['runs_passed']} paused={s['runs_paused']} iterations={s['iterations']} fanouts={s['fanouts']}")
+        print(f"  pass_rate={s.get('pass_rate')}")
+        print(f"  output: {out_path}")
+    return EXIT_OK
+
+
 def cmd_visualize(args: argparse.Namespace) -> int:
     project = Path(args.project).resolve()
 
@@ -4162,6 +4443,7 @@ def cmd_describe(args: argparse.Namespace) -> int:
             {"name": "resume", "purpose": "Resume the latest or a named autopilot run; --list shows pending vs completed phases"},
             {"name": "visualize", "purpose": "Render an autopilot run.json (or a fanout.json with --fanout-id) as a single self-contained HTML page"},
             {"name": "fanout", "purpose": "Parallel multi-agent orchestrator: split one prompt into N tracks, run each as its own autopilot, aggregate into fanout.json"},
+            {"name": "summary", "purpose": "Project-level dashboard aggregating every autopilot run + fanout into one HTML page (recent runs, lineage, fanouts, phase pass-rate, consistency trend)"},
             {"name": "doctor", "purpose": "Check local tools used by Super Skill"},
         ],
         "profiles": sorted(PROFILE_STAGE_PREFIXES),
@@ -4725,6 +5007,15 @@ def build_parser() -> argparse.ArgumentParser:
     viz_p.add_argument("--output", default=None, help="output path (default: <run_dir>/timeline.html or <fanout_dir>/fanout.html)")
     viz_p.add_argument("--json", action="store_true")
     viz_p.set_defaults(func=cmd_visualize)
+
+    sum_p = sub.add_parser(
+        "summary",
+        help="aggregate every autopilot run + fanout in a project into one JSON / single-page HTML dashboard",
+    )
+    sum_p.add_argument("--project", default=".", help="project root that owns the runs")
+    sum_p.add_argument("--output", default=None, help="HTML output path (default: <project>/.super-skill/summary.html)")
+    sum_p.add_argument("--json", action="store_true", help="emit JSON to stdout (combined with --output also writes HTML)")
+    sum_p.set_defaults(func=cmd_summary)
 
     fan_p = sub.add_parser(
         "fanout",
