@@ -1,0 +1,31 @@
+{
+  "project": "goal-driven-delivery",
+  "required_stages": [
+    "00-orchestration",
+    "03-product",
+    "07-testing-and-quality",
+    "09-operations-and-knowledge",
+    "90-codex-patterns"
+  ],
+  "required_skills": [
+    "goal-driven-workflow",
+    "intent-contract",
+    "product-spec",
+    "ralph-loop",
+    "code-simplifier",
+    "output-quality-gate",
+    "verification-loop",
+    "agent-memory-dream-loop",
+    "token-budgeting"
+  ],
+  "required_phrases": [
+    "token budget",
+    "Stop if",
+    "Done when",
+    "OpenSpec",
+    "Ralph Loop",
+    "code-simplifier",
+    "evidence",
+    "memory"
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "generated_at": 1778015281,
+  "generated_at": 1778045924,
   "installable_skills": [
     {
       "name": "auto-flow",
@@ -40,6 +40,14 @@
       "stage_label": "Orchestration",
       "source": "core",
       "path": "skills/00-orchestration/durable-agent-board"
+    },
+    {
+      "name": "goal-driven-workflow",
+      "description": "Codex /goal 风格的持久目标工作流:把模糊需求转成可审计 goal contract,再用 OpenSpec/SDD、Ralph Loop、code-simplifier、completion audit 和 memory/dream replay 形成长任务闭环。 适用场景:长程开发、跨会话任务、规格驱动实现、复杂重构、批量修复、需要 token budget/Stop if/Done when 的任务。 触发词:「/goal」「goal」「目标模式」「持久目标」「长期任务」「OpenSpec」「SDD」「spec-driven」「Ralph loop++」「跑到完成」。",
+      "stage": "00-orchestration",
+      "stage_label": "Orchestration",
+      "source": "core",
+      "path": "skills/00-orchestration/goal-driven-workflow"
     },
     {
       "name": "intent-contract",

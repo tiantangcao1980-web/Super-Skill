@@ -13,6 +13,7 @@
     "hermes": "bin/super-skill hermes",
     "memory": "bin/super-skill memory",
     "triggers": "bin/super-skill triggers",
+    "goal": "bin/super-skill goal",
     "evals": "bin/super-skill evals",
     "live-evals": "bin/super-skill live-evals",
     "memory-plugin": "bin/super-skill memory-plugin",

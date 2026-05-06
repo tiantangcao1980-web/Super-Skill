@@ -53,6 +53,18 @@
       }
     },
     {
+      "id": "fallback-long-running-goal",
+      "surface": "implicit-skill",
+      "condition": "The user asks for /goal, persistent objectives, long-running work, SDD/OpenSpec execution, or to keep working until a verifiable goal is done.",
+      "action": "Use goal-driven-workflow to generate a scoped goal contract with Done when, Stop if, and token budget before implementation.",
+      "control": {
+        "auto_promote": false,
+        "capture_raw_prompt": false,
+        "capture_raw_response": false,
+        "deduplicate": true
+      }
+    },
+    {
       "id": "fallback-failure-or-regression",
       "surface": "implicit-skill",
       "condition": "A build, test, audit, security check, deployment, or user acceptance loop failed more than once.",

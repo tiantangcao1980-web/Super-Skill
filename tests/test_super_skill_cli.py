@@ -123,8 +123,47 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertFalse(trigger_policy["controls"]["capture_raw_prompt"])
         self.assertFalse(trigger_policy["controls"]["capture_raw_response"])
         self.assertFalse(trigger_policy["controls"]["auto_promote"])
+        trigger_ids = {item["id"] for item in trigger_policy["triggers"]}
+        self.assertIn("fallback-long-running-goal", trigger_ids)
+        self.assertIn("goal-driven-workflow", lifecycle_policy["protected_skills"])
         self.assertIn("agent-memory-dream-loop", lifecycle_policy["protected_skills"])
         self.assertFalse(lifecycle_policy["curation"]["auto_delete"])
+
+    def test_goal_builder_renders_audit_friendly_sdd_goal(self) -> None:
+        data = run_cli(
+            "goal",
+            "--objective", "Implement openspec/changes/add-rerank exactly as specified",
+            "--sdd-path", "openspec/changes/add-rerank",
+            "--scope", "openspec/changes/add-rerank; src/retrieval; tests/retrieval",
+            "--done", "Each task in openspec/changes/add-rerank/tasks.md is checked off with file evidence",
+            "--done", "`npm test` exits 0 and summary is pasted",
+            "--done", "Each SHALL has a passing test name cited in tests/retrieval",
+            "--stop-if", "A SHALL conflicts with another SHALL in specs/",
+            "--stop-if", "A new dependency requires npm install",
+            "--stop-if", "git diff touches auth/ or billing/ outside scope",
+            "--budget", "120000",
+        )
+        self.assertGreaterEqual(data["score"], 90)
+        goal = data["goal"]
+        self.assertIn("/goal Implement openspec/changes/add-rerank exactly as specified", goal)
+        self.assertIn("First action:", goal)
+        self.assertIn("Done when:", goal)
+        self.assertIn("Stop if:", goal)
+        self.assertIn("Use a token budget of 120000 tokens", goal)
+        self.assertEqual(data["budget_source"], "explicit")
+
+    def test_goal_builder_flags_vague_objective(self) -> None:
+        data = run_cli(
+            "goal",
+            "--objective", "优化整个项目",
+            "--scope", "repository",
+            "--done", "README.md updated",
+            "--stop-if", "git diff touches secrets.json",
+        )
+        self.assertLess(data["score"], 90)
+        check_by_id = {item["id"]: item for item in data["checks"]}
+        self.assertFalse(check_by_id["no-vague-objective"]["ok"])
+        self.assertTrue(data["warnings"])
 
     def test_memory_plugin_plan_reports_codex_bootstrap(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
