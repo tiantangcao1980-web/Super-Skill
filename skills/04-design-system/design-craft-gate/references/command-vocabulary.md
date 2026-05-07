@@ -8,8 +8,8 @@ commands; they are reusable design work modes.
 | Mode | Use when | Output |
 | --- | --- | --- |
 | `teach` | The project lacks product/design context | `PRODUCT.md` plus optional `DESIGN.md` draft |
-| `document` | UI exists but design rules are implicit | token inventory, component notes, `DESIGN.md` update |
-| `extract` | Repeated UI should become reusable | tokens/components, migration plan, docs |
+| `document` | UI exists but design rules are implicit | `design-extract` inventory, component notes, `DESIGN.md` update |
+| `extract` | Repeated UI should become reusable | JSON sidecar, tokens/components, migration plan, docs |
 
 ## Creation Commands
 

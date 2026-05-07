@@ -9,6 +9,7 @@ Desktop / Claude Code / Cursor / any MCP-aware client and call:
   - resume(project=".", run_id=None, list=False, ...)
   - llm_eval(prompt=None, provider="stub")
   - design_preflight(project=".", strict=False, max_findings=50)
+  - design_extract(project=".", write_sidecar=None, write_design=None)
   - design_audit(project=".", max_findings=200)
 
 The tools wrap `bin/super-skill` via subprocess. We deliberately do not
@@ -150,6 +151,20 @@ TOOLS = [
             },
         },
     },
+    {
+        "name": "design_extract",
+        "description": "Extract design tokens, utility classes, component signals, and an optional DESIGN.md draft from frontend files.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "project": {"type": "string", "default": ".", "description": "Project root or frontend surface to scan"},
+                "max_items": {"type": "integer", "default": 16},
+                "write_sidecar": {"type": "string", "description": "Optional JSON sidecar output path"},
+                "write_design": {"type": "string", "description": "Optional generated DESIGN.md draft output path"},
+                "force": {"type": "boolean", "default": False},
+            },
+        },
+    },
 ]
 
 
@@ -201,12 +216,26 @@ def build_argv_design_preflight(args: dict) -> list[str]:
     return argv
 
 
+def build_argv_design_extract(args: dict) -> list[str]:
+    argv = ["design-extract", "--project", args.get("project", ".")]
+    if args.get("max_items") is not None:
+        argv += ["--max-items", str(args["max_items"])]
+    if args.get("write_sidecar"):
+        argv += ["--write-sidecar", args["write_sidecar"]]
+    if args.get("write_design"):
+        argv += ["--write-design", args["write_design"]]
+    if args.get("force"):
+        argv += ["--force"]
+    return argv
+
+
 TOOL_DISPATCH = {
     "autopilot": build_argv_autopilot,
     "resume": build_argv_resume,
     "llm_eval": build_argv_llm_eval,
     "design_audit": build_argv_design_audit,
     "design_preflight": build_argv_design_preflight,
+    "design_extract": build_argv_design_extract,
 }
 
 

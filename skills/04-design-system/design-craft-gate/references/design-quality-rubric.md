@@ -24,6 +24,7 @@ Above 85 is acceptable if P0/P1 are absent and the user goal is satisfied.
 ## Evidence Checklist
 
 - context loaded or assumptions documented
+- `design-extract` run when existing UI has implicit tokens or components
 - shape brief exists for new work
 - token/component alignment checked
 - `design-preflight` passes or missing context is explicitly documented

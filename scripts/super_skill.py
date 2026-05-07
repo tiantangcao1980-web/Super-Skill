@@ -441,6 +441,32 @@ DESIGN_AUDIT_DOCUMENT_RULES = [
     },
 ]
 
+DESIGN_EXTRACT_SUFFIXES = DESIGN_AUDIT_SUFFIXES | {".json", ".md"}
+DESIGN_EXTRACT_COLOR_RE = re.compile(
+    r"#[0-9a-fA-F]{3,8}\b|\b(?:rgb|rgba|hsl|hsla|oklch|oklab)\([^;\n)]+\)",
+    re.I,
+)
+DESIGN_EXTRACT_CSS_VAR_RE = re.compile(r"(?P<name>--[A-Za-z0-9_-]+)\s*:\s*(?P<value>[^;\n]+)")
+DESIGN_EXTRACT_FONT_FAMILY_RE = re.compile(r"font-family\s*:\s*([^;\n}]+)", re.I)
+DESIGN_EXTRACT_FONT_SIZE_RE = re.compile(r"font-size\s*:\s*([^;\n}]+)", re.I)
+DESIGN_EXTRACT_SPACING_RE = re.compile(
+    r"\b(?:margin|padding|gap|row-gap|column-gap|inset|top|right|bottom|left)(?:-[\w-]+)?\s*:\s*([^;\n}]+)",
+    re.I,
+)
+DESIGN_EXTRACT_RADIUS_RE = re.compile(r"border-radius\s*:\s*([^;\n}]+)", re.I)
+DESIGN_EXTRACT_SHADOW_RE = re.compile(r"box-shadow\s*:\s*([^;\n}]+)", re.I)
+DESIGN_EXTRACT_MOTION_RE = re.compile(r"\b(?:transition|animation)(?:-[\w-]+)?\s*:\s*([^;\n}]+)", re.I)
+DESIGN_EXTRACT_CLASS_RE = re.compile(r"\bclass(?:Name)?\s*=\s*[\"']([^\"']+)[\"']", re.I)
+DESIGN_EXTRACT_COMPONENT_RE = re.compile(r"<([A-Z][A-Za-z0-9]*(?:\.[A-Z][A-Za-z0-9]*)?)\b")
+DESIGN_EXTRACT_CLASS_BUCKETS = {
+    "color": re.compile(r"^(?:bg|text|border|from|via|to|ring|fill|stroke)-"),
+    "spacing": re.compile(r"^(?:p|px|py|pt|pr|pb|pl|m|mx|my|mt|mr|mb|ml|gap|gap-x|gap-y|space-x|space-y)-"),
+    "radius": re.compile(r"^rounded(?:-|$)"),
+    "typography": re.compile(r"^(?:text-(?:xs|sm|base|lg|xl|[2-9]xl|\[)|font-|leading-|tracking-)"),
+    "layout": re.compile(r"^(?:grid|flex|inline-flex|items-|justify-|content-|place-|w-|h-|min-|max-|col-|row-)"),
+    "motion": re.compile(r"^(?:transition|duration|ease|animate|delay)-"),
+}
+
 GOAL_VAGUE_RE = re.compile(
     r"\b(?:improve|optimi[sz]e|clean\s*up|all|everything|better|enhance)\b|"
     r"(?:优化|提升|全部|彻底|更好|完善|全面)",
@@ -4525,6 +4551,23 @@ def design_audit_files(project: Path) -> tuple[Path, list[Path]]:
     return project, sorted(files)
 
 
+def design_extract_files(project: Path) -> tuple[Path, list[Path]]:
+    project = project.expanduser().resolve()
+    if project.is_file():
+        return project.parent, [project] if project.suffix.lower() in DESIGN_EXTRACT_SUFFIXES else []
+
+    files: list[Path] = []
+    for path in project.rglob("*"):
+        if not path.is_file():
+            continue
+        rel_parts = path.relative_to(project).parts
+        if any(part in DESIGN_AUDIT_IGNORES for part in rel_parts):
+            continue
+        if path.suffix.lower() in DESIGN_EXTRACT_SUFFIXES:
+            files.append(path)
+    return project, sorted(files)
+
+
 def line_number_for_offset(text: str, offset: int) -> int:
     return text.count("\n", 0, offset) + 1
 
@@ -4810,6 +4853,274 @@ def design_preflight_scan(project: Path, max_findings: int = 50) -> dict:
             "status": anti_pattern_status,
         },
     }
+
+
+def design_signal_value(value: str) -> str:
+    return re.sub(r"\s+", " ", value.strip().strip("\"'`")).strip()
+
+
+def design_bump_signal(bucket: dict, value: str, rel: str, lineno: int) -> None:
+    clean = design_signal_value(value)
+    if not clean:
+        return
+    if len(clean) > 140:
+        clean = clean[:137] + "..."
+    item = bucket.setdefault(clean, {"count": 0, "samples": []})
+    item["count"] += 1
+    sample = f"{rel}:{lineno}"
+    if len(item["samples"]) < 3 and sample not in item["samples"]:
+        item["samples"].append(sample)
+
+
+def design_top_signals(bucket: dict, limit: int = 12) -> list[dict]:
+    rows = [
+        {"value": value, "count": data["count"], "samples": data["samples"]}
+        for value, data in bucket.items()
+    ]
+    return sorted(rows, key=lambda row: (-row["count"], row["value"]))[:limit]
+
+
+def design_extract_classes(class_value: str) -> list[str]:
+    return [part for part in re.split(r"\s+", class_value.strip()) if part and "{" not in part and "}" not in part]
+
+
+def design_extract_scan(project: Path, max_items: int = 16) -> dict:
+    base, files = design_extract_files(project)
+    signals = {
+        "css_variables": {},
+        "colors": {},
+        "font_families": {},
+        "font_sizes": {},
+        "spacing": {},
+        "radius": {},
+        "shadows": {},
+        "motion": {},
+        "components": {},
+    }
+    class_signals = {name: {} for name in DESIGN_EXTRACT_CLASS_BUCKETS}
+    files_scanned = 0
+
+    for path in files:
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        files_scanned += 1
+        rel = path.relative_to(base).as_posix()
+
+        for match in DESIGN_EXTRACT_CSS_VAR_RE.finditer(text):
+            value = f"{match.group('name')}: {design_signal_value(match.group('value'))}"
+            design_bump_signal(signals["css_variables"], value, rel, line_number_for_offset(text, match.start()))
+        for match in DESIGN_EXTRACT_COLOR_RE.finditer(text):
+            design_bump_signal(signals["colors"], match.group(0), rel, line_number_for_offset(text, match.start()))
+        for match in DESIGN_EXTRACT_FONT_FAMILY_RE.finditer(text):
+            design_bump_signal(signals["font_families"], match.group(1), rel, line_number_for_offset(text, match.start()))
+        for match in DESIGN_EXTRACT_FONT_SIZE_RE.finditer(text):
+            design_bump_signal(signals["font_sizes"], match.group(1), rel, line_number_for_offset(text, match.start()))
+        for match in DESIGN_EXTRACT_SPACING_RE.finditer(text):
+            design_bump_signal(signals["spacing"], match.group(1), rel, line_number_for_offset(text, match.start()))
+        for match in DESIGN_EXTRACT_RADIUS_RE.finditer(text):
+            design_bump_signal(signals["radius"], match.group(1), rel, line_number_for_offset(text, match.start()))
+        for match in DESIGN_EXTRACT_SHADOW_RE.finditer(text):
+            design_bump_signal(signals["shadows"], match.group(1), rel, line_number_for_offset(text, match.start()))
+        for match in DESIGN_EXTRACT_MOTION_RE.finditer(text):
+            design_bump_signal(signals["motion"], match.group(1), rel, line_number_for_offset(text, match.start()))
+        for match in DESIGN_EXTRACT_COMPONENT_RE.finditer(text):
+            design_bump_signal(signals["components"], match.group(1), rel, line_number_for_offset(text, match.start()))
+        for match in DESIGN_EXTRACT_CLASS_RE.finditer(text):
+            lineno = line_number_for_offset(text, match.start())
+            for class_name in design_extract_classes(match.group(1)):
+                for bucket_name, pattern in DESIGN_EXTRACT_CLASS_BUCKETS.items():
+                    if pattern.search(class_name):
+                        design_bump_signal(class_signals[bucket_name], class_name, rel, lineno)
+
+    top = {name: design_top_signals(bucket, max_items) for name, bucket in signals.items()}
+    top_classes = {name: design_top_signals(bucket, max_items) for name, bucket in class_signals.items()}
+    audit = design_audit_scan(project, max_findings=50)
+
+    recommendations: list[str] = []
+    if top["css_variables"]:
+        recommendations.append("Preserve discovered CSS variables as the first token source, then rename high-use values into semantic DesignDNA tokens.")
+    if len(top["colors"]) >= 8:
+        recommendations.append("Consolidate repeated raw colors into semantic color roles before adding new palettes.")
+    if top_classes["spacing"] and not top["spacing"]:
+        recommendations.append("Translate repeated spacing utility classes into documented spacing tokens.")
+    if top["components"]:
+        recommendations.append("Document high-frequency component names as reusable product primitives.")
+    if audit["findings_by_severity"].get("P1") or audit["findings_by_severity"].get("P0"):
+        recommendations.append("Resolve blocking design-audit findings before treating this extraction as a stable design system.")
+    if not recommendations:
+        recommendations.append("Use this extraction as a draft; validate naming, contrast, and component roles with product context before codifying.")
+
+    sidecar = {
+        "schema": "super-skill.design-extract.v1",
+        "project": str(project.expanduser().resolve()),
+        "base": str(base),
+        "files_scanned": files_scanned,
+        "tokens": top,
+        "utility_classes": top_classes,
+        "audit_summary": {
+            "status": audit["status"],
+            "score": audit["score"],
+            "findings_total": audit["findings_total"],
+            "findings_by_rule": audit["findings_by_rule"],
+            "findings_by_severity": audit["findings_by_severity"],
+        },
+        "recommendations": recommendations,
+    }
+    markdown = render_design_extract_markdown(sidecar)
+    return {**sidecar, "markdown": markdown}
+
+
+def markdown_escape_cell(value: str) -> str:
+    return value.replace("|", "\\|").replace("\n", " ")
+
+
+def render_signal_table(items: list[dict], empty: str = "No strong signal found.") -> str:
+    if not items:
+        return empty
+    lines = ["| Signal | Count | Samples |", "| --- | ---: | --- |"]
+    for item in items[:10]:
+        lines.append(
+            f"| `{markdown_escape_cell(item['value'])}` | {item['count']} | "
+            f"{', '.join(f'`{sample}`' for sample in item.get('samples', []))} |"
+        )
+    return "\n".join(lines)
+
+
+def render_design_extract_markdown(sidecar: dict) -> str:
+    tokens = sidecar["tokens"]
+    classes = sidecar["utility_classes"]
+    recommendations = "\n".join(f"- {item}" for item in sidecar["recommendations"])
+    return f"""# Extracted Design System Draft
+
+Generated by `bin/super-skill design-extract`. Treat this as a draft for a
+human-reviewed `DESIGN.md`, not as a final brand decision.
+
+## Source
+
+- Project: `{sidecar['project']}`
+- Files scanned: {sidecar['files_scanned']}
+- Design audit: {sidecar['audit_summary']['status']} ({sidecar['audit_summary']['score']}/100), {sidecar['audit_summary']['findings_total']} findings
+
+## CSS Variables
+
+{render_signal_table(tokens['css_variables'])}
+
+## Color Signals
+
+{render_signal_table(tokens['colors'])}
+
+## Typography Signals
+
+### Font Families
+
+{render_signal_table(tokens['font_families'])}
+
+### Font Sizes
+
+{render_signal_table(tokens['font_sizes'])}
+
+## Space And Shape
+
+### Spacing
+
+{render_signal_table(tokens['spacing'])}
+
+### Radius
+
+{render_signal_table(tokens['radius'])}
+
+## Motion And Elevation
+
+### Motion
+
+{render_signal_table(tokens['motion'])}
+
+### Shadows
+
+{render_signal_table(tokens['shadows'])}
+
+## Component Signals
+
+{render_signal_table(tokens['components'])}
+
+## Utility Class Signals
+
+### Color Classes
+
+{render_signal_table(classes['color'])}
+
+### Spacing Classes
+
+{render_signal_table(classes['spacing'])}
+
+### Typography Classes
+
+{render_signal_table(classes['typography'])}
+
+### Layout Classes
+
+{render_signal_table(classes['layout'])}
+
+## Recommendations
+
+{recommendations}
+"""
+
+
+def write_design_output(path_arg: str, text: str, force: bool) -> str:
+    path = Path(path_arg).expanduser()
+    if not path.is_absolute():
+        path = Path.cwd() / path
+    path = path.resolve()
+    if path.exists() and not force:
+        raise FileExistsError(str(path))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return str(path)
+
+
+def cmd_design_extract(args: argparse.Namespace) -> int:
+    project = Path(args.project)
+    if not project.expanduser().exists():
+        if args.json:
+            emit_json(False, {"message": f"project path not found: {project}"}, code="USAGE")
+        else:
+            print(f"error: project path not found: {project}", file=sys.stderr)
+        return EXIT_USAGE
+
+    payload = design_extract_scan(project, max_items=args.max_items)
+    outputs: dict[str, str] = {}
+    try:
+        if args.write_sidecar:
+            sidecar_payload = {key: value for key, value in payload.items() if key != "markdown"}
+            outputs["sidecar"] = write_design_output(
+                args.write_sidecar,
+                json.dumps(sidecar_payload, ensure_ascii=False, indent=2) + "\n",
+                args.force,
+            )
+        if args.write_design:
+            outputs["design"] = write_design_output(args.write_design, payload["markdown"], args.force)
+    except FileExistsError as exc:
+        message = f"output exists, use --force to overwrite: {exc}"
+        if args.json:
+            emit_json(False, {"message": message, "outputs": outputs}, code="DESIGN_EXTRACT_OUTPUT_EXISTS")
+        else:
+            print(f"error: {message}", file=sys.stderr)
+        return EXIT_USAGE
+
+    payload["outputs"] = outputs
+    if args.json:
+        emit_json(True, payload)
+    else:
+        print(f"Design extract: scanned {payload['files_scanned']} files")
+        print(f"Audit: {payload['audit_summary']['status']} ({payload['audit_summary']['score']}/100)")
+        for recommendation in payload["recommendations"]:
+            print(f"- {recommendation}")
+        for label, output in outputs.items():
+            print(f"{label}: {output}")
+    return EXIT_OK
 
 
 def cmd_design_audit(args: argparse.Namespace) -> int:
@@ -5287,6 +5598,7 @@ def cmd_describe(args: argparse.Namespace) -> int:
             {"name": "goal", "purpose": "Build an audit-friendly Codex /goal command with scope, evidence, stop-if guards, and token budget"},
             {"name": "audit", "purpose": "Check duplicates, manifests, compatibility links, secrets, and risky patterns"},
             {"name": "design-preflight", "purpose": "Check PRODUCT/DESIGN context, shape brief, tokens, visual refs, and anti-pattern readiness before UI mutation"},
+            {"name": "design-extract", "purpose": "Extract design tokens, utility classes, component signals, and an optional DESIGN.md draft from frontend files"},
             {"name": "design-audit", "purpose": "Scan frontend files for deterministic AI design anti-patterns and quality risks"},
             {"name": "harness", "purpose": "Assess AI-first harness readiness for this or another project"},
             {"name": "hermes", "purpose": "Assess Hermes-inspired self-improving agent system readiness"},
@@ -5764,6 +6076,15 @@ def build_parser() -> argparse.ArgumentParser:
     design_preflight_p.add_argument("--strict", action="store_true", help="exit non-zero when required context or anti-pattern gate is blocked")
     design_preflight_p.add_argument("--json", action="store_true")
     design_preflight_p.set_defaults(func=cmd_design_preflight)
+
+    design_extract_p = sub.add_parser("design-extract", help="extract design system signals from frontend files")
+    design_extract_p.add_argument("--project", default=".", help="project root or frontend surface to scan")
+    design_extract_p.add_argument("--max-items", type=int, default=16, help="maximum signals to keep per category")
+    design_extract_p.add_argument("--write-sidecar", default=None, help="optional path for JSON sidecar output")
+    design_extract_p.add_argument("--write-design", default=None, help="optional path for generated DESIGN.md draft")
+    design_extract_p.add_argument("--force", action="store_true", help="overwrite existing output files")
+    design_extract_p.add_argument("--json", action="store_true")
+    design_extract_p.set_defaults(func=cmd_design_extract)
 
     harness_p = sub.add_parser("harness", help="assess AI-first harness readiness")
     harness_p.add_argument("--project", default=".")

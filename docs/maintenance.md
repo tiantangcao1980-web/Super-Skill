@@ -12,6 +12,7 @@
 bin/super-skill validate
 bin/super-skill audit
 bin/super-skill design-preflight --project <project-root>
+bin/super-skill design-extract --project <frontend-path>
 bin/super-skill design-audit --project <frontend-path>
 bin/super-skill harness
 bin/super-skill hermes
@@ -54,6 +55,7 @@ Then update NOTICE and run validation.
 - `bin/super-skill audit` exits 0 with no blocking failures.
 - `bin/super-skill design-audit --project <frontend-path> --json` reports deterministic design anti-pattern findings for review.
 - `bin/super-skill design-preflight --project <project-root> --json` reports PRODUCT/DESIGN context, shape brief, token, visual reference, and anti-pattern readiness.
+- `bin/super-skill design-extract --project <frontend-path> --json` reports extracted design tokens, component signals, utility classes, recommendations, and optional sidecar / DESIGN.md draft outputs.
 - `bin/super-skill harness --json` reports the AI-first harness capability matrix.
 - `docs/harness-engineering-validation.md` records the source-derived harness criteria, current evidence, and remaining runtime gaps.
 - `bin/super-skill hermes --json` reports the Hermes-style self-improving agent capability matrix.

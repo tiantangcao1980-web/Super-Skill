@@ -41,6 +41,9 @@ structure.
 - `DESIGN_CRAFT_PREFLIGHT` as a compact context and mutation gate.
 - Deterministic `bin/super-skill design-preflight` checks for product/design
   context, shape brief, tokens, visual references, and anti-pattern readiness.
+- `bin/super-skill design-extract` for extracting CSS variables, colors,
+  typography, spacing, radius, motion, component, and utility-class signals into
+  a JSON sidecar plus optional `DESIGN.md` draft.
 - Deterministic `bin/super-skill design-audit` checks for repeatable AI UI
   patterns such as generic purple/cyan palettes, gradient text, decorative side
   borders, nested cards, pure black/white defaults, low-contrast text, skipped
@@ -74,6 +77,9 @@ Run:
 ```bash
 bin/super-skill design-audit --project <frontend-path> --json
 bin/super-skill design-preflight --project <project-root> --strict --json
+bin/super-skill design-extract --project <frontend-path> \
+  --write-sidecar .super-skill/design/design.json \
+  --write-design .super-skill/design/DESIGN.generated.md --json
 ```
 
 Use the scans as gates, not as substitutes for design judgment.

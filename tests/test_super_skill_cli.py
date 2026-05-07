@@ -173,6 +173,57 @@ class SuperSkillCliTests(unittest.TestCase):
             self.assertFalse(payload["ok"])
             self.assertEqual(payload["error"]["code"], "DESIGN_PREFLIGHT_BLOCKED")
 
+    def test_design_extract_generates_sidecar_and_design_draft(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "src").mkdir()
+            (root / "src" / "style.css").write_text(
+                """
+                :root {
+                  --color-bg: #f8fafc;
+                  --color-text: #172033;
+                  --space-md: 16px;
+                  --radius-card: 8px;
+                }
+                body {
+                  color: var(--color-text);
+                  background: var(--color-bg);
+                  font-family: Inter, system-ui, sans-serif;
+                  font-size: 16px;
+                  padding: 16px;
+                }
+                .panel { border-radius: 8px; box-shadow: 0 1px 2px rgba(15,23,42,.08); transition: opacity 160ms ease; }
+                """,
+                encoding="utf-8",
+            )
+            (root / "src" / "App.tsx").write_text(
+                '<Button className="bg-slate-900 text-white px-4 py-2 rounded-md font-semibold transition-opacity">Save</Button>',
+                encoding="utf-8",
+            )
+            sidecar = root / ".super-skill" / "design" / "design.json"
+            draft = root / ".super-skill" / "design" / "DESIGN.generated.md"
+
+            data = run_cli(
+                "design-extract",
+                "--project",
+                str(root / "src"),
+                "--write-sidecar",
+                str(sidecar),
+                "--write-design",
+                str(draft),
+            )
+            self.assertGreaterEqual(data["files_scanned"], 2)
+            self.assertIn("markdown", data)
+            self.assertTrue(sidecar.exists())
+            self.assertTrue(draft.exists())
+            sidecar_data = json.loads(sidecar.read_text(encoding="utf-8"))
+            self.assertEqual(sidecar_data["schema"], "super-skill.design-extract.v1")
+            css_vars = {item["value"] for item in data["tokens"]["css_variables"]}
+            self.assertTrue(any("--color-bg" in item for item in css_vars))
+            classes = {item["value"] for item in data["utility_classes"]["color"]}
+            self.assertIn("bg-slate-900", classes)
+            self.assertIn("Extracted Design System Draft", draft.read_text(encoding="utf-8"))
+
     def test_harness_assessment_reports_capabilities(self) -> None:
         data = run_cli("harness", "--project", ".")
         self.assertGreaterEqual(data["score"], 70)
@@ -595,6 +646,7 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertIn("llm_eval", tool_names)
         self.assertIn("design_audit", tool_names)
         self.assertIn("design_preflight", tool_names)
+        self.assertIn("design_extract", tool_names)
 
     def test_mcp_server_dispatches_autopilot_dry_run(self) -> None:
         ROOT = Path(__file__).resolve().parents[1]
@@ -675,6 +727,31 @@ class SuperSkillCliTests(unittest.TestCase):
             inner = json.loads(call_reply["result"]["content"][0]["text"])
             self.assertTrue(inner["ok"])
             self.assertEqual(inner["data"]["mutation"], "open")
+
+    def test_mcp_server_dispatches_design_extract(self) -> None:
+        ROOT = Path(__file__).resolve().parents[1]
+        server = ROOT / "plugins" / "super-skill-mcp-server" / "scripts" / "mcp_server.py"
+        with tempfile.TemporaryDirectory() as td:
+            page = Path(td) / "page.html"
+            page.write_text("<style>:root{--color-bg:#f8fafc}.card{padding:16px;border-radius:8px}</style>", encoding="utf-8")
+            dialogue = "\n".join([
+                '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{}}}',
+                json.dumps({
+                    "jsonrpc": "2.0", "id": 2, "method": "tools/call",
+                    "params": {"name": "design_extract", "arguments": {"project": td}},
+                }),
+            ]) + "\n"
+            proc = subprocess.run(
+                [sys.executable, str(server)],
+                input=dialogue, capture_output=True, text=True, timeout=30, check=False,
+            )
+            lines = [json.loads(l) for l in proc.stdout.splitlines() if l.strip()]
+            call_reply = lines[1]
+            self.assertFalse(call_reply["result"].get("isError"))
+            inner = json.loads(call_reply["result"]["content"][0]["text"])
+            self.assertTrue(inner["ok"])
+            self.assertGreater(inner["data"]["files_scanned"], 0)
+            self.assertIn("css_variables", inner["data"]["tokens"])
 
     def test_visualize_renders_html_for_latest_run(self) -> None:
         with tempfile.TemporaryDirectory() as td:

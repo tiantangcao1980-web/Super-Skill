@@ -21,6 +21,9 @@ inspired by Impeccable's context-first design vocabulary. It does not replace
      or equivalent.
    - Design context: `DESIGN.md`, `design/tokens.json`, Storybook, screenshots,
      Figma assets, brand guide, or existing components.
+   - Extraction path: when UI exists but design rules are implicit, run
+     `bin/super-skill design-extract --project <path> --json` and use the
+     sidecar/markdown draft as a review artifact.
    - If neither exists, produce a compact design-context brief first and mark
      assumptions clearly.
 2. **Shape before build.** Write a short shape brief covering user goal, surface,
@@ -71,6 +74,7 @@ stable design language:
 
 - **teach**: establish `PRODUCT.md` and `DESIGN.md` context.
 - **document**: extract tokens, components, and visual rules from existing code.
+  Use `design-extract` when local files exist.
 - **shape**: plan the UX/UI and acceptance evidence before code.
 - **craft**: build the shaped surface with visual iteration.
 - **critique**: review hierarchy, clarity, fit, and anti-patterns.

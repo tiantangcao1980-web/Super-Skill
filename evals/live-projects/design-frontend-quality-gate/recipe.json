@@ -47,6 +47,10 @@
         "argv": ["{root}/bin/super-skill", "design-preflight", "--project", ".", "--strict", "--json"]
       },
       {
+        "id": "design-extract",
+        "argv": ["{root}/bin/super-skill", "design-extract", "--project", "src", "--write-sidecar", ".super-skill/design/design.json", "--write-design", ".super-skill/design/DESIGN.generated.md", "--json"]
+      },
+      {
         "id": "design-audit",
         "argv": ["{root}/bin/super-skill", "design-audit", "--project", "src", "--fail-on-findings", "--json"]
       },
