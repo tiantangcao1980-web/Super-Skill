@@ -43,11 +43,17 @@ Moving a skill between lifecycle directories is safe if the skill folder remains
 
 ## Update Vendor Content
 
-Vendor content lives outside installable `skills/` unless names are explicitly namespaced. If promoting a vendor skill into lifecycle skills, rename both folder and frontmatter, for example:
+Vendor content lives outside installable `skills/` unless names are explicitly namespaced. Generate the namespace plan first:
+
+```bash
+bin/super-skill vendor --write-namespace catalog/vendor-namespace.json
+```
+
+If promoting a vendor skill into lifecycle skills, use the generated `installable_name` as both folder and frontmatter name, for example:
 
 ```text
-sales-call-prep
-marketing-competitive-analysis
+cowork-sales-call-prep
+cowork-marketing-competitive-analysis
 ```
 
 Then update NOTICE and run validation.

@@ -9,6 +9,7 @@ two views without introducing external dependencies.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import html
 import json
 import os
@@ -1276,6 +1277,80 @@ def duplicate_explicit_triggers(skills: list[Skill]) -> dict[str, list[Skill]]:
     return {phrase: vals for phrase, vals in seen.items() if len(vals) > 1}
 
 
+def slugify(value: str, fallback: str = "unknown") -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+    return slug or fallback
+
+
+def vendor_identity(skill: Skill) -> tuple[str, str]:
+    try:
+        parts = skill.path.relative_to(VENDOR_ROOT).parts
+    except ValueError:
+        return "unknown", "unknown"
+    domain = parts[0] if len(parts) >= 1 else "unknown"
+    version = parts[1] if len(parts) >= 2 else "unknown"
+    return domain, version
+
+
+def vendor_namespace_plan(vendor_skills: list[Skill], installable_names: set[str] | None = None) -> dict:
+    installable_names = installable_names or set()
+    base_aliases: dict[str, list[Skill]] = {}
+    for skill in vendor_skills:
+        domain, _version = vendor_identity(skill)
+        base = f"cowork-{slugify(domain)}-{slugify(skill.name)}"
+        base_aliases.setdefault(base, []).append(skill)
+
+    used: set[str] = set()
+    entries: list[dict] = []
+    for skill in sorted(vendor_skills, key=lambda s: s.relative_path):
+        domain, version = vendor_identity(skill)
+        domain_slug = slugify(domain)
+        version_slug = slugify(version)
+        skill_slug = slugify(skill.name)
+        base = f"cowork-{domain_slug}-{skill_slug}"
+        installable_name = base
+        if len(base_aliases.get(base, [])) > 1:
+            installable_name = f"cowork-{domain_slug}-{version_slug}-{skill_slug}"
+        if installable_name in used:
+            suffix = hashlib.sha1(skill.relative_path.encode("utf-8")).hexdigest()[:8]
+            installable_name = f"{installable_name}-{suffix}"
+        used.add(installable_name)
+        entries.append(
+            {
+                "name": skill.name,
+                "installable_name": installable_name,
+                "namespace": f"cowork/{domain}/{version}",
+                "domain": domain,
+                "version": version,
+                "path": skill.relative_path,
+                "collides_with_installable": installable_name in installable_names,
+            }
+        )
+
+    alias_buckets: dict[str, list[dict]] = {}
+    for entry in entries:
+        alias_buckets.setdefault(entry["installable_name"], []).append(entry)
+    alias_duplicates = {
+        alias: [item["path"] for item in items]
+        for alias, items in alias_buckets.items()
+        if len(items) > 1
+    }
+    installable_collisions = [
+        entry
+        for entry in entries
+        if entry["collides_with_installable"]
+    ]
+
+    return {
+        "strategy": "preserve vendor source names; promote or install through cowork-<domain>-<skill> aliases, adding version or hash suffix only when needed",
+        "skills_total": len(vendor_skills),
+        "aliases_total": len(entries),
+        "alias_duplicates": alias_duplicates,
+        "installable_collisions": installable_collisions,
+        "entries": entries,
+    }
+
+
 def local_markdown_links(skill: Skill) -> list[Path]:
     text = (skill.path / "SKILL.md").read_text(encoding="utf-8", errors="replace")
     out = []
@@ -1338,6 +1413,14 @@ def cmd_list(args: argparse.Namespace) -> int:
 def cmd_vendor(args: argparse.Namespace) -> int:
     skills = discover_vendor_skills()
     dups = duplicate_names(skills)
+    installable_names = {s.name for s in discover_skills("all")}
+    namespace = vendor_namespace_plan(skills, installable_names=installable_names)
+    if getattr(args, "write_namespace", None):
+        out_path = Path(args.write_namespace)
+        if not out_path.is_absolute():
+            out_path = ROOT / out_path
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(json.dumps(namespace, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     if args.json:
         emit_json(
             True,
@@ -1345,16 +1428,28 @@ def cmd_vendor(args: argparse.Namespace) -> int:
                 "total": len(skills),
                 "unique_names": len({s.name for s in skills}),
                 "duplicates": {k: [s.relative_path for s in v] for k, v in dups.items()},
+                "namespace": namespace,
                 "skills": [skill_dict(s) for s in skills],
             },
         )
         return EXIT_OK
 
     print(f"Cowork vendor ecosystem: {len(skills)} skill files, {len({s.name for s in skills})} unique names")
+    print(
+        "Namespaced aliases: "
+        f"{namespace['aliases_total']} generated, "
+        f"{len(namespace['alias_duplicates'])} duplicate aliases, "
+        f"{len(namespace['installable_collisions'])} installable collisions"
+    )
     if dups:
         print("Duplicate names are intentionally kept in vendor form:")
         for name, items in sorted(dups.items()):
             print(f"  {name}: {', '.join(s.relative_path for s in items)}")
+            for item in items:
+                alias = next(entry["installable_name"] for entry in namespace["entries"] if entry["path"] == item.relative_path)
+                print(f"    -> {alias}")
+    if getattr(args, "write_namespace", None):
+        print(f"Namespace plan written: {out_path}")
     return EXIT_OK
 
 
@@ -6303,6 +6398,7 @@ def cmd_audit(args: argparse.Namespace) -> int:
     install_dups = duplicate_names(skills)
     vendor_dups = duplicate_names(vendor_skills)
     trigger_overlaps = duplicate_explicit_triggers(skills)
+    vendor_namespace = vendor_namespace_plan(vendor_skills, installable_names={s.name for s in skills})
     manifest_errors, manifest_warnings = profile_manifest_report()
     plugin_errors, plugin_warnings = plugin_manifest_report()
     trigger_errors, trigger_warnings, trigger_policy = auto_trigger_policy_report()
@@ -6337,6 +6433,10 @@ def cmd_audit(args: argparse.Namespace) -> int:
         failures.append({"check": "installable-duplicates", "items": sorted(install_dups)})
     if trigger_overlaps:
         failures.append({"check": "trigger-phrase-overlaps", "items": sorted(trigger_overlaps)})
+    if vendor_namespace["alias_duplicates"]:
+        failures.append({"check": "vendor-namespace-alias-duplicates", "items": vendor_namespace["alias_duplicates"]})
+    if vendor_namespace["installable_collisions"]:
+        failures.append({"check": "vendor-namespace-installable-collisions", "items": vendor_namespace["installable_collisions"]})
     broken_links = [item for item in compatibility if not item["ok"]]
     if broken_links:
         failures.append({"check": "compatibility-links", "items": broken_links})
@@ -6360,6 +6460,12 @@ def cmd_audit(args: argparse.Namespace) -> int:
         "installable_duplicate_names": {k: [s.relative_path for s in v] for k, v in install_dups.items()},
         "vendor_duplicate_names": {k: [s.relative_path for s in v] for k, v in vendor_dups.items()},
         "trigger_phrase_overlaps": {k: [s.relative_path for s in v] for k, v in trigger_overlaps.items()},
+        "vendor_namespace": {
+            "strategy": vendor_namespace["strategy"],
+            "aliases_total": vendor_namespace["aliases_total"],
+            "alias_duplicates": vendor_namespace["alias_duplicates"],
+            "installable_collisions": vendor_namespace["installable_collisions"],
+        },
         "compatibility_links": compatibility,
         "manifest_warnings": manifest_warnings,
         "codex_plugins": [plugin_dict(plugin) for plugin in plugins],
@@ -6393,6 +6499,12 @@ def cmd_audit(args: argparse.Namespace) -> int:
         print(f"Installable duplicate names: {len(install_dups)}")
         print(f"Vendor duplicate names: {len(vendor_dups)}")
         print(f"Trigger phrase overlaps: {len(trigger_overlaps)}")
+        print(
+            "Vendor namespace aliases: "
+            f"{vendor_namespace['aliases_total']} total, "
+            f"{len(vendor_namespace['alias_duplicates'])} duplicate aliases, "
+            f"{len(vendor_namespace['installable_collisions'])} installable collisions"
+        )
         print(f"Compatibility links: {len(compatibility) - len(broken_links)}/{len(compatibility)} ok")
         print(f"Secret findings: {len(secret_findings)}")
         print(
@@ -6803,10 +6915,12 @@ def cmd_catalog(args: argparse.Namespace) -> int:
     skills = discover_skills("all")
     vendor_skills = discover_vendor_skills()
     plugins = discover_plugins()
+    vendor_namespace = vendor_namespace_plan(vendor_skills, installable_names={s.name for s in skills})
     payload = {
         "generated_at": int(time.time()),
         "installable_skills": [skill_dict(s) for s in skills],
         "vendor_skills": [skill_dict(s) for s in vendor_skills],
+        "vendor_namespace": vendor_namespace,
         "codex_plugins": [plugin_dict(p) for p in plugins],
         "profiles": {k: sorted(v) for k, v in PROFILE_STAGE_PREFIXES.items()},
         "profile_excludes": {k: sorted(v) for k, v in PROFILE_SKILL_EXCLUDES.items()},
@@ -6818,7 +6932,7 @@ def cmd_catalog(args: argparse.Namespace) -> int:
     md_path = CATALOG_ROOT / "skill-index.md"
     if not args.dry_run:
         json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        md_path.write_text(render_catalog_md(skills, vendor_skills, plugins), encoding="utf-8")
+        md_path.write_text(render_catalog_md(skills, vendor_skills, plugins, vendor_namespace), encoding="utf-8")
 
     if args.json:
         emit_json(True, {"json": str(json_path), "markdown": str(md_path), "dry_run": args.dry_run})
@@ -6829,7 +6943,7 @@ def cmd_catalog(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
-def render_catalog_md(skills: list[Skill], vendor_skills: list[Skill], plugins: list[Plugin]) -> str:
+def render_catalog_md(skills: list[Skill], vendor_skills: list[Skill], plugins: list[Plugin], vendor_namespace: dict | None = None) -> str:
     lines = [
         "# Super Skill Catalog",
         "",
@@ -6851,6 +6965,7 @@ def render_catalog_md(skills: list[Skill], vendor_skills: list[Skill], plugins: 
         lines.append("")
 
     dups = duplicate_names(vendor_skills)
+    vendor_namespace = vendor_namespace or vendor_namespace_plan(vendor_skills, installable_names={s.name for s in skills})
     lines.extend([
         "## Install Profiles",
         "",
@@ -6884,6 +6999,8 @@ def render_catalog_md(skills: list[Skill], vendor_skills: list[Skill], plugins: 
         "",
         f"- Vendor skill files: {len(vendor_skills)}",
         f"- Unique vendor names: {len({s.name for s in vendor_skills})}",
+        f"- Namespaced install aliases: {vendor_namespace['aliases_total']}",
+        f"- Alias collisions with lifecycle skills: {len(vendor_namespace['installable_collisions'])}",
         "",
     ])
     if dups:
@@ -6892,7 +7009,16 @@ def render_catalog_md(skills: list[Skill], vendor_skills: list[Skill], plugins: 
         for name, items in sorted(dups.items()):
             paths = ", ".join(f"`{s.relative_path}`" for s in items)
             lines.append(f"- `{name}`: {paths}")
+            for skill in items:
+                alias = next(entry["installable_name"] for entry in vendor_namespace["entries"] if entry["path"] == skill.relative_path)
+                lines.append(f"  - namespaced alias: `{alias}`")
         lines.append("")
+    lines.extend([
+        "### Vendor Namespace Rule",
+        "",
+        "`vendor/cowork/<domain>/<version>/skills/<name>` promotes as `cowork-<domain>-<name>`; if a future same-domain collision appears, the CLI adds a version or hash suffix deterministically.",
+        "",
+    ])
     return "\n".join(lines)
 
 
@@ -7324,6 +7450,7 @@ def build_parser() -> argparse.ArgumentParser:
     live_evals_p.set_defaults(func=cmd_live_evals)
 
     vendor_p = sub.add_parser("vendor", help="summarize vendored domain ecosystem")
+    vendor_p.add_argument("--write-namespace", default=None, help="write the deterministic vendor namespace plan to this JSON path")
     vendor_p.add_argument("--json", action="store_true")
     vendor_p.set_defaults(func=cmd_vendor)
 

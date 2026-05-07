@@ -184,10 +184,24 @@ Cowork vendor skills are preserved as domain plugin source material because seve
 
 - Vendor skill files: 67
 - Unique vendor names: 63
+- Namespaced install aliases: 67
+- Alias collisions with lifecycle skills: 0
 
 ### Vendor Duplicate Names
 
 - `account-research`: `vendor/cowork/common-room/1.0.0/skills/account-research`, `vendor/cowork/sales/1.1.0/skills/account-research`
+  - namespaced alias: `cowork-common-room-account-research`
+  - namespaced alias: `cowork-sales-account-research`
 - `call-prep`: `vendor/cowork/common-room/1.0.0/skills/call-prep`, `vendor/cowork/sales/1.1.0/skills/call-prep`
+  - namespaced alias: `cowork-common-room-call-prep`
+  - namespaced alias: `cowork-sales-call-prep`
 - `competitive-analysis`: `vendor/cowork/marketing/1.1.0/skills/competitive-analysis`, `vendor/cowork/product-management/1.1.0/skills/competitive-analysis`
+  - namespaced alias: `cowork-marketing-competitive-analysis`
+  - namespaced alias: `cowork-product-management-competitive-analysis`
 - `prospect`: `vendor/cowork/apollo/0.1.0/skills/prospect`, `vendor/cowork/common-room/1.0.0/skills/prospect`
+  - namespaced alias: `cowork-apollo-prospect`
+  - namespaced alias: `cowork-common-room-prospect`
+
+### Vendor Namespace Rule
+
+`vendor/cowork/<domain>/<version>/skills/<name>` promotes as `cowork-<domain>-<name>`; if a future same-domain collision appears, the CLI adds a version or hash suffix deterministically.

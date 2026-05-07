@@ -308,7 +308,7 @@ The root-level `design-md`, `designdna`, `assets`, `playground`, `showcase`, and
 
 Installable skills 使用唯一扁平命名，方便 Codex/Claude 等 agent 目录直接加载。仓库内部仍按生命周期分组，方便人类维护。
 
-Cowork 领域生态保留在 `vendor/cowork/` 而不是强行塞进 `skills/`，因为它包含有意复用的通用名称，例如 `call-prep` 和 `competitive-analysis`。这部分作为领域插件素材与未来命名空间化来源。
+Cowork 领域生态保留在 `vendor/cowork/` 而不是强行塞进 `skills/`，因为它包含有意复用的通用名称，例如 `call-prep` 和 `competitive-analysis`。CLI 会为每个 vendor skill 生成确定性的安全别名：`vendor/cowork/<domain>/<version>/skills/<name>` → `cowork-<domain>-<name>`，例如 `cowork-sales-call-prep` 和 `cowork-common-room-call-prep`。`bin/super-skill audit` 会检查这些别名是否重复或撞上正式技能，`bin/super-skill vendor --write-namespace catalog/vendor-namespace.json` 可以落盘完整映射。
 
 DesignDNA 被保留为主技能和资源库：主技能在 `skills/04-design-system/designdna/`，品牌系统在 `resources/design-md/`，CLI 在 `packages/designdna-cli/`。
 

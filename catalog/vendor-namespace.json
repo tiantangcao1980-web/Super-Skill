@@ -1,0 +1,612 @@
+{
+  "strategy": "preserve vendor source names; promote or install through cowork-<domain>-<skill> aliases, adding version or hash suffix only when needed",
+  "skills_total": 67,
+  "aliases_total": 67,
+  "alias_duplicates": {},
+  "installable_collisions": [],
+  "entries": [
+    {
+      "name": "enrich-lead",
+      "installable_name": "cowork-apollo-enrich-lead",
+      "namespace": "cowork/apollo/0.1.0",
+      "domain": "apollo",
+      "version": "0.1.0",
+      "path": "vendor/cowork/apollo/0.1.0/skills/enrich-lead",
+      "collides_with_installable": false
+    },
+    {
+      "name": "prospect",
+      "installable_name": "cowork-apollo-prospect",
+      "namespace": "cowork/apollo/0.1.0",
+      "domain": "apollo",
+      "version": "0.1.0",
+      "path": "vendor/cowork/apollo/0.1.0/skills/prospect",
+      "collides_with_installable": false
+    },
+    {
+      "name": "sequence-load",
+      "installable_name": "cowork-apollo-sequence-load",
+      "namespace": "cowork/apollo/0.1.0",
+      "domain": "apollo",
+      "version": "0.1.0",
+      "path": "vendor/cowork/apollo/0.1.0/skills/sequence-load",
+      "collides_with_installable": false
+    },
+    {
+      "name": "instrument-data-to-allotrope",
+      "installable_name": "cowork-bio-research-instrument-data-to-allotrope",
+      "namespace": "cowork/bio-research/1.0.0",
+      "domain": "bio-research",
+      "version": "1.0.0",
+      "path": "vendor/cowork/bio-research/1.0.0/skills/instrument-data-to-allotrope",
+      "collides_with_installable": false
+    },
+    {
+      "name": "nextflow-development",
+      "installable_name": "cowork-bio-research-nextflow-development",
+      "namespace": "cowork/bio-research/1.0.0",
+      "domain": "bio-research",
+      "version": "1.0.0",
+      "path": "vendor/cowork/bio-research/1.0.0/skills/nextflow-development",
+      "collides_with_installable": false
+    },
+    {
+      "name": "scientific-problem-selection",
+      "installable_name": "cowork-bio-research-scientific-problem-selection",
+      "namespace": "cowork/bio-research/1.0.0",
+      "domain": "bio-research",
+      "version": "1.0.0",
+      "path": "vendor/cowork/bio-research/1.0.0/skills/scientific-problem-selection",
+      "collides_with_installable": false
+    },
+    {
+      "name": "scvi-tools",
+      "installable_name": "cowork-bio-research-scvi-tools",
+      "namespace": "cowork/bio-research/1.0.0",
+      "domain": "bio-research",
+      "version": "1.0.0",
+      "path": "vendor/cowork/bio-research/1.0.0/skills/scvi-tools",
+      "collides_with_installable": false
+    },
+    {
+      "name": "single-cell-rna-qc",
+      "installable_name": "cowork-bio-research-single-cell-rna-qc",
+      "namespace": "cowork/bio-research/1.0.0",
+      "domain": "bio-research",
+      "version": "1.0.0",
+      "path": "vendor/cowork/bio-research/1.0.0/skills/single-cell-rna-qc",
+      "collides_with_installable": false
+    },
+    {
+      "name": "brand-voice-enforcement",
+      "installable_name": "cowork-brand-voice-brand-voice-enforcement",
+      "namespace": "cowork/brand-voice/1.0.0",
+      "domain": "brand-voice",
+      "version": "1.0.0",
+      "path": "vendor/cowork/brand-voice/1.0.0/skills/brand-voice-enforcement",
+      "collides_with_installable": false
+    },
+    {
+      "name": "discover-brand",
+      "installable_name": "cowork-brand-voice-discover-brand",
+      "namespace": "cowork/brand-voice/1.0.0",
+      "domain": "brand-voice",
+      "version": "1.0.0",
+      "path": "vendor/cowork/brand-voice/1.0.0/skills/discover-brand",
+      "collides_with_installable": false
+    },
+    {
+      "name": "guideline-generation",
+      "installable_name": "cowork-brand-voice-guideline-generation",
+      "namespace": "cowork/brand-voice/1.0.0",
+      "domain": "brand-voice",
+      "version": "1.0.0",
+      "path": "vendor/cowork/brand-voice/1.0.0/skills/guideline-generation",
+      "collides_with_installable": false
+    },
+    {
+      "name": "account-research",
+      "installable_name": "cowork-common-room-account-research",
+      "namespace": "cowork/common-room/1.0.0",
+      "domain": "common-room",
+      "version": "1.0.0",
+      "path": "vendor/cowork/common-room/1.0.0/skills/account-research",
+      "collides_with_installable": false
+    },
+    {
+      "name": "call-prep",
+      "installable_name": "cowork-common-room-call-prep",
+      "namespace": "cowork/common-room/1.0.0",
+      "domain": "common-room",
+      "version": "1.0.0",
+      "path": "vendor/cowork/common-room/1.0.0/skills/call-prep",
+      "collides_with_installable": false
+    },
+    {
+      "name": "compose-outreach",
+      "installable_name": "cowork-common-room-compose-outreach",
+      "namespace": "cowork/common-room/1.0.0",
+      "domain": "common-room",
+      "version": "1.0.0",
+      "path": "vendor/cowork/common-room/1.0.0/skills/compose-outreach",
+      "collides_with_installable": false
+    },
+    {
+      "name": "contact-research",
+      "installable_name": "cowork-common-room-contact-research",
+      "namespace": "cowork/common-room/1.0.0",
+      "domain": "common-room",
+      "version": "1.0.0",
+      "path": "vendor/cowork/common-room/1.0.0/skills/contact-research",
+      "collides_with_installable": false
+    },
+    {
+      "name": "prospect",
+      "installable_name": "cowork-common-room-prospect",
+      "namespace": "cowork/common-room/1.0.0",
+      "domain": "common-room",
+      "version": "1.0.0",
+      "path": "vendor/cowork/common-room/1.0.0/skills/prospect",
+      "collides_with_installable": false
+    },
+    {
+      "name": "weekly-prep-brief",
+      "installable_name": "cowork-common-room-weekly-prep-brief",
+      "namespace": "cowork/common-room/1.0.0",
+      "domain": "common-room",
+      "version": "1.0.0",
+      "path": "vendor/cowork/common-room/1.0.0/skills/weekly-prep-brief",
+      "collides_with_installable": false
+    },
+    {
+      "name": "cowork-plugin-customizer",
+      "installable_name": "cowork-cowork-plugin-management-cowork-plugin-customizer",
+      "namespace": "cowork/cowork-plugin-management/0.2.2",
+      "domain": "cowork-plugin-management",
+      "version": "0.2.2",
+      "path": "vendor/cowork/cowork-plugin-management/0.2.2/skills/cowork-plugin-customizer",
+      "collides_with_installable": false
+    },
+    {
+      "name": "create-cowork-plugin",
+      "installable_name": "cowork-cowork-plugin-management-create-cowork-plugin",
+      "namespace": "cowork/cowork-plugin-management/0.2.2",
+      "domain": "cowork-plugin-management",
+      "version": "0.2.2",
+      "path": "vendor/cowork/cowork-plugin-management/0.2.2/skills/create-cowork-plugin",
+      "collides_with_installable": false
+    },
+    {
+      "name": "customer-research",
+      "installable_name": "cowork-customer-support-customer-research",
+      "namespace": "cowork/customer-support/1.1.0",
+      "domain": "customer-support",
+      "version": "1.1.0",
+      "path": "vendor/cowork/customer-support/1.1.0/skills/customer-research",
+      "collides_with_installable": false
+    },
+    {
+      "name": "escalation",
+      "installable_name": "cowork-customer-support-escalation",
+      "namespace": "cowork/customer-support/1.1.0",
+      "domain": "customer-support",
+      "version": "1.1.0",
+      "path": "vendor/cowork/customer-support/1.1.0/skills/escalation",
+      "collides_with_installable": false
+    },
+    {
+      "name": "knowledge-management",
+      "installable_name": "cowork-customer-support-knowledge-management",
+      "namespace": "cowork/customer-support/1.1.0",
+      "domain": "customer-support",
+      "version": "1.1.0",
+      "path": "vendor/cowork/customer-support/1.1.0/skills/knowledge-management",
+      "collides_with_installable": false
+    },
+    {
+      "name": "response-drafting",
+      "installable_name": "cowork-customer-support-response-drafting",
+      "namespace": "cowork/customer-support/1.1.0",
+      "domain": "customer-support",
+      "version": "1.1.0",
+      "path": "vendor/cowork/customer-support/1.1.0/skills/response-drafting",
+      "collides_with_installable": false
+    },
+    {
+      "name": "ticket-triage",
+      "installable_name": "cowork-customer-support-ticket-triage",
+      "namespace": "cowork/customer-support/1.1.0",
+      "domain": "customer-support",
+      "version": "1.1.0",
+      "path": "vendor/cowork/customer-support/1.1.0/skills/ticket-triage",
+      "collides_with_installable": false
+    },
+    {
+      "name": "data-context-extractor",
+      "installable_name": "cowork-data-data-context-extractor",
+      "namespace": "cowork/data/1.0.0",
+      "domain": "data",
+      "version": "1.0.0",
+      "path": "vendor/cowork/data/1.0.0/skills/data-context-extractor",
+      "collides_with_installable": false
+    },
+    {
+      "name": "data-exploration",
+      "installable_name": "cowork-data-data-exploration",
+      "namespace": "cowork/data/1.0.0",
+      "domain": "data",
+      "version": "1.0.0",
+      "path": "vendor/cowork/data/1.0.0/skills/data-exploration",
+      "collides_with_installable": false
+    },
+    {
+      "name": "data-validation",
+      "installable_name": "cowork-data-data-validation",
+      "namespace": "cowork/data/1.0.0",
+      "domain": "data",
+      "version": "1.0.0",
+      "path": "vendor/cowork/data/1.0.0/skills/data-validation",
+      "collides_with_installable": false
+    },
+    {
+      "name": "data-visualization",
+      "installable_name": "cowork-data-data-visualization",
+      "namespace": "cowork/data/1.0.0",
+      "domain": "data",
+      "version": "1.0.0",
+      "path": "vendor/cowork/data/1.0.0/skills/data-visualization",
+      "collides_with_installable": false
+    },
+    {
+      "name": "interactive-dashboard-builder",
+      "installable_name": "cowork-data-interactive-dashboard-builder",
+      "namespace": "cowork/data/1.0.0",
+      "domain": "data",
+      "version": "1.0.0",
+      "path": "vendor/cowork/data/1.0.0/skills/interactive-dashboard-builder",
+      "collides_with_installable": false
+    },
+    {
+      "name": "sql-queries",
+      "installable_name": "cowork-data-sql-queries",
+      "namespace": "cowork/data/1.0.0",
+      "domain": "data",
+      "version": "1.0.0",
+      "path": "vendor/cowork/data/1.0.0/skills/sql-queries",
+      "collides_with_installable": false
+    },
+    {
+      "name": "statistical-analysis",
+      "installable_name": "cowork-data-statistical-analysis",
+      "namespace": "cowork/data/1.0.0",
+      "domain": "data",
+      "version": "1.0.0",
+      "path": "vendor/cowork/data/1.0.0/skills/statistical-analysis",
+      "collides_with_installable": false
+    },
+    {
+      "name": "knowledge-synthesis",
+      "installable_name": "cowork-enterprise-search-knowledge-synthesis",
+      "namespace": "cowork/enterprise-search/1.1.0",
+      "domain": "enterprise-search",
+      "version": "1.1.0",
+      "path": "vendor/cowork/enterprise-search/1.1.0/skills/knowledge-synthesis",
+      "collides_with_installable": false
+    },
+    {
+      "name": "search-strategy",
+      "installable_name": "cowork-enterprise-search-search-strategy",
+      "namespace": "cowork/enterprise-search/1.1.0",
+      "domain": "enterprise-search",
+      "version": "1.1.0",
+      "path": "vendor/cowork/enterprise-search/1.1.0/skills/search-strategy",
+      "collides_with_installable": false
+    },
+    {
+      "name": "source-management",
+      "installable_name": "cowork-enterprise-search-source-management",
+      "namespace": "cowork/enterprise-search/1.1.0",
+      "domain": "enterprise-search",
+      "version": "1.1.0",
+      "path": "vendor/cowork/enterprise-search/1.1.0/skills/source-management",
+      "collides_with_installable": false
+    },
+    {
+      "name": "audit-support",
+      "installable_name": "cowork-finance-audit-support",
+      "namespace": "cowork/finance/1.1.0",
+      "domain": "finance",
+      "version": "1.1.0",
+      "path": "vendor/cowork/finance/1.1.0/skills/audit-support",
+      "collides_with_installable": false
+    },
+    {
+      "name": "close-management",
+      "installable_name": "cowork-finance-close-management",
+      "namespace": "cowork/finance/1.1.0",
+      "domain": "finance",
+      "version": "1.1.0",
+      "path": "vendor/cowork/finance/1.1.0/skills/close-management",
+      "collides_with_installable": false
+    },
+    {
+      "name": "financial-statements",
+      "installable_name": "cowork-finance-financial-statements",
+      "namespace": "cowork/finance/1.1.0",
+      "domain": "finance",
+      "version": "1.1.0",
+      "path": "vendor/cowork/finance/1.1.0/skills/financial-statements",
+      "collides_with_installable": false
+    },
+    {
+      "name": "journal-entry-prep",
+      "installable_name": "cowork-finance-journal-entry-prep",
+      "namespace": "cowork/finance/1.1.0",
+      "domain": "finance",
+      "version": "1.1.0",
+      "path": "vendor/cowork/finance/1.1.0/skills/journal-entry-prep",
+      "collides_with_installable": false
+    },
+    {
+      "name": "reconciliation",
+      "installable_name": "cowork-finance-reconciliation",
+      "namespace": "cowork/finance/1.1.0",
+      "domain": "finance",
+      "version": "1.1.0",
+      "path": "vendor/cowork/finance/1.1.0/skills/reconciliation",
+      "collides_with_installable": false
+    },
+    {
+      "name": "variance-analysis",
+      "installable_name": "cowork-finance-variance-analysis",
+      "namespace": "cowork/finance/1.1.0",
+      "domain": "finance",
+      "version": "1.1.0",
+      "path": "vendor/cowork/finance/1.1.0/skills/variance-analysis",
+      "collides_with_installable": false
+    },
+    {
+      "name": "canned-responses",
+      "installable_name": "cowork-legal-canned-responses",
+      "namespace": "cowork/legal/1.1.0",
+      "domain": "legal",
+      "version": "1.1.0",
+      "path": "vendor/cowork/legal/1.1.0/skills/canned-responses",
+      "collides_with_installable": false
+    },
+    {
+      "name": "compliance",
+      "installable_name": "cowork-legal-compliance",
+      "namespace": "cowork/legal/1.1.0",
+      "domain": "legal",
+      "version": "1.1.0",
+      "path": "vendor/cowork/legal/1.1.0/skills/compliance",
+      "collides_with_installable": false
+    },
+    {
+      "name": "contract-review",
+      "installable_name": "cowork-legal-contract-review",
+      "namespace": "cowork/legal/1.1.0",
+      "domain": "legal",
+      "version": "1.1.0",
+      "path": "vendor/cowork/legal/1.1.0/skills/contract-review",
+      "collides_with_installable": false
+    },
+    {
+      "name": "legal-risk-assessment",
+      "installable_name": "cowork-legal-legal-risk-assessment",
+      "namespace": "cowork/legal/1.1.0",
+      "domain": "legal",
+      "version": "1.1.0",
+      "path": "vendor/cowork/legal/1.1.0/skills/legal-risk-assessment",
+      "collides_with_installable": false
+    },
+    {
+      "name": "meeting-briefing",
+      "installable_name": "cowork-legal-meeting-briefing",
+      "namespace": "cowork/legal/1.1.0",
+      "domain": "legal",
+      "version": "1.1.0",
+      "path": "vendor/cowork/legal/1.1.0/skills/meeting-briefing",
+      "collides_with_installable": false
+    },
+    {
+      "name": "nda-triage",
+      "installable_name": "cowork-legal-nda-triage",
+      "namespace": "cowork/legal/1.1.0",
+      "domain": "legal",
+      "version": "1.1.0",
+      "path": "vendor/cowork/legal/1.1.0/skills/nda-triage",
+      "collides_with_installable": false
+    },
+    {
+      "name": "brand-voice",
+      "installable_name": "cowork-marketing-brand-voice",
+      "namespace": "cowork/marketing/1.1.0",
+      "domain": "marketing",
+      "version": "1.1.0",
+      "path": "vendor/cowork/marketing/1.1.0/skills/brand-voice",
+      "collides_with_installable": false
+    },
+    {
+      "name": "campaign-planning",
+      "installable_name": "cowork-marketing-campaign-planning",
+      "namespace": "cowork/marketing/1.1.0",
+      "domain": "marketing",
+      "version": "1.1.0",
+      "path": "vendor/cowork/marketing/1.1.0/skills/campaign-planning",
+      "collides_with_installable": false
+    },
+    {
+      "name": "competitive-analysis",
+      "installable_name": "cowork-marketing-competitive-analysis",
+      "namespace": "cowork/marketing/1.1.0",
+      "domain": "marketing",
+      "version": "1.1.0",
+      "path": "vendor/cowork/marketing/1.1.0/skills/competitive-analysis",
+      "collides_with_installable": false
+    },
+    {
+      "name": "content-creation",
+      "installable_name": "cowork-marketing-content-creation",
+      "namespace": "cowork/marketing/1.1.0",
+      "domain": "marketing",
+      "version": "1.1.0",
+      "path": "vendor/cowork/marketing/1.1.0/skills/content-creation",
+      "collides_with_installable": false
+    },
+    {
+      "name": "performance-analytics",
+      "installable_name": "cowork-marketing-performance-analytics",
+      "namespace": "cowork/marketing/1.1.0",
+      "domain": "marketing",
+      "version": "1.1.0",
+      "path": "vendor/cowork/marketing/1.1.0/skills/performance-analytics",
+      "collides_with_installable": false
+    },
+    {
+      "name": "competitive-analysis",
+      "installable_name": "cowork-product-management-competitive-analysis",
+      "namespace": "cowork/product-management/1.1.0",
+      "domain": "product-management",
+      "version": "1.1.0",
+      "path": "vendor/cowork/product-management/1.1.0/skills/competitive-analysis",
+      "collides_with_installable": false
+    },
+    {
+      "name": "feature-spec",
+      "installable_name": "cowork-product-management-feature-spec",
+      "namespace": "cowork/product-management/1.1.0",
+      "domain": "product-management",
+      "version": "1.1.0",
+      "path": "vendor/cowork/product-management/1.1.0/skills/feature-spec",
+      "collides_with_installable": false
+    },
+    {
+      "name": "metrics-tracking",
+      "installable_name": "cowork-product-management-metrics-tracking",
+      "namespace": "cowork/product-management/1.1.0",
+      "domain": "product-management",
+      "version": "1.1.0",
+      "path": "vendor/cowork/product-management/1.1.0/skills/metrics-tracking",
+      "collides_with_installable": false
+    },
+    {
+      "name": "roadmap-management",
+      "installable_name": "cowork-product-management-roadmap-management",
+      "namespace": "cowork/product-management/1.1.0",
+      "domain": "product-management",
+      "version": "1.1.0",
+      "path": "vendor/cowork/product-management/1.1.0/skills/roadmap-management",
+      "collides_with_installable": false
+    },
+    {
+      "name": "stakeholder-comms",
+      "installable_name": "cowork-product-management-stakeholder-comms",
+      "namespace": "cowork/product-management/1.1.0",
+      "domain": "product-management",
+      "version": "1.1.0",
+      "path": "vendor/cowork/product-management/1.1.0/skills/stakeholder-comms",
+      "collides_with_installable": false
+    },
+    {
+      "name": "user-research-synthesis",
+      "installable_name": "cowork-product-management-user-research-synthesis",
+      "namespace": "cowork/product-management/1.1.0",
+      "domain": "product-management",
+      "version": "1.1.0",
+      "path": "vendor/cowork/product-management/1.1.0/skills/user-research-synthesis",
+      "collides_with_installable": false
+    },
+    {
+      "name": "memory-management",
+      "installable_name": "cowork-productivity-memory-management",
+      "namespace": "cowork/productivity/1.1.0",
+      "domain": "productivity",
+      "version": "1.1.0",
+      "path": "vendor/cowork/productivity/1.1.0/skills/memory-management",
+      "collides_with_installable": false
+    },
+    {
+      "name": "task-management",
+      "installable_name": "cowork-productivity-task-management",
+      "namespace": "cowork/productivity/1.1.0",
+      "domain": "productivity",
+      "version": "1.1.0",
+      "path": "vendor/cowork/productivity/1.1.0/skills/task-management",
+      "collides_with_installable": false
+    },
+    {
+      "name": "account-research",
+      "installable_name": "cowork-sales-account-research",
+      "namespace": "cowork/sales/1.1.0",
+      "domain": "sales",
+      "version": "1.1.0",
+      "path": "vendor/cowork/sales/1.1.0/skills/account-research",
+      "collides_with_installable": false
+    },
+    {
+      "name": "call-prep",
+      "installable_name": "cowork-sales-call-prep",
+      "namespace": "cowork/sales/1.1.0",
+      "domain": "sales",
+      "version": "1.1.0",
+      "path": "vendor/cowork/sales/1.1.0/skills/call-prep",
+      "collides_with_installable": false
+    },
+    {
+      "name": "competitive-intelligence",
+      "installable_name": "cowork-sales-competitive-intelligence",
+      "namespace": "cowork/sales/1.1.0",
+      "domain": "sales",
+      "version": "1.1.0",
+      "path": "vendor/cowork/sales/1.1.0/skills/competitive-intelligence",
+      "collides_with_installable": false
+    },
+    {
+      "name": "create-an-asset",
+      "installable_name": "cowork-sales-create-an-asset",
+      "namespace": "cowork/sales/1.1.0",
+      "domain": "sales",
+      "version": "1.1.0",
+      "path": "vendor/cowork/sales/1.1.0/skills/create-an-asset",
+      "collides_with_installable": false
+    },
+    {
+      "name": "daily-briefing",
+      "installable_name": "cowork-sales-daily-briefing",
+      "namespace": "cowork/sales/1.1.0",
+      "domain": "sales",
+      "version": "1.1.0",
+      "path": "vendor/cowork/sales/1.1.0/skills/daily-briefing",
+      "collides_with_installable": false
+    },
+    {
+      "name": "draft-outreach",
+      "installable_name": "cowork-sales-draft-outreach",
+      "namespace": "cowork/sales/1.1.0",
+      "domain": "sales",
+      "version": "1.1.0",
+      "path": "vendor/cowork/sales/1.1.0/skills/draft-outreach",
+      "collides_with_installable": false
+    },
+    {
+      "name": "slack-messaging",
+      "installable_name": "cowork-slack-by-salesforce-slack-messaging",
+      "namespace": "cowork/slack-by-salesforce/1.0.0",
+      "domain": "slack-by-salesforce",
+      "version": "1.0.0",
+      "path": "vendor/cowork/slack-by-salesforce/1.0.0/skills/slack-messaging",
+      "collides_with_installable": false
+    },
+    {
+      "name": "slack-search",
+      "installable_name": "cowork-slack-by-salesforce-slack-search",
+      "namespace": "cowork/slack-by-salesforce/1.0.0",
+      "domain": "slack-by-salesforce",
+      "version": "1.0.0",
+      "path": "vendor/cowork/slack-by-salesforce/1.0.0/skills/slack-search",
+      "collides_with_installable": false
+    }
+  ]
+}

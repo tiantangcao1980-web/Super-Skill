@@ -99,6 +99,8 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertEqual(data["failures"], [])
         self.assertEqual(data["secret_findings"], [])
         self.assertEqual(data["trigger_phrase_overlaps"], {})
+        self.assertEqual(data["vendor_namespace"]["alias_duplicates"], {})
+        self.assertEqual(data["vendor_namespace"]["installable_collisions"], [])
         self.assertGreaterEqual(len(data["compatibility_links"]), 6)
         risky = data["risky_pattern_findings"]
         self.assertTrue(all("classification" in finding and "governed" in finding for finding in risky))
@@ -128,6 +130,38 @@ class SuperSkillCliTests(unittest.TestCase):
         ]
         overlaps = mod.duplicate_explicit_triggers(skills)
         self.assertEqual([skill.name for skill in overlaps["共享触发"]], ["alpha", "beta"])
+
+    def test_vendor_namespace_plan_gives_duplicate_vendor_names_safe_aliases(self) -> None:
+        mod = _load_super_skill_module()
+        vendor_skills = mod.discover_vendor_skills()
+        installable_names = {skill.name for skill in mod.discover_skills("all")}
+        namespace = mod.vendor_namespace_plan(vendor_skills, installable_names=installable_names)
+        aliases = [entry["installable_name"] for entry in namespace["entries"]]
+        self.assertEqual(len(aliases), len(vendor_skills))
+        self.assertEqual(len(aliases), len(set(aliases)))
+        self.assertTrue(all(mod.NAME_RE.match(alias) for alias in aliases))
+        self.assertEqual(namespace["alias_duplicates"], {})
+        self.assertEqual(namespace["installable_collisions"], [])
+
+        by_path = {entry["path"]: entry["installable_name"] for entry in namespace["entries"]}
+        self.assertEqual(
+            by_path["vendor/cowork/sales/1.1.0/skills/call-prep"],
+            "cowork-sales-call-prep",
+        )
+        self.assertEqual(
+            by_path["vendor/cowork/common-room/1.0.0/skills/call-prep"],
+            "cowork-common-room-call-prep",
+        )
+
+    def test_vendor_command_can_write_namespace_plan(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td) / "vendor-namespace.json"
+            data = run_cli("vendor", "--write-namespace", str(out))
+            self.assertTrue(out.exists())
+            written = json.loads(out.read_text(encoding="utf-8"))
+            self.assertEqual(data["namespace"]["aliases_total"], written["aliases_total"])
+            self.assertEqual(written["alias_duplicates"], {})
+            self.assertTrue(any(entry["installable_name"] == "cowork-sales-call-prep" for entry in written["entries"]))
 
     def test_design_audit_detects_common_ai_ui_patterns(self) -> None:
         with tempfile.TemporaryDirectory() as td:

@@ -36,7 +36,7 @@ Use `bin/super-skill plan` first when you need a read-only preview for CI, revie
 
 - Installable skills must have unique names. Current lifecycle skills have no duplicate names.
 - Hermes Agent should use `--profile hermes`; it excludes Hermes-native mirror skills to avoid duplicate slash commands and overlapping procedural guidance. `plan` reports existing target-name conflicts, and `install` skips them unless `--force` is used.
-- Cowork vendor skills are not flattened by default because several plugin domains intentionally reuse names.
+- Cowork vendor skills are not flattened by default because several plugin domains intentionally reuse names. When a vendor skill is promoted or exported, use the deterministic namespace alias from `bin/super-skill vendor --json`: `cowork-<domain>-<skill>`, with version/hash suffixes added only if a future same-domain collision appears. `audit` fails if the alias plan collides with lifecycle skills.
 - Some copied skills reference external tools such as Docker, GitHub CLI, Node, browsers, or package managers. `doctor` checks the common baseline only.
 - Runtime adapters are thin wrappers. The canonical `SKILL.md` remains the source of truth, and wrappers should record source paths or hashes to avoid drift.
 - Model compatibility is governed by `model-adaptation-contract`: switching models requires structured-output, tool-use, failure, and regression checks before promotion.
