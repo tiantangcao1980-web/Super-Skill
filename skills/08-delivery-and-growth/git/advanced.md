@@ -63,6 +63,11 @@ git reflog show branch      # specific branch history
 ```
 
 Recovery patterns:
+
+Danger: `git reset --hard` discards tracked local changes.
+Safer alternative: inspect `git status`, create a backup branch or stash first, then prefer `git restore <path>` or `git revert <commit>` when you only need to undo a bounded change.
+Use only when: you intentionally want to discard tracked changes and have confirmed the reflog target.
+
 ```bash
 # After bad rebase
 git reflog

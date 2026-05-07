@@ -4564,7 +4564,7 @@ def looks_like_placeholder(value: str) -> bool:
 
 def classify_risky_line(rel: str, lines: list[str], index: int) -> tuple[str, bool]:
     line = lines[index].strip()
-    window = "\n".join(lines[max(0, index - 3): index + 4]).lower()
+    window = "\n".join(lines[max(0, index - 8): index + 9]).lower()
     lowered_rel = rel.lower()
     lowered_line = line.lower()
 
@@ -6286,6 +6286,16 @@ def cmd_audit(args: argparse.Namespace) -> int:
         secrets, risks = scan_text_file(path)
         secret_findings.extend(secrets)
         risky_findings.extend(risks)
+    risky_summary = {
+        "total": len(risky_findings),
+        "governed": sum(1 for item in risky_findings if item.get("governed")),
+        "ungoverned": sum(1 for item in risky_findings if not item.get("governed")),
+        "executable_ungoverned": sum(
+            1
+            for item in risky_findings
+            if not item.get("governed") and item.get("classification") == "executable-instruction"
+        ),
+    }
 
     executable_checks = []
     for rel in ("bin/super-skill", "scripts/super_skill.py"):
@@ -6334,6 +6344,7 @@ def cmd_audit(args: argparse.Namespace) -> int:
         },
         "secret_findings": secret_findings,
         "risky_pattern_findings": risky_findings,
+        "risky_pattern_summary": risky_summary,
         "executable_checks": executable_checks,
         "failures": failures,
     }
@@ -6350,7 +6361,12 @@ def cmd_audit(args: argparse.Namespace) -> int:
         print(f"Vendor duplicate names: {len(vendor_dups)}")
         print(f"Compatibility links: {len(compatibility) - len(broken_links)}/{len(compatibility)} ok")
         print(f"Secret findings: {len(secret_findings)}")
-        print(f"Risky pattern findings: {len(risky_findings)}")
+        print(
+            "Risky pattern findings: "
+            f"{risky_summary['total']} total, "
+            f"{risky_summary['governed']} governed, "
+            f"{risky_summary['ungoverned']} ungoverned"
+        )
         if failures:
             print("\nFailures:")
             for failure in failures:

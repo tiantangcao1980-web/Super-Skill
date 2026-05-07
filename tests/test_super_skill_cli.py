@@ -102,6 +102,8 @@ class SuperSkillCliTests(unittest.TestCase):
         risky = data["risky_pattern_findings"]
         self.assertTrue(all("classification" in finding and "governed" in finding for finding in risky))
         self.assertTrue(any(finding["governed"] for finding in risky))
+        self.assertEqual(data["risky_pattern_summary"]["ungoverned"], 0)
+        self.assertEqual(data["risky_pattern_summary"]["executable_ungoverned"], 0)
 
     def test_design_audit_detects_common_ai_ui_patterns(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -523,6 +525,14 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertIn("ai-first-saas-launch", project_names)
         self.assertIn("cross-runtime-memory", project_names)
         self.assertIn("ultra-lite-engineering-discipline", project_names)
+
+    def test_readme_reports_current_eval_counts(self) -> None:
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        eval_count = len([path for path in (ROOT / "evals" / "projects").iterdir() if path.is_dir()])
+        live_count = len([path for path in (ROOT / "evals" / "live-projects").iterdir() if (path / "recipe.json").exists()])
+        self.assertIn(f"`evals/projects/` 中保留 {eval_count} 个验证性项目", readme)
+        self.assertIn(f"`evals/live-projects/` 中保留 {live_count} 个可执行 live eval 项目", readme)
+        self.assertIn(f"- {live_count} 个 live eval projects", readme)
 
     def test_capability_evals_reject_unknown_project(self) -> None:
         proc = subprocess.run(

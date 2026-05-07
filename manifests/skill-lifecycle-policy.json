@@ -14,6 +14,7 @@
     "context-engineering",
     "dev-tool-adapter",
     "durable-agent-board",
+    "engineering-core-loop",
     "goal-driven-workflow",
     "harness-engineering",
     "intent-contract",
@@ -21,6 +22,7 @@
     "output-quality-gate",
     "persistent-memory-curation",
     "prompt-cache-layering",
+    "safe-command-governance",
     "security-review",
     "skill-evolution-loop",
     "toolset-sandbox-routing"

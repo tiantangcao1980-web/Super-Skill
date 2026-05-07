@@ -76,6 +76,10 @@ git push --force-with-lease # safe force push
 
 ## Undoing
 
+Danger: `git reset --hard` discards tracked local changes.
+Safer alternative: use `git status`, `git restore --staged <path>`, `git restore <path>`, or `git revert <commit>` for narrower undo paths.
+Use only when: the goal is explicitly to discard tracked changes and there is no uncommitted work worth preserving.
+
 ```bash
 git reset --soft HEAD~1     # undo commit, keep changes staged
 git reset --mixed HEAD~1    # undo commit, keep changes unstaged

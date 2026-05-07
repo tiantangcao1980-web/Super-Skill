@@ -2,6 +2,10 @@
 
 ## Reset
 
+Danger: `git reset --hard` is destructive for tracked local work.
+Safer alternative: make a backup branch or stash first, then prefer `git revert` for pushed commits and `git restore <path>` for file-level undo.
+Use only when: the destructive discard is intentional and confirmed.
+
 - `git reset --hard` loses uncommitted changes PERMANENTLY — no undo
 - `--hard` vs `--soft` vs `--mixed` — each moves different things
 - Reset of pushed commit = history diverges — you need force push

@@ -104,8 +104,14 @@ ocr file.jpg --json       # {"text": "...", "confidence": 0.92, "lang": "zh"}
 ```
 brew install yourorg/tap/ocr
 # or
-curl -sf https://yourorg.com/install.sh | sh
+curl -fsSLO https://yourorg.com/install.sh
+less install.sh
+sh install.sh
 ```
+
+Danger: piping a remote installer directly into a shell executes unaudited code.
+Safer alternative: download the installer, inspect it, verify the source or checksum when available, then run it explicitly.
+Use only when: the installer URL is trusted and the command is meant for local developer bootstrap, not production runtime.
 
 ---
 

@@ -37,7 +37,7 @@
 
 ## Size Traps
 
-- `rm -rf /var/lib/apt/lists` en RUN separado = espacio no recuperado (layers)
+- Removing `/var/lib/apt/lists/*` in a separate `RUN` layer = espacio no recuperado (layers); clean package-manager cache in the same layer that creates it.
 - `npm install --production` después de `npm install` = dev dependencies todavía en layer anterior
 - `.git` copiado = megas extra si no hay .dockerignore
 - Múltiples `RUN apt-get` = cada uno es layer con cache de apt

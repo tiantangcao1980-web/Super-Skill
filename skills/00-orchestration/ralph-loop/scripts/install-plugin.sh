@@ -33,6 +33,21 @@ ensure_src() {
   fi
 }
 
+remove_installed_dir() {
+  case "$DST" in
+    "$HOME/.claude/plugins/$PLUGIN_NAMESPACE/$PLUGIN_NAME") ;;
+    *)
+      echo "error: refusing to remove unexpected path: $DST" >&2
+      exit 1
+      ;;
+  esac
+  if [[ "$DST" == "$HOME" || "$DST" == "/" || -z "$DST" ]]; then
+    echo "error: refusing to remove unsafe path: $DST" >&2
+    exit 1
+  fi
+  rm -R -- "$DST"
+}
+
 case "$cmd" in
   install)
     ensure_src
@@ -64,7 +79,7 @@ case "$cmd" in
       rm "$DST"
       echo "[OK] symlink removed: $DST"
     else
-      rm -rf "$DST"
+      remove_installed_dir
       echo "[OK] directory removed: $DST"
     fi
     ;;
