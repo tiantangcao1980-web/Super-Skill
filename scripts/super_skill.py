@@ -144,6 +144,133 @@ RISKY_PATTERNS = {
     "chmod-777": re.compile(r"\bchmod\s+777\b"),
 }
 
+DESIGN_AUDIT_SUFFIXES = {
+    ".astro",
+    ".css",
+    ".html",
+    ".js",
+    ".jsx",
+    ".mjs",
+    ".py",
+    ".svelte",
+    ".ts",
+    ".tsx",
+    ".vue",
+}
+
+DESIGN_AUDIT_IGNORES = {
+    ".git",
+    ".next",
+    ".nuxt",
+    ".svelte-kit",
+    ".turbo",
+    ".venv",
+    "__snapshots__",
+    "__pycache__",
+    "build",
+    "coverage",
+    "dist",
+    "node_modules",
+    "tests",
+}
+
+DESIGN_AUDIT_SEVERITY_WEIGHTS = {"P0": 25, "P1": 12, "P2": 6, "P3": 3}
+
+DESIGN_AUDIT_RULES = [
+    {
+        "id": "gradient-text",
+        "category": "ai-slop",
+        "severity": "P2",
+        "pattern": re.compile(r"(?:-webkit-)?background-clip\s*:\s*text|\bbg-clip-text\b", re.I),
+        "recommendation": "Use solid or tokenized accent text unless text-as-image is a deliberate brand move.",
+    },
+    {
+        "id": "ai-color-palette",
+        "category": "ai-slop",
+        "severity": "P2",
+        "pattern": re.compile(
+            r"\b(?:from|via|to|bg|text|border)-(?:purple|violet|indigo|cyan)-\d+\b|"
+            r"linear-gradient\([^;\n]*(?:#?8b5cf6|#?7c3aed|#?a855f7|#?06b6d4|purple|violet|indigo|cyan)",
+            re.I,
+        ),
+        "recommendation": "Replace generic purple/cyan gradients with brand-specific semantic tokens.",
+    },
+    {
+        "id": "side-tab",
+        "category": "ai-slop",
+        "severity": "P2",
+        "pattern": re.compile(
+            r"\bborder-[lrse]-(?:2|3|4|8)\b|"
+            r"border-(?:left|right|inline-start|inline-end)(?:-width)?\s*:\s*(?:[2-9]|\d{2,})px|"
+            r"border(?:Left|Right)\s*[:=]\s*[\"'`]?(?:[2-9]|\d{2,})px",
+            re.I,
+        ),
+        "recommendation": "Use hierarchy, rows, or semantic status indicators instead of repeated decorative side bars.",
+    },
+    {
+        "id": "pure-black-white",
+        "category": "quality",
+        "severity": "P3",
+        "pattern": re.compile(
+            r"(?:color|background|background-color)\s*:\s*#(?:000(?:000)?|fff(?:fff)?)\b|"
+            r"\b(?:bg-black|text-black|bg-white|text-white)\b",
+            re.I,
+        ),
+        "recommendation": "Prefer near-black, off-white, and tinted neutrals tied to the design system.",
+    },
+    {
+        "id": "gray-on-color",
+        "category": "quality",
+        "severity": "P1",
+        "pattern": re.compile(
+            r"\btext-(?:gray|slate|zinc|neutral|stone)-\d+\b[^\n]*(?:bg|from|to)-"
+            r"(?:red|orange|amber|yellow|green|emerald|teal|cyan|blue|indigo|violet|purple|pink|rose)-\d+|"
+            r"\b(?:bg|from|to)-(?:red|orange|amber|yellow|green|emerald|teal|cyan|blue|indigo|violet|purple|pink|rose)-\d+\b[^\n]*"
+            r"text-(?:gray|slate|zinc|neutral|stone)-\d+",
+            re.I,
+        ),
+        "recommendation": "Use contrast-checked foreground tokens for colored surfaces.",
+    },
+    {
+        "id": "overused-font",
+        "category": "ai-slop",
+        "severity": "P3",
+        "pattern": re.compile(
+            r"font-family\s*:\s*[^;\n]*(?:Inter|Roboto|Arial|Helvetica|Geist|Instrument Sans|Plus Jakarta Sans|Space Grotesk)",
+            re.I,
+        ),
+        "recommendation": "Use the brand font, a deliberate type pairing, or document why the generic font is correct.",
+    },
+    {
+        "id": "nested-cards",
+        "category": "ai-slop",
+        "severity": "P2",
+        "pattern": re.compile(r"\bcard\b[^;\n]{0,120}\bcard\b|rounded-[\w\[\]-]+[^;\n]{0,120}rounded-[\w\[\]-]+", re.I),
+        "recommendation": "Flatten containers; use sections, rows, dividers, or true repeated object cards.",
+    },
+    {
+        "id": "bounce-easing",
+        "category": "motion",
+        "severity": "P2",
+        "pattern": re.compile(r"\banimate-bounce\b|animation[^;\n]*(?:bounce|elastic|wobble|jiggle)|cubic-bezier\(\s*0\.68\s*,\s*-0\.55", re.I),
+        "recommendation": "Use purposeful easing and reduced-motion fallbacks; avoid novelty motion by default.",
+    },
+    {
+        "id": "layout-transition",
+        "category": "motion",
+        "severity": "P1",
+        "pattern": re.compile(r"transition(?:-property)?\s*:\s*[^;\n]*(?:width|height|top|left|right|bottom|margin|padding)", re.I),
+        "recommendation": "Animate transform, opacity, color, or filter instead of layout properties.",
+    },
+    {
+        "id": "tiny-text",
+        "category": "quality",
+        "severity": "P2",
+        "pattern": re.compile(r"font-size\s*:\s*(?:[0-9](?:\.\d+)?|1[01](?:\.\d+)?)px|\btext-\[?10px\]?|\btext-\[?11px\]?", re.I),
+        "recommendation": "Keep auxiliary text at 12px+ and body text larger unless a platform guideline says otherwise.",
+    },
+]
+
 GOAL_VAGUE_RE = re.compile(
     r"\b(?:improve|optimi[sz]e|clean\s*up|all|everything|better|enhance)\b|"
     r"(?:优化|提升|全部|彻底|更好|完善|全面)",
@@ -4211,6 +4338,117 @@ def scan_text_file(path: Path) -> tuple[list[dict], list[dict]]:
     return secrets, risks
 
 
+def design_audit_files(project: Path) -> tuple[Path, list[Path]]:
+    project = project.expanduser().resolve()
+    if project.is_file():
+        return project.parent, [project] if project.suffix.lower() in DESIGN_AUDIT_SUFFIXES else []
+
+    files: list[Path] = []
+    for path in project.rglob("*"):
+        if not path.is_file():
+            continue
+        rel_parts = path.relative_to(project).parts
+        if any(part in DESIGN_AUDIT_IGNORES for part in rel_parts):
+            continue
+        if path.suffix.lower() in DESIGN_AUDIT_SUFFIXES:
+            files.append(path)
+    return project, sorted(files)
+
+
+def design_audit_scan(project: Path, max_findings: int = 200) -> dict:
+    base, files = design_audit_files(project)
+    findings: list[dict] = []
+    files_scanned = 0
+    truncated = False
+
+    for path in files:
+        if len(findings) >= max_findings:
+            truncated = True
+            break
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        files_scanned += 1
+        rel = path.relative_to(base).as_posix()
+        seen_line_rules: set[tuple[int, str]] = set()
+        for lineno, line in enumerate(text.splitlines(), start=1):
+            if len(findings) >= max_findings:
+                truncated = True
+                break
+            for rule in DESIGN_AUDIT_RULES:
+                if (lineno, rule["id"]) in seen_line_rules:
+                    continue
+                if not rule["pattern"].search(line):
+                    continue
+                seen_line_rules.add((lineno, rule["id"]))
+                findings.append(
+                    {
+                        "rule": rule["id"],
+                        "category": rule["category"],
+                        "severity": rule["severity"],
+                        "file": rel,
+                        "line": lineno,
+                        "snippet": line.strip()[:180],
+                        "recommendation": rule["recommendation"],
+                    }
+                )
+                if len(findings) >= max_findings:
+                    truncated = True
+                    break
+
+    by_severity: dict[str, int] = {}
+    by_rule: dict[str, int] = {}
+    for finding in findings:
+        by_severity[finding["severity"]] = by_severity.get(finding["severity"], 0) + 1
+        by_rule[finding["rule"]] = by_rule.get(finding["rule"], 0) + 1
+    score = max(
+        0,
+        100 - sum(DESIGN_AUDIT_SEVERITY_WEIGHTS.get(f["severity"], 3) for f in findings),
+    )
+    blocking = any(f["severity"] in {"P0", "P1"} for f in findings)
+    status = "pass" if not blocking and score >= 85 else ("polish" if score >= 70 else "fail")
+    return {
+        "project": str(project.expanduser().resolve()),
+        "base": str(base),
+        "files_scanned": files_scanned,
+        "findings_total": len(findings),
+        "findings_by_severity": dict(sorted(by_severity.items())),
+        "findings_by_rule": dict(sorted(by_rule.items())),
+        "score": score,
+        "status": status,
+        "truncated": truncated,
+        "findings": findings,
+    }
+
+
+def cmd_design_audit(args: argparse.Namespace) -> int:
+    project = Path(args.project)
+    if not project.expanduser().exists():
+        if args.json:
+            emit_json(False, {"message": f"project path not found: {project}"}, code="USAGE")
+        else:
+            print(f"error: project path not found: {project}", file=sys.stderr)
+        return EXIT_USAGE
+
+    payload = design_audit_scan(project, max_findings=args.max_findings)
+    ok = not args.fail_on_findings or payload["findings_total"] == 0
+    if args.json:
+        emit_json(ok, payload, code="DESIGN_AUDIT_FAILED" if not ok else None)
+    else:
+        print(f"Design audit: {payload['status']} ({payload['score']}/100)")
+        print(f"Files scanned: {payload['files_scanned']}")
+        print(f"Findings: {payload['findings_total']}")
+        for finding in payload["findings"][:20]:
+            print(
+                f"[{finding['severity']}] {finding['rule']} "
+                f"{finding['file']}:{finding['line']} - {finding['recommendation']}"
+            )
+        if payload["truncated"]:
+            print(f"Findings truncated at {args.max_findings}.")
+    return EXIT_RUNTIME if not ok else EXIT_OK
+
+
 def cmd_audit(args: argparse.Namespace) -> int:
     skills = discover_skills("all")
     vendor_skills = discover_vendor_skills()
@@ -4634,6 +4872,7 @@ def cmd_describe(args: argparse.Namespace) -> int:
             {"name": "install", "purpose": "Install a profile into a flat agent skill directory"},
             {"name": "goal", "purpose": "Build an audit-friendly Codex /goal command with scope, evidence, stop-if guards, and token budget"},
             {"name": "audit", "purpose": "Check duplicates, manifests, compatibility links, secrets, and risky patterns"},
+            {"name": "design-audit", "purpose": "Scan frontend files for deterministic AI design anti-patterns and quality risks"},
             {"name": "harness", "purpose": "Assess AI-first harness readiness for this or another project"},
             {"name": "hermes", "purpose": "Assess Hermes-inspired self-improving agent system readiness"},
             {"name": "memory", "purpose": "Assess agent memory, experience reuse, and dream replay readiness"},
@@ -5096,6 +5335,13 @@ def build_parser() -> argparse.ArgumentParser:
     audit_p = sub.add_parser("audit", help="audit duplicate, compatibility, reliability, and security posture")
     audit_p.add_argument("--json", action="store_true")
     audit_p.set_defaults(func=cmd_audit)
+
+    design_audit_p = sub.add_parser("design-audit", help="scan frontend files for AI design anti-patterns")
+    design_audit_p.add_argument("--project", default=".", help="file or directory to scan")
+    design_audit_p.add_argument("--max-findings", type=int, default=200)
+    design_audit_p.add_argument("--fail-on-findings", action="store_true", help="exit non-zero when any finding exists")
+    design_audit_p.add_argument("--json", action="store_true")
+    design_audit_p.set_defaults(func=cmd_design_audit)
 
     harness_p = sub.add_parser("harness", help="assess AI-first harness readiness")
     harness_p.add_argument("--project", default=".")

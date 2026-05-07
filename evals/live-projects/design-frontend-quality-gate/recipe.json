@@ -2,6 +2,7 @@
   "project": "design-frontend-quality-gate",
   "description": "A small DesignDNA-to-frontend quality gate with tokens, accessible rendering, and anti-slop checks.",
   "required_skills": [
+    "design-craft-gate",
     "designdna",
     "design-templates",
     "anti-slop",
@@ -20,17 +21,17 @@
     "required_content": [
       {
         "path": "docs/design-quality.md",
-        "patterns": ["DesignDNA", "brand", "quality", "accessibility", "responsive"]
+        "patterns": ["design-craft-gate", "PRODUCT.md", "DESIGN.md", "DesignDNA", "brand", "quality", "accessibility", "responsive", "anti-pattern"]
       },
       {
         "path": "src/render_dashboard.py",
-        "patterns": ["aria-label", "grid-template-columns", "DesignDNA"]
+        "patterns": ["aria-label", "grid-template-columns", "DesignDNA", "PRODUCT.md", "DESIGN.md"]
       }
     ],
     "forbidden_content": [
       {
         "path": "src/render_dashboard.py",
-        "patterns": ["letter-spacing: -", "gradient orb", "bokeh", "manual svg hero"]
+        "patterns": ["letter-spacing: -", "gradient orb", "bokeh", "manual svg hero", "bg-clip-text", "animate-bounce"]
       }
     ],
     "commands": [

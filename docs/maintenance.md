@@ -11,6 +11,7 @@
 ```bash
 bin/super-skill validate
 bin/super-skill audit
+bin/super-skill design-audit --project <frontend-path>
 bin/super-skill harness
 bin/super-skill hermes
 bin/super-skill memory
@@ -50,6 +51,7 @@ Then update NOTICE and run validation.
 
 - `bin/super-skill validate` exits 0.
 - `bin/super-skill audit` exits 0 with no blocking failures.
+- `bin/super-skill design-audit --project <frontend-path> --json` reports deterministic design anti-pattern findings for review.
 - `bin/super-skill harness --json` reports the AI-first harness capability matrix.
 - `docs/harness-engineering-validation.md` records the source-derived harness criteria, current evidence, and remaining runtime gaps.
 - `bin/super-skill hermes --json` reports the Hermes-style self-improving agent capability matrix.

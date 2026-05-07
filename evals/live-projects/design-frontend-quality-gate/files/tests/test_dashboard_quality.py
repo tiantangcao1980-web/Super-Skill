@@ -19,6 +19,8 @@ class DashboardQualityTests(unittest.TestCase):
         self.assertIn("aria-label", html)
         self.assertIn("grid-template-columns", html)
         self.assertIn("--accent", html)
+        self.assertIn("PRODUCT.md", html)
+        self.assertIn("DESIGN.md", html)
 
     def test_render_avoids_visual_slop_patterns(self) -> None:
         html = render_dashboard(load_tokens(ROOT / "design" / "tokens.json")).lower()
@@ -26,6 +28,8 @@ class DashboardQualityTests(unittest.TestCase):
         self.assertNotIn("gradient orb", html)
         self.assertNotIn("bokeh", html)
         self.assertNotIn("manual svg hero", html)
+        self.assertNotIn("bg-clip-text", html)
+        self.assertNotIn("animate-bounce", html)
 
 
 if __name__ == "__main__":

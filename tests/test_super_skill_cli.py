@@ -77,6 +77,45 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertEqual(data["secret_findings"], [])
         self.assertGreaterEqual(len(data["compatibility_links"]), 6)
 
+    def test_design_audit_detects_common_ai_ui_patterns(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            page = Path(td) / "bad.html"
+            page.write_text(
+                """
+                <style>
+                .hero {
+                  font-family: Inter, sans-serif;
+                  color: #000;
+                  background: linear-gradient(90deg, #8b5cf6, #06b6d4);
+                  -webkit-background-clip: text;
+                  border-left: 4px solid #8b5cf6;
+                  transition: width 300ms ease;
+                  animation: bounce 1s infinite;
+                  font-size: 10px;
+                }
+                </style>
+                """,
+                encoding="utf-8",
+            )
+            data = run_cli("design-audit", "--project", td)
+            self.assertGreater(data["findings_total"], 0)
+            self.assertLess(data["score"], 100)
+            rules = {finding["rule"] for finding in data["findings"]}
+            self.assertIn("gradient-text", rules)
+            self.assertIn("ai-color-palette", rules)
+            self.assertIn("side-tab", rules)
+            self.assertIn("layout-transition", rules)
+            self.assertIn("tiny-text", rules)
+
+    def test_design_audit_clean_fixture_keeps_high_score(self) -> None:
+        data = run_cli(
+            "design-audit",
+            "--project",
+            "evals/live-projects/design-frontend-quality-gate/files/src",
+        )
+        self.assertEqual(data["findings_total"], 0)
+        self.assertGreaterEqual(data["score"], 95)
+
     def test_harness_assessment_reports_capabilities(self) -> None:
         data = run_cli("harness", "--project", ".")
         self.assertGreaterEqual(data["score"], 70)
@@ -497,6 +536,7 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertIn("autopilot", tool_names)
         self.assertIn("resume", tool_names)
         self.assertIn("llm_eval", tool_names)
+        self.assertIn("design_audit", tool_names)
 
     def test_mcp_server_dispatches_autopilot_dry_run(self) -> None:
         ROOT = Path(__file__).resolve().parents[1]
@@ -519,6 +559,33 @@ class SuperSkillCliTests(unittest.TestCase):
             inner = json.loads(call_reply["result"]["content"][0]["text"])
             self.assertTrue(inner["ok"])
             self.assertEqual(len(inner["data"]["phases_planned"]), 12)
+
+    def test_mcp_server_dispatches_design_audit(self) -> None:
+        ROOT = Path(__file__).resolve().parents[1]
+        server = ROOT / "plugins" / "super-skill-mcp-server" / "scripts" / "mcp_server.py"
+        with tempfile.TemporaryDirectory() as td:
+            page = Path(td) / "bad.html"
+            page.write_text(
+                "<style>.hero{background:linear-gradient(90deg,#8b5cf6,#06b6d4);-webkit-background-clip:text}</style>",
+                encoding="utf-8",
+            )
+            dialogue = "\n".join([
+                '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{}}}',
+                json.dumps({
+                    "jsonrpc": "2.0", "id": 2, "method": "tools/call",
+                    "params": {"name": "design_audit", "arguments": {"project": td}},
+                }),
+            ]) + "\n"
+            proc = subprocess.run(
+                [sys.executable, str(server)],
+                input=dialogue, capture_output=True, text=True, timeout=30, check=False,
+            )
+            lines = [json.loads(l) for l in proc.stdout.splitlines() if l.strip()]
+            call_reply = lines[1]
+            self.assertFalse(call_reply["result"].get("isError"))
+            inner = json.loads(call_reply["result"]["content"][0]["text"])
+            self.assertTrue(inner["ok"])
+            self.assertGreater(inner["data"]["findings_total"], 0)
 
     def test_visualize_renders_html_for_latest_run(self) -> None:
         with tempfile.TemporaryDirectory() as td:

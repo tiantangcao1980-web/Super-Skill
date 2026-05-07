@@ -51,6 +51,7 @@ def render_dashboard(tokens: dict) -> str:
 </head>
 <body>
   <main aria-label="DesignDNA brand dashboard">
+    <p class="context-note">PRODUCT.md and DESIGN.md context verified before UI mutation.</p>
     <section aria-label="Conversion health"><h1>{tokens['brand']}</h1><p>Conversion is stable.</p></section>
     <section aria-label="Delivery quality"><h2>Quality</h2><p>Checks are passing.</p></section>
     <section aria-label="Operational warning"><h2>Guardrail</h2><p>No rollback needed.</p></section>

@@ -9,6 +9,7 @@
   "scripts": {
     "validate": "bin/super-skill validate",
     "audit": "bin/super-skill audit",
+    "design-audit": "bin/super-skill design-audit",
     "harness": "bin/super-skill harness",
     "hermes": "bin/super-skill hermes",
     "memory": "bin/super-skill memory",

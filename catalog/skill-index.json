@@ -1,5 +1,5 @@
 {
-  "generated_at": 1778045924,
+  "generated_at": 1778113905,
   "installable_skills": [
     {
       "name": "auto-flow",
@@ -232,6 +232,14 @@
       "stage_label": "Design",
       "source": "core",
       "path": "skills/04-design-system/copywriting-design"
+    },
+    {
+      "name": "design-craft-gate",
+      "description": "Context-gated frontend design workflow for AI agents. Use when designing, redesigning, polishing, auditing, or shipping product UI so PRODUCT.md/DESIGN.md, shape briefs, anti-pattern detection, visual iteration, accessibility, responsive behavior, and DesignDNA tokens stay connected.",
+      "stage": "04-design-system",
+      "stage_label": "Design",
+      "source": "core",
+      "path": "skills/04-design-system/design-craft-gate"
     },
     {
       "name": "design-templates",

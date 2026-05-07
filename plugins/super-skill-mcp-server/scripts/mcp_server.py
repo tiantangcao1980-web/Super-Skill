@@ -8,6 +8,7 @@ Desktop / Claude Code / Cursor / any MCP-aware client and call:
   - autopilot(prompt, provider="stub", project=".", run_id=None, ...)
   - resume(project=".", run_id=None, list=False, ...)
   - llm_eval(prompt=None, provider="stub")
+  - design_audit(project=".", max_findings=200)
 
 The tools wrap `bin/super-skill` via subprocess. We deliberately do not
 re-implement the CLI here — the canonical surface stays the CLI so behavior is
@@ -124,6 +125,18 @@ TOOLS = [
             },
         },
     },
+    {
+        "name": "design_audit",
+        "description": "Scan frontend files for deterministic AI design anti-patterns and design quality risks.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "project": {"type": "string", "default": ".", "description": "File or directory to scan"},
+                "max_findings": {"type": "integer", "default": 200},
+                "fail_on_findings": {"type": "boolean", "default": False},
+            },
+        },
+    },
 ]
 
 
@@ -157,10 +170,20 @@ def build_argv_llm_eval(args: dict) -> list[str]:
     return argv
 
 
+def build_argv_design_audit(args: dict) -> list[str]:
+    argv = ["design-audit", "--project", args.get("project", ".")]
+    if args.get("max_findings") is not None:
+        argv += ["--max-findings", str(args["max_findings"])]
+    if args.get("fail_on_findings"):
+        argv += ["--fail-on-findings"]
+    return argv
+
+
 TOOL_DISPATCH = {
     "autopilot": build_argv_autopilot,
     "resume": build_argv_resume,
     "llm_eval": build_argv_llm_eval,
+    "design_audit": build_argv_design_audit,
 }
 
 

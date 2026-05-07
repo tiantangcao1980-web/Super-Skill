@@ -6,6 +6,7 @@
     "07-testing-and-quality"
   ],
   "required_skills": [
+    "design-craft-gate",
     "designdna",
     "design-templates",
     "anti-slop",
@@ -16,6 +17,10 @@
     "output-quality-gate"
   ],
   "required_phrases": [
+    "PRODUCT/DESIGN",
+    "shape brief",
+    "anti-pattern",
+    "design-audit",
     "DesignDNA",
     "brand",
     "quality"

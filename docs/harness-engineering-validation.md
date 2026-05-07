@@ -53,7 +53,7 @@ The important caveat: it is a portable skill and workflow harness, not a product
 
 - `ai-first-saas-launch`: end-to-end research, product, design, development, QA, delivery, operations, and memory.
 - `cross-runtime-memory`: Codex hook plugin plus fallback triggers for developer tools without plugin support.
-- `design-to-frontend-quality`: DesignDNA, UI frameworks, frontend patterns, browser/quality checks, and brand sync.
+- `design-to-frontend-quality`: design-craft-gate, DesignDNA, PRODUCT/DESIGN context, UI frameworks, deterministic anti-pattern audit, browser/quality checks, and brand sync.
 - `incident-to-learning-loop`: observability, debugging, security review, evals, memory, and skill lifecycle gates.
 - `token-efficient-llm-io`: intent, context, token budgeting, prompt cache, model contracts, and output quality.
 
