@@ -10,6 +10,7 @@ commands; they are reusable design work modes.
 | `teach` | The project lacks product/design context | `PRODUCT.md` plus optional `DESIGN.md` draft |
 | `document` | UI exists but design rules are implicit | `design-extract` inventory, component notes, `DESIGN.md` update |
 | `extract` | Repeated UI should become reusable | JSON sidecar, tokens/components, migration plan, docs |
+| `live` | Static checks are insufficient and browser-computed evidence matters | overlay panel, computed-style snapshot, variant notes |
 
 ## Creation Commands
 

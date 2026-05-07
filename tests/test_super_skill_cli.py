@@ -224,6 +224,39 @@ class SuperSkillCliTests(unittest.TestCase):
             self.assertIn("bg-slate-900", classes)
             self.assertIn("Extracted Design System Draft", draft.read_text(encoding="utf-8"))
 
+    def test_design_live_generates_computed_style_overlay_panel(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "src").mkdir()
+            (root / "src" / "page.html").write_text(
+                """
+                <style>
+                :root { --color-accent: #0f766e; --radius-card: 8px; }
+                .card { color: #172033; background: #f8fafc; padding: 16px; border-radius: var(--radius-card); }
+                </style>
+                <main class="card"><h1>Dashboard</h1></main>
+                """,
+                encoding="utf-8",
+            )
+            panel = root / ".super-skill" / "design" / "live.html"
+            data = run_cli(
+                "design-live",
+                "--project",
+                str(root / "src"),
+                "--target-url",
+                "http://localhost:3000",
+                "--output",
+                str(panel),
+            )
+            self.assertTrue(panel.exists())
+            self.assertEqual(data["schema"], "super-skill.design-live.v1")
+            self.assertIn("computed-style-inspection", data["capabilities"])
+            html = panel.read_text(encoding="utf-8")
+            self.assertIn("getComputedStyle", html)
+            self.assertIn("data-ss-design-overlay", html)
+            self.assertIn("Live Variant", html)
+            self.assertIn("contrast", html)
+
     def test_harness_assessment_reports_capabilities(self) -> None:
         data = run_cli("harness", "--project", ".")
         self.assertGreaterEqual(data["score"], 70)
@@ -647,6 +680,7 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertIn("design_audit", tool_names)
         self.assertIn("design_preflight", tool_names)
         self.assertIn("design_extract", tool_names)
+        self.assertIn("design_live", tool_names)
 
     def test_mcp_server_dispatches_autopilot_dry_run(self) -> None:
         ROOT = Path(__file__).resolve().parents[1]
@@ -752,6 +786,32 @@ class SuperSkillCliTests(unittest.TestCase):
             self.assertTrue(inner["ok"])
             self.assertGreater(inner["data"]["files_scanned"], 0)
             self.assertIn("css_variables", inner["data"]["tokens"])
+
+    def test_mcp_server_dispatches_design_live(self) -> None:
+        ROOT = Path(__file__).resolve().parents[1]
+        server = ROOT / "plugins" / "super-skill-mcp-server" / "scripts" / "mcp_server.py"
+        with tempfile.TemporaryDirectory() as td:
+            page = Path(td) / "page.html"
+            out = Path(td) / "live.html"
+            page.write_text("<style>:root{--color-bg:#f8fafc}.card{padding:16px;border-radius:8px}</style>", encoding="utf-8")
+            dialogue = "\n".join([
+                '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{}}}',
+                json.dumps({
+                    "jsonrpc": "2.0", "id": 2, "method": "tools/call",
+                    "params": {"name": "design_live", "arguments": {"project": td, "output": str(out), "target_url": "http://localhost:3000"}},
+                }),
+            ]) + "\n"
+            proc = subprocess.run(
+                [sys.executable, str(server)],
+                input=dialogue, capture_output=True, text=True, timeout=30, check=False,
+            )
+            lines = [json.loads(l) for l in proc.stdout.splitlines() if l.strip()]
+            call_reply = lines[1]
+            self.assertFalse(call_reply["result"].get("isError"))
+            inner = json.loads(call_reply["result"]["content"][0]["text"])
+            self.assertTrue(inner["ok"])
+            self.assertTrue(out.exists())
+            self.assertIn("computed-style-inspection", inner["data"]["capabilities"])
 
     def test_visualize_renders_html_for_latest_run(self) -> None:
         with tempfile.TemporaryDirectory() as td:

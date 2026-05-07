@@ -9,6 +9,7 @@ two views without introducing external dependencies.
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import os
 import re
@@ -5069,6 +5070,360 @@ human-reviewed `DESIGN.md`, not as a final brand decision.
 """
 
 
+def design_live_overlay_script() -> str:
+    return r"""(() => {
+  if (window.__SUPER_SKILL_DESIGN_OVERLAY__) {
+    window.__SUPER_SKILL_DESIGN_OVERLAY__.destroy();
+  }
+
+  const state = { selected: null, hover: null };
+  const style = document.createElement("style");
+  style.textContent = `
+    [data-ss-design-overlay="panel"] {
+      position: fixed;
+      z-index: 2147483647;
+      right: 16px;
+      top: 16px;
+      width: min(390px, calc(100vw - 32px));
+      max-height: calc(100vh - 32px);
+      overflow: auto;
+      color: #172033;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 13px;
+      line-height: 1.45;
+      padding: 14px;
+    }
+    [data-ss-design-overlay="panel"] h2,
+    [data-ss-design-overlay="panel"] h3 {
+      margin: 0 0 8px;
+      font-size: 14px;
+    }
+    [data-ss-design-overlay="panel"] button,
+    [data-ss-design-overlay="panel"] input,
+    [data-ss-design-overlay="panel"] textarea {
+      font: inherit;
+    }
+    [data-ss-design-overlay="panel"] button {
+      border: 1px solid #94a3b8;
+      background: #ffffff;
+      color: #172033;
+      border-radius: 6px;
+      padding: 5px 8px;
+      cursor: pointer;
+    }
+    [data-ss-design-overlay="panel"] input,
+    [data-ss-design-overlay="panel"] textarea {
+      box-sizing: border-box;
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 6px;
+      background: #ffffff;
+      color: #172033;
+    }
+    [data-ss-design-overlay="panel"] textarea {
+      min-height: 52px;
+      resize: vertical;
+    }
+    [data-ss-design-overlay="panel"] .ss-row {
+      display: grid;
+      grid-template-columns: 112px 1fr;
+      gap: 8px;
+      padding: 3px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    [data-ss-design-overlay="panel"] code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+    [data-ss-design-overlay="outline"] {
+      position: fixed;
+      z-index: 2147483646;
+      pointer-events: none;
+      border: 2px solid #14b8a6;
+      background: rgba(20, 184, 166, 0.08);
+      border-radius: 4px;
+    }
+  `;
+  document.documentElement.appendChild(style);
+
+  const panel = document.createElement("aside");
+  panel.setAttribute("data-ss-design-overlay", "panel");
+  panel.innerHTML = `
+    <h2>Super Skill Design Live</h2>
+    <p>Hover to inspect. Click to pin an element. Edit a CSS variable to test a live variant.</p>
+    <div id="ss-live-summary">No element selected.</div>
+    <h3>Live Variant</h3>
+    <label>CSS variable <input id="ss-var-name" placeholder="--color-accent"></label>
+    <label>Value <input id="ss-var-value" placeholder="#0f766e"></label>
+    <p><button id="ss-apply-var">Apply variable</button> <button id="ss-clear-var">Clear inline variants</button> <button id="ss-close">Close</button></p>
+    <label>Variant notes <textarea id="ss-variant-notes" placeholder="What changed and why?"></textarea></label>
+  `;
+  document.documentElement.appendChild(panel);
+
+  const outline = document.createElement("div");
+  outline.setAttribute("data-ss-design-overlay", "outline");
+  document.documentElement.appendChild(outline);
+
+  const summary = panel.querySelector("#ss-live-summary");
+  const varName = panel.querySelector("#ss-var-name");
+  const varValue = panel.querySelector("#ss-var-value");
+  const notes = panel.querySelector("#ss-variant-notes");
+  notes.value = sessionStorage.getItem("super-skill-design-live-notes") || "";
+  notes.addEventListener("input", () => sessionStorage.setItem("super-skill-design-live-notes", notes.value));
+
+  function rgbParts(color) {
+    const match = String(color).match(/rgba?\(([^)]+)\)/i);
+    if (!match) return null;
+    const parts = match[1].split(",").slice(0, 3).map((part) => Number.parseFloat(part.trim()));
+    return parts.length === 3 && parts.every(Number.isFinite) ? parts : null;
+  }
+
+  function luminance(parts) {
+    const values = parts.map((value) => {
+      const channel = value / 255;
+      return channel <= 0.03928 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * values[0] + 0.7152 * values[1] + 0.0722 * values[2];
+  }
+
+  function contrastRatio(a, b) {
+    const pa = rgbParts(a);
+    const pb = rgbParts(b);
+    if (!pa || !pb) return "unknown";
+    const la = luminance(pa);
+    const lb = luminance(pb);
+    return String((Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)).slice(0, 4) + ":1";
+  }
+
+  function effectiveBackground(el) {
+    let node = el;
+    while (node && node.nodeType === 1) {
+      const color = getComputedStyle(node).backgroundColor;
+      if (color && !/rgba?\(\s*0\s*,\s*0\s*,\s*0\s*(?:,\s*0\s*)?\)/i.test(color) && color !== "transparent") {
+        return color;
+      }
+      node = node.parentElement;
+    }
+    return "rgb(255, 255, 255)";
+  }
+
+  function selectorFor(el) {
+    if (!el || el === document.documentElement) return "html";
+    if (el.id) return "#" + CSS.escape(el.id);
+    const cls = [...el.classList].slice(0, 3).map((item) => "." + CSS.escape(item)).join("");
+    return el.tagName.toLowerCase() + cls;
+  }
+
+  function row(label, value) {
+    return `<div class="ss-row"><strong>${label}</strong><code>${String(value || "none")}</code></div>`;
+  }
+
+  function snapshot(el) {
+    const cs = getComputedStyle(el);
+    const rect = el.getBoundingClientRect();
+    const bg = effectiveBackground(el);
+    return {
+      selector: selectorFor(el),
+      size: Math.round(rect.width) + "x" + Math.round(rect.height),
+      display: cs.display,
+      position: cs.position,
+      font: [cs.fontFamily, cs.fontSize, cs.fontWeight, "line " + cs.lineHeight].join(" / "),
+      color: cs.color,
+      background: bg,
+      contrast: contrastRatio(cs.color, bg),
+      spacing: "margin " + cs.margin + " / padding " + cs.padding,
+      radius: cs.borderRadius,
+      shadow: cs.boxShadow,
+      motion: "transition " + cs.transitionProperty + " " + cs.transitionDuration + " / animation " + cs.animationName + " " + cs.animationDuration,
+    };
+  }
+
+  function render(el) {
+    if (!el || panel.contains(el)) return;
+    const rect = el.getBoundingClientRect();
+    outline.style.left = rect.left + "px";
+    outline.style.top = rect.top + "px";
+    outline.style.width = rect.width + "px";
+    outline.style.height = rect.height + "px";
+    const snap = snapshot(el);
+    summary.innerHTML = [
+      row("selector", snap.selector),
+      row("size", snap.size),
+      row("display", snap.display),
+      row("position", snap.position),
+      row("font", snap.font),
+      row("color", snap.color),
+      row("background", snap.background),
+      row("contrast", snap.contrast),
+      row("spacing", snap.spacing),
+      row("radius", snap.radius),
+      row("shadow", snap.shadow),
+      row("motion", snap.motion),
+    ].join("");
+  }
+
+  function onMove(event) {
+    if (panel.contains(event.target)) return;
+    state.hover = event.target;
+    if (!state.selected) render(state.hover);
+  }
+
+  function onClick(event) {
+    if (panel.contains(event.target)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    state.selected = event.target;
+    render(state.selected);
+  }
+
+  document.addEventListener("mousemove", onMove, true);
+  document.addEventListener("click", onClick, true);
+  panel.querySelector("#ss-apply-var").addEventListener("click", () => {
+    const name = varName.value.trim();
+    const value = varValue.value.trim();
+    if (name.startsWith("--") && value) {
+      document.documentElement.style.setProperty(name, value);
+      if (state.selected) render(state.selected);
+    }
+  });
+  panel.querySelector("#ss-clear-var").addEventListener("click", () => {
+    [...document.documentElement.style].filter((name) => name.startsWith("--")).forEach((name) => {
+      document.documentElement.style.removeProperty(name);
+    });
+    if (state.selected) render(state.selected);
+  });
+  panel.querySelector("#ss-close").addEventListener("click", () => window.__SUPER_SKILL_DESIGN_OVERLAY__.destroy());
+
+  window.__SUPER_SKILL_DESIGN_OVERLAY__ = {
+    destroy() {
+      document.removeEventListener("mousemove", onMove, true);
+      document.removeEventListener("click", onClick, true);
+      panel.remove();
+      outline.remove();
+      style.remove();
+      delete window.__SUPER_SKILL_DESIGN_OVERLAY__;
+    },
+    snapshot() {
+      return state.selected ? snapshot(state.selected) : null;
+    },
+  };
+})();"""
+
+
+def render_design_live_html(payload: dict) -> str:
+    overlay_script = payload["overlay_script"]
+    target_url = payload.get("target_url") or ""
+    target_link = (
+        f"<a href=\"{html.escape(target_url)}\" target=\"_blank\" rel=\"noreferrer\">Open target</a>"
+        if target_url
+        else "<span>No target URL supplied.</span>"
+    )
+    extract = payload["extract_summary"]
+    audit = payload["audit_summary"]
+    escaped_overlay = html.escape(overlay_script)
+    overlay_json = json.dumps(overlay_script).replace("</", "<\\/")
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Super Skill Design Live</title>
+  <style>
+    :root {{ --bg:#f8fafc; --surface:#ffffff; --text:#172033; --muted:#64748b; --accent:#0f766e; --border:#cbd5e1; }}
+    body {{ margin:0; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; line-height:1.5; }}
+    main {{ max-width:1120px; margin:0 auto; padding:32px 20px; }}
+    h1 {{ font-size:32px; margin:0 0 8px; }}
+    h2 {{ font-size:18px; margin:28px 0 10px; }}
+    p {{ max-width:72ch; }}
+    .grid {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }}
+    .panel {{ background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:16px; }}
+    .metric {{ font-size:28px; font-weight:700; color:var(--accent); }}
+    textarea {{ width:100%; min-height:280px; box-sizing:border-box; border:1px solid var(--border); border-radius:8px; padding:12px; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:var(--text); background:var(--surface); }}
+    button, a.button {{ display:inline-block; border:1px solid var(--accent); background:var(--accent); color:#ffffff; border-radius:6px; padding:8px 10px; text-decoration:none; cursor:pointer; }}
+    code {{ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.92em; }}
+    .muted {{ color:var(--muted); }}
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Super Skill Design Live</h1>
+    <p class="muted">A dependency-free live panel for browser computed styles, element overlay, contrast probes, and CSS-variable variants.</p>
+    <p>{target_link}</p>
+
+    <section class="grid" aria-label="Design live capability summary">
+      <article class="panel"><h2>Computed Styles</h2><div class="metric">getComputedStyle</div><p>Inspect true rendered font, color, spacing, radius, shadow, motion, and size.</p></article>
+      <article class="panel"><h2>Live Variant</h2><div class="metric">CSS vars</div><p>Edit a CSS custom property in the page and keep notes for later design memory.</p></article>
+      <article class="panel"><h2>Quality Gates</h2><div class="metric">{audit['status']} {audit['score']}/100</div><p>{audit['findings_total']} deterministic design-audit findings on the scanned source.</p></article>
+      <article class="panel"><h2>Extraction</h2><div class="metric">{extract['files_scanned']} files</div><p>{extract['css_variables']} CSS variable signals and {extract['components']} component signals found.</p></article>
+    </section>
+
+    <section class="panel">
+      <h2>Install Overlay In A Target Page</h2>
+      <p>Open the target page, run the script below in DevTools Console, then hover and click elements. The script does not send data anywhere.</p>
+      <p><button id="copy-overlay">Copy overlay script</button></p>
+      <textarea id="overlay-script" spellcheck="false">{escaped_overlay}</textarea>
+    </section>
+
+    <section class="panel">
+      <h2>Agent Notes</h2>
+      <p>This panel fills the live gap between static extraction and deterministic audit. Use captured computed styles as evidence, then fold durable decisions back into <code>DESIGN.md</code>, tokens, or memory candidates.</p>
+    </section>
+  </main>
+  <script id="super-skill-overlay-script" type="application/json">{overlay_json}</script>
+  <script>
+    const overlayScript = JSON.parse(document.getElementById("super-skill-overlay-script").textContent);
+    document.getElementById("copy-overlay").addEventListener("click", async () => {{
+      await navigator.clipboard.writeText(overlayScript);
+      document.getElementById("copy-overlay").textContent = "Copied";
+    }});
+  </script>
+</body>
+</html>
+"""
+
+
+def design_live_build(project: Path, target_url: str | None = None, max_items: int = 8) -> dict:
+    extract = design_extract_scan(project, max_items=max_items)
+    audit = design_audit_scan(project, max_findings=80)
+    overlay_script = design_live_overlay_script()
+    payload = {
+        "schema": "super-skill.design-live.v1",
+        "project": str(project.expanduser().resolve()),
+        "target_url": target_url,
+        "capabilities": [
+            "browser-element-overlay",
+            "computed-style-inspection",
+            "contrast-probe",
+            "css-variable-live-variants",
+            "session-notes-for-reviewable-memory",
+        ],
+        "extract_summary": {
+            "files_scanned": extract["files_scanned"],
+            "css_variables": len(extract["tokens"]["css_variables"]),
+            "colors": len(extract["tokens"]["colors"]),
+            "font_families": len(extract["tokens"]["font_families"]),
+            "spacing": len(extract["tokens"]["spacing"]),
+            "radius": len(extract["tokens"]["radius"]),
+            "components": len(extract["tokens"]["components"]),
+        },
+        "audit_summary": {
+            "status": audit["status"],
+            "score": audit["score"],
+            "findings_total": audit["findings_total"],
+            "findings_by_severity": audit["findings_by_severity"],
+        },
+        "overlay_script": overlay_script,
+    }
+    payload["panel_html"] = render_design_live_html(payload)
+    return payload
+
+
 def write_design_output(path_arg: str, text: str, force: bool) -> str:
     path = Path(path_arg).expanduser()
     if not path.is_absolute():
@@ -5120,6 +5475,47 @@ def cmd_design_extract(args: argparse.Namespace) -> int:
             print(f"- {recommendation}")
         for label, output in outputs.items():
             print(f"{label}: {output}")
+    return EXIT_OK
+
+
+def cmd_design_live(args: argparse.Namespace) -> int:
+    project = Path(args.project)
+    if not project.expanduser().exists():
+        if args.json:
+            emit_json(False, {"message": f"project path not found: {project}"}, code="USAGE")
+        else:
+            print(f"error: project path not found: {project}", file=sys.stderr)
+        return EXIT_USAGE
+
+    payload = design_live_build(project, target_url=args.target_url, max_items=args.max_items)
+    outputs: dict[str, str] = {}
+    if args.output:
+        try:
+            outputs["panel"] = write_design_output(args.output, payload["panel_html"], args.force)
+        except FileExistsError as exc:
+            message = f"output exists, use --force to overwrite: {exc}"
+            if args.json:
+                emit_json(False, {"message": message, "outputs": outputs}, code="DESIGN_LIVE_OUTPUT_EXISTS")
+            else:
+                print(f"error: {message}", file=sys.stderr)
+            return EXIT_USAGE
+    payload["outputs"] = outputs
+    if not args.include_html:
+        payload.pop("panel_html", None)
+
+    if args.json:
+        emit_json(True, payload)
+    else:
+        print("Design live panel generated." if outputs else "Design live panel ready.")
+        print(f"Project: {payload['project']}")
+        if args.target_url:
+            print(f"Target URL: {args.target_url}")
+        print(f"Capabilities: {', '.join(payload['capabilities'])}")
+        print(f"Audit: {payload['audit_summary']['status']} ({payload['audit_summary']['score']}/100)")
+        for label, output in outputs.items():
+            print(f"{label}: {output}")
+        if not outputs:
+            print("Use --output <path> to write the HTML panel.")
     return EXIT_OK
 
 
@@ -5599,6 +5995,7 @@ def cmd_describe(args: argparse.Namespace) -> int:
             {"name": "audit", "purpose": "Check duplicates, manifests, compatibility links, secrets, and risky patterns"},
             {"name": "design-preflight", "purpose": "Check PRODUCT/DESIGN context, shape brief, tokens, visual refs, and anti-pattern readiness before UI mutation"},
             {"name": "design-extract", "purpose": "Extract design tokens, utility classes, component signals, and an optional DESIGN.md draft from frontend files"},
+            {"name": "design-live", "purpose": "Generate a browser live design panel with overlay script, computed-style inspection, and CSS-variable variants"},
             {"name": "design-audit", "purpose": "Scan frontend files for deterministic AI design anti-patterns and quality risks"},
             {"name": "harness", "purpose": "Assess AI-first harness readiness for this or another project"},
             {"name": "hermes", "purpose": "Assess Hermes-inspired self-improving agent system readiness"},
@@ -6085,6 +6482,16 @@ def build_parser() -> argparse.ArgumentParser:
     design_extract_p.add_argument("--force", action="store_true", help="overwrite existing output files")
     design_extract_p.add_argument("--json", action="store_true")
     design_extract_p.set_defaults(func=cmd_design_extract)
+
+    design_live_p = sub.add_parser("design-live", help="generate browser live design overlay panel")
+    design_live_p.add_argument("--project", default=".", help="project root or frontend surface to summarize")
+    design_live_p.add_argument("--target-url", default=None, help="optional URL the overlay should be used against")
+    design_live_p.add_argument("--output", default=None, help="optional path for generated live panel HTML")
+    design_live_p.add_argument("--max-items", type=int, default=8, help="maximum extraction signals to summarize")
+    design_live_p.add_argument("--force", action="store_true", help="overwrite existing panel output")
+    design_live_p.add_argument("--include-html", action="store_true", help="include generated panel HTML in JSON output")
+    design_live_p.add_argument("--json", action="store_true")
+    design_live_p.set_defaults(func=cmd_design_live)
 
     harness_p = sub.add_parser("harness", help="assess AI-first harness readiness")
     harness_p.add_argument("--project", default=".")

@@ -51,6 +51,14 @@
         "argv": ["{root}/bin/super-skill", "design-extract", "--project", "src", "--write-sidecar", ".super-skill/design/design.json", "--write-design", ".super-skill/design/DESIGN.generated.md", "--json"]
       },
       {
+        "id": "design-live",
+        "argv": ["{root}/bin/super-skill", "design-live", "--project", "src", "--target-url", "http://localhost:3000", "--output", ".super-skill/design/live.html", "--json"]
+      },
+      {
+        "id": "design-live-panel-check",
+        "argv": ["{python}", "-c", "from pathlib import Path\nhtml=Path('.super-skill/design/live.html').read_text(encoding='utf-8')\nassert 'getComputedStyle' in html\nassert 'data-ss-design-overlay' in html\nassert 'Live Variant' in html\nassert 'contrast' in html"]
+      },
+      {
         "id": "design-audit",
         "argv": ["{root}/bin/super-skill", "design-audit", "--project", "src", "--fail-on-findings", "--json"]
       },

@@ -11,6 +11,7 @@
     "audit": "bin/super-skill audit",
     "design-preflight": "bin/super-skill design-preflight",
     "design-extract": "bin/super-skill design-extract",
+    "design-live": "bin/super-skill design-live",
     "design-audit": "bin/super-skill design-audit",
     "harness": "bin/super-skill harness",
     "hermes": "bin/super-skill hermes",

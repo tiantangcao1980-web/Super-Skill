@@ -44,6 +44,9 @@ structure.
 - `bin/super-skill design-extract` for extracting CSS variables, colors,
   typography, spacing, radius, motion, component, and utility-class signals into
   a JSON sidecar plus optional `DESIGN.md` draft.
+- `bin/super-skill design-live` for generating a browser live panel with an
+  injectable overlay script, computed-style inspection, contrast probes, and
+  CSS-variable live variants.
 - Deterministic `bin/super-skill design-audit` checks for repeatable AI UI
   patterns such as generic purple/cyan palettes, gradient text, decorative side
   borders, nested cards, pure black/white defaults, low-contrast text, skipped
@@ -80,6 +83,9 @@ bin/super-skill design-preflight --project <project-root> --strict --json
 bin/super-skill design-extract --project <frontend-path> \
   --write-sidecar .super-skill/design/design.json \
   --write-design .super-skill/design/DESIGN.generated.md --json
+bin/super-skill design-live --project <frontend-path> \
+  --target-url http://localhost:3000 \
+  --output .super-skill/design/live.html --json
 ```
 
 Use the scans as gates, not as substitutes for design judgment.

@@ -10,6 +10,7 @@ Desktop / Claude Code / Cursor / any MCP-aware client and call:
   - llm_eval(prompt=None, provider="stub")
   - design_preflight(project=".", strict=False, max_findings=50)
   - design_extract(project=".", write_sidecar=None, write_design=None)
+  - design_live(project=".", target_url=None, output=None)
   - design_audit(project=".", max_findings=200)
 
 The tools wrap `bin/super-skill` via subprocess. We deliberately do not
@@ -165,6 +166,21 @@ TOOLS = [
             },
         },
     },
+    {
+        "name": "design_live",
+        "description": "Generate a browser live design panel with overlay script, computed-style inspection, and CSS-variable variants.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "project": {"type": "string", "default": ".", "description": "Project root or frontend surface to summarize"},
+                "target_url": {"type": "string", "description": "Optional URL the overlay should be used against"},
+                "output": {"type": "string", "description": "Optional path for generated live panel HTML"},
+                "max_items": {"type": "integer", "default": 8},
+                "force": {"type": "boolean", "default": False},
+                "include_html": {"type": "boolean", "default": False},
+            },
+        },
+    },
 ]
 
 
@@ -229,6 +245,21 @@ def build_argv_design_extract(args: dict) -> list[str]:
     return argv
 
 
+def build_argv_design_live(args: dict) -> list[str]:
+    argv = ["design-live", "--project", args.get("project", ".")]
+    if args.get("target_url"):
+        argv += ["--target-url", args["target_url"]]
+    if args.get("output"):
+        argv += ["--output", args["output"]]
+    if args.get("max_items") is not None:
+        argv += ["--max-items", str(args["max_items"])]
+    if args.get("force"):
+        argv += ["--force"]
+    if args.get("include_html"):
+        argv += ["--include-html"]
+    return argv
+
+
 TOOL_DISPATCH = {
     "autopilot": build_argv_autopilot,
     "resume": build_argv_resume,
@@ -236,6 +267,7 @@ TOOL_DISPATCH = {
     "design_audit": build_argv_design_audit,
     "design_preflight": build_argv_design_preflight,
     "design_extract": build_argv_design_extract,
+    "design_live": build_argv_design_live,
 }
 
 

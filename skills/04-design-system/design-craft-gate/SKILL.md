@@ -35,6 +35,9 @@ inspired by Impeccable's context-first design vocabulary. It does not replace
 4. **Critique and audit.** Run a two-pass review:
    - Human-readable critique: hierarchy, clarity, copy, state coverage,
      emotional fit, and brand/product consistency.
+   - Live browser pass: `bin/super-skill design-live --project <path>
+     --target-url <url> --output .super-skill/design/live.html --json` when
+     true computed styles, element overlay, or variant probing matters.
    - Context gate: `bin/super-skill design-preflight --project <path> --json`
      before mutating a product UI when local files exist.
    - Deterministic scan: `bin/super-skill design-audit --project <path> --json`
@@ -80,6 +83,8 @@ stable design language:
 - **critique**: review hierarchy, clarity, fit, and anti-patterns.
 - **audit**: run context, accessibility, responsive, performance, and
   deterministic anti-pattern checks.
+- **live**: generate a browser overlay panel for computed styles, contrast
+  probes, and CSS-variable variants.
 - **polish**: align final implementation with tokens and shipping standards.
 - **harden**: cover errors, loading, empty states, i18n, text overflow, and
   reduced motion.

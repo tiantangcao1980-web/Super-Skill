@@ -92,6 +92,11 @@ bin/super-skill design-extract --project ./src \
   --write-sidecar .super-skill/design/design.json \
   --write-design .super-skill/design/DESIGN.generated.md --json
 
+# 生成浏览器设计现场面板：overlay、computed styles、对比度探针、CSS 变量 live variant
+bin/super-skill design-live --project ./src \
+  --target-url http://localhost:3000 \
+  --output .super-skill/design/live.html --json
+
 # 扫描前端文件中的 AI 设计套路和可机器发现的设计质量风险
 bin/super-skill design-audit --project ./src --json
 
@@ -283,6 +288,7 @@ bin/super-skill plan --profile hermes --json
 bin/super-skill audit --json
 bin/super-skill design-preflight --project evals/live-projects/design-frontend-quality-gate/files --json
 bin/super-skill design-extract --project evals/live-projects/design-frontend-quality-gate/files/src --json
+bin/super-skill design-live --project evals/live-projects/design-frontend-quality-gate/files/src --output /tmp/super-skill-design-live.html --json
 bin/super-skill design-audit --project evals/live-projects/design-frontend-quality-gate/files/src --fail-on-findings --json
 bin/super-skill harness --json
 bin/super-skill hermes --json
@@ -297,7 +303,7 @@ python3 -m unittest discover -s tests
 npm --prefix packages/designdna-cli test
 ```
 
-CI 会运行 `doctor`、`validate`、`plan`、Hermes profile plan、`audit`、`design-preflight`、`design-extract`、`design-audit`、`harness`、`hermes`、`memory`、`triggers`、`evals`、`live-evals`、`memory-plugin` dry-run、Python CLI 测试，以及 DesignDNA CLI 测试，确保结构、兼容、安全、自动触发、设计上下文门禁、设计提取、设计反套路扫描、验证性项目、live 项目 grader、harness readiness、self-improving agent readiness、agent memory readiness 和基础工具链可用。
+CI 会运行 `doctor`、`validate`、`plan`、Hermes profile plan、`audit`、`design-preflight`、`design-extract`、`design-live`、`design-audit`、`harness`、`hermes`、`memory`、`triggers`、`evals`、`live-evals`、`memory-plugin` dry-run、Python CLI 测试，以及 DesignDNA CLI 测试，确保结构、兼容、安全、自动触发、设计上下文门禁、设计提取、浏览器现场面板、设计反套路扫描、验证性项目、live 项目 grader、harness readiness、self-improving agent readiness、agent memory readiness 和基础工具链可用。
 
 ## 文档
 

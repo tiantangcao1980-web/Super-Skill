@@ -2,7 +2,7 @@
 
 A minimal stdlib-only MCP (Model Context Protocol) server that exposes
 `bin/super-skill autopilot`, `resume`, `llm-eval`, `design-preflight`,
-`design-extract`, and `design-audit` as MCP tools.
+`design-extract`, `design-live`, and `design-audit` as MCP tools.
 
 ## Why
 
@@ -40,6 +40,7 @@ or the equivalent on your platform:
 | `llm_eval` | Run the contract → impl → gate round trip (used for testing the harness itself). |
 | `design_preflight` | Check PRODUCT/DESIGN context, shape brief, tokens, visual references, and anti-pattern readiness before UI mutation. |
 | `design_extract` | Extract design tokens, utility classes, component signals, and an optional DESIGN.md draft from frontend files. |
+| `design_live` | Generate a browser live design panel with overlay script, computed-style inspection, and CSS-variable variants. |
 | `design_audit` | Scan frontend files for deterministic AI design anti-patterns and quality risks. |
 
 The LLM-backed tools accept `provider: "stub" | "anthropic"`. Stub is offline
