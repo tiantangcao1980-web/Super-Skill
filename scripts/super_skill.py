@@ -1247,6 +1247,35 @@ def duplicate_names(skills: list[Skill]) -> dict[str, list[Skill]]:
     return {name: vals for name, vals in seen.items() if len(vals) > 1}
 
 
+def explicit_trigger_phrases(description: str) -> list[str]:
+    phrases: list[str] = []
+    for match in re.finditer(r"触发词[:：]\s*([^\n。]+)", description, flags=re.IGNORECASE):
+        segment = match.group(1)
+        quoted = re.findall(r"[「“\"]([^」”\"]+)[」”\"]", segment)
+        raw_items = quoted or re.split(r"[、,，/|;；]+", segment)
+        for item in raw_items:
+            clean = re.sub(r"\s+", " ", item).strip(" `\"'「」“”").lower()
+            if clean:
+                phrases.append(clean)
+
+    for match in re.finditer(r"Keywords?:\s*([^\n.]+)", description, flags=re.IGNORECASE):
+        segment = match.group(1)
+        for item in re.split(r"[、,，/|;；]+", segment):
+            clean = re.sub(r"\s+", " ", item).strip(" `\"'「」“”").lower()
+            if clean:
+                phrases.append(clean)
+
+    return sorted(set(phrases))
+
+
+def duplicate_explicit_triggers(skills: list[Skill]) -> dict[str, list[Skill]]:
+    seen: dict[str, list[Skill]] = {}
+    for skill in skills:
+        for phrase in explicit_trigger_phrases(skill.description):
+            seen.setdefault(phrase, []).append(skill)
+    return {phrase: vals for phrase, vals in seen.items() if len(vals) > 1}
+
+
 def local_markdown_links(skill: Skill) -> list[Path]:
     text = (skill.path / "SKILL.md").read_text(encoding="utf-8", errors="replace")
     out = []
@@ -6273,6 +6302,7 @@ def cmd_audit(args: argparse.Namespace) -> int:
     vendor_skills = discover_vendor_skills()
     install_dups = duplicate_names(skills)
     vendor_dups = duplicate_names(vendor_skills)
+    trigger_overlaps = duplicate_explicit_triggers(skills)
     manifest_errors, manifest_warnings = profile_manifest_report()
     plugin_errors, plugin_warnings = plugin_manifest_report()
     trigger_errors, trigger_warnings, trigger_policy = auto_trigger_policy_report()
@@ -6305,6 +6335,8 @@ def cmd_audit(args: argparse.Namespace) -> int:
     failures = []
     if install_dups:
         failures.append({"check": "installable-duplicates", "items": sorted(install_dups)})
+    if trigger_overlaps:
+        failures.append({"check": "trigger-phrase-overlaps", "items": sorted(trigger_overlaps)})
     broken_links = [item for item in compatibility if not item["ok"]]
     if broken_links:
         failures.append({"check": "compatibility-links", "items": broken_links})
@@ -6327,6 +6359,7 @@ def cmd_audit(args: argparse.Namespace) -> int:
         "vendor_skill_files": len(vendor_skills),
         "installable_duplicate_names": {k: [s.relative_path for s in v] for k, v in install_dups.items()},
         "vendor_duplicate_names": {k: [s.relative_path for s in v] for k, v in vendor_dups.items()},
+        "trigger_phrase_overlaps": {k: [s.relative_path for s in v] for k, v in trigger_overlaps.items()},
         "compatibility_links": compatibility,
         "manifest_warnings": manifest_warnings,
         "codex_plugins": [plugin_dict(plugin) for plugin in plugins],
@@ -6359,6 +6392,7 @@ def cmd_audit(args: argparse.Namespace) -> int:
         print(f"Protected skills: {payload['skill_lifecycle_policy']['protected_skills']}")
         print(f"Installable duplicate names: {len(install_dups)}")
         print(f"Vendor duplicate names: {len(vendor_dups)}")
+        print(f"Trigger phrase overlaps: {len(trigger_overlaps)}")
         print(f"Compatibility links: {len(compatibility) - len(broken_links)}/{len(compatibility)} ok")
         print(f"Secret findings: {len(secret_findings)}")
         print(

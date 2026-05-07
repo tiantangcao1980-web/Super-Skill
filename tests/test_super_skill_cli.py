@@ -98,12 +98,36 @@ class SuperSkillCliTests(unittest.TestCase):
         data = run_cli("audit")
         self.assertEqual(data["failures"], [])
         self.assertEqual(data["secret_findings"], [])
+        self.assertEqual(data["trigger_phrase_overlaps"], {})
         self.assertGreaterEqual(len(data["compatibility_links"]), 6)
         risky = data["risky_pattern_findings"]
         self.assertTrue(all("classification" in finding and "governed" in finding for finding in risky))
         self.assertTrue(any(finding["governed"] for finding in risky))
         self.assertEqual(data["risky_pattern_summary"]["ungoverned"], 0)
         self.assertEqual(data["risky_pattern_summary"]["executable_ungoverned"], 0)
+
+    def test_duplicate_explicit_trigger_detection_flags_skill_conflicts(self) -> None:
+        mod = _load_super_skill_module()
+        skills = [
+            mod.Skill(
+                name="alpha",
+                description="触发词:「共享触发」「alpha」。",
+                path=ROOT / "skills" / "alpha",
+                stage="00-orchestration",
+                source="core",
+                relative_path="skills/alpha",
+            ),
+            mod.Skill(
+                name="beta",
+                description="触发词:「共享触发」「beta」。",
+                path=ROOT / "skills" / "beta",
+                stage="00-orchestration",
+                source="core",
+                relative_path="skills/beta",
+            ),
+        ]
+        overlaps = mod.duplicate_explicit_triggers(skills)
+        self.assertEqual([skill.name for skill in overlaps["共享触发"]], ["alpha", "beta"])
 
     def test_design_audit_detects_common_ai_ui_patterns(self) -> None:
         with tempfile.TemporaryDirectory() as td:

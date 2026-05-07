@@ -3,7 +3,7 @@ name: design-dev-flow
 description: |
   项目级"设计 → 开发 → 验证 → 交付"全流程编排器。从需求澄清开始,串联设计规范(taste + 文案 + UI 库)、CLI/接口设计、前后端 Ralph Loop 实现、浏览器自动验证、代码简化、Demo 录制。
   本 skill 只做编排,具体环节调用:spec-workflow / ui-design / designdna / ralph-loop / code-simplifier 以及 frontend-patterns / backend-patterns 等已有 skill。
-  触发词:「全流程开发」「设计到交付」「从 0 做项目」「项目编排」「设计 + 开发 + 验证」「端到端开发」「端到端交付」。
+  触发词:「全流程蓝图」「设计到交付」「从 0 做项目」「项目编排」「设计 + 开发 + 验证」「端到端流程蓝图」「端到端交付」。
 ---
 
 # Design-Dev-Flow · 设计开发全流程编排器
