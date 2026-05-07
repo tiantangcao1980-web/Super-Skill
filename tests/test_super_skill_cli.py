@@ -58,6 +58,29 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertIn("00-orchestration", data["stages"])
         self.assertNotIn("06-development", data["stages"])
 
+    def test_ultra_lite_profile_installs_only_core_discipline_skills(self) -> None:
+        data = run_cli("plan", "--profile", "ultra-lite", "--target", "/tmp/super-skill-lite-test")
+        names = {item["name"] for item in data["operations"]}
+        expected = {
+            "agent-memory-dream-loop",
+            "code-review",
+            "domain-context-adr",
+            "engineering-core-loop",
+            "goal-driven-workflow",
+            "intent-contract",
+            "karpathy-discipline",
+            "output-quality-gate",
+            "safe-command-governance",
+            "test-driven-development",
+            "token-budgeting",
+            "verification-loop",
+        }
+        self.assertEqual(names, expected)
+        self.assertEqual(set(data["included_skills"]), expected)
+        self.assertEqual(data["skills_total"], len(expected))
+        self.assertLessEqual(data["skills_total"], 15)
+        self.assertEqual(data["excluded_skills"], [])
+
     def test_hermes_profile_excludes_native_mirror_skills(self) -> None:
         data = run_cli("plan", "--profile", "hermes")
         names = {item["name"] for item in data["operations"]}
@@ -76,6 +99,9 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertEqual(data["failures"], [])
         self.assertEqual(data["secret_findings"], [])
         self.assertGreaterEqual(len(data["compatibility_links"]), 6)
+        risky = data["risky_pattern_findings"]
+        self.assertTrue(all("classification" in finding and "governed" in finding for finding in risky))
+        self.assertTrue(any(finding["governed"] for finding in risky))
 
     def test_design_audit_detects_common_ai_ui_patterns(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -496,6 +522,7 @@ class SuperSkillCliTests(unittest.TestCase):
         project_names = {item["project"] for item in data["projects"]}
         self.assertIn("ai-first-saas-launch", project_names)
         self.assertIn("cross-runtime-memory", project_names)
+        self.assertIn("ultra-lite-engineering-discipline", project_names)
 
     def test_capability_evals_reject_unknown_project(self) -> None:
         proc = subprocess.run(

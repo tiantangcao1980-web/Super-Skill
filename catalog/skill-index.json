@@ -1,5 +1,5 @@
 {
-  "generated_at": 1778113905,
+  "generated_at": 1778154915,
   "installable_skills": [
     {
       "name": "auto-flow",
@@ -40,6 +40,14 @@
       "stage_label": "Orchestration",
       "source": "core",
       "path": "skills/00-orchestration/durable-agent-board"
+    },
+    {
+      "name": "engineering-core-loop",
+      "description": "Compact always-on engineering loop for AI-agent development: skill/context check, goal contract, TDD or explicit test exception, small implementation, review gates, verification evidence, finish decision, and memory candidate. Use when starting non-trivial code work, reviewing implementation plans, or installing a minimal Super Skill profile.",
+      "stage": "00-orchestration",
+      "stage_label": "Orchestration",
+      "source": "core",
+      "path": "skills/00-orchestration/engineering-core-loop"
     },
     {
       "name": "goal-driven-workflow",
@@ -738,6 +746,14 @@
       "path": "skills/07-testing-and-quality/qa-strategy"
     },
     {
+      "name": "safe-command-governance",
+      "description": "Audit, document, and replace risky shell/git/install commands such as curl-pipe-shell, rm -rf, git reset --hard, chmod 777, or forceful installers. Use before adding examples, install docs, cleanup scripts, or agent-executable commands.",
+      "stage": "07-testing-and-quality",
+      "stage_label": "Quality",
+      "source": "core",
+      "path": "skills/07-testing-and-quality/safe-command-governance"
+    },
+    {
       "name": "security-review",
       "description": "Run a comprehensive security audit covering OWASP Top 10, hardcoded secrets, unsafe patterns, dependency vulnerabilities, authentication/authorization gaps, and crypto misuse. Use when auditing code before release, reviewing sensitive changes (auth, payments, data handling), responding to a security incident, or asked for \"security review\", \"security audit\", \"vulnerability scan\", or \"安全审查/安全审计\".",
       "stage": "07-testing-and-quality",
@@ -840,6 +856,14 @@
       "stage_label": "Operations",
       "source": "core",
       "path": "skills/09-operations-and-knowledge/documentation"
+    },
+    {
+      "name": "domain-context-adr",
+      "description": "Capture shared project language and durable architectural decisions. Use when terms are fuzzy, a plan depends on domain boundaries, architecture choices should not be re-litigated, or a project lacks CONTEXT.md / docs/adr documentation.",
+      "stage": "09-operations-and-knowledge",
+      "stage_label": "Operations",
+      "source": "core",
+      "path": "skills/09-operations-and-knowledge/domain-context-adr"
     },
     {
       "name": "file-curation",
@@ -1519,6 +1543,13 @@
       "04-design-system",
       "07-testing-and-quality"
     ],
+    "ultra-lite": [
+      "00-orchestration",
+      "06-development",
+      "07-testing-and-quality",
+      "09-operations-and-knowledge",
+      "90-codex-patterns"
+    ],
     "hermes": [
       "00-orchestration",
       "01-research",
@@ -1554,6 +1585,22 @@
       "prompt-cache-layering",
       "skill-evolution-loop",
       "toolset-sandbox-routing"
+    ]
+  },
+  "profile_includes": {
+    "ultra-lite": [
+      "agent-memory-dream-loop",
+      "code-review",
+      "domain-context-adr",
+      "engineering-core-loop",
+      "goal-driven-workflow",
+      "intent-contract",
+      "karpathy-discipline",
+      "output-quality-gate",
+      "safe-command-governance",
+      "test-driven-development",
+      "token-budgeting",
+      "verification-loop"
     ]
   }
 }

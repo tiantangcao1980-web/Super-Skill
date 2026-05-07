@@ -1,0 +1,36 @@
+{
+  "project": "ultra-lite-engineering-discipline",
+  "required_stages": [
+    "00-orchestration",
+    "06-development",
+    "07-testing-and-quality",
+    "09-operations-and-knowledge",
+    "90-codex-patterns"
+  ],
+  "required_skills": [
+    "engineering-core-loop",
+    "goal-driven-workflow",
+    "intent-contract",
+    "karpathy-discipline",
+    "test-driven-development",
+    "code-review",
+    "output-quality-gate",
+    "verification-loop",
+    "domain-context-adr",
+    "safe-command-governance",
+    "agent-memory-dream-loop",
+    "token-budgeting"
+  ],
+  "required_phrases": [
+    "Superpowers",
+    "Karpathy",
+    "CONTEXT.md",
+    "ADR",
+    "TDD",
+    "safe command",
+    "Done when",
+    "Stop if",
+    "verification",
+    "memory"
+  ]
+}

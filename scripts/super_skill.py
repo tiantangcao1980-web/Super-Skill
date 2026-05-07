@@ -83,8 +83,32 @@ PROFILE_STAGE_PREFIXES = {
         "90-codex-patterns",
     },
     "design": {"04-design-system", "07-testing-and-quality"},
+    "ultra-lite": {
+        "00-orchestration",
+        "06-development",
+        "07-testing-and-quality",
+        "09-operations-and-knowledge",
+        "90-codex-patterns",
+    },
     "hermes": set(STAGES),
     "all": set(STAGES),
+}
+
+PROFILE_SKILL_INCLUDES = {
+    "ultra-lite": {
+        "agent-memory-dream-loop",
+        "code-review",
+        "domain-context-adr",
+        "engineering-core-loop",
+        "goal-driven-workflow",
+        "intent-contract",
+        "karpathy-discipline",
+        "output-quality-gate",
+        "safe-command-governance",
+        "test-driven-development",
+        "token-budgeting",
+        "verification-loop",
+    },
 }
 
 PROFILE_SKILL_EXCLUDES = {
@@ -1015,6 +1039,7 @@ def discover_skills(profile: str = "all") -> list[Skill]:
     allowed = PROFILE_STAGE_PREFIXES.get(profile)
     if allowed is None:
         raise ValueError(f"unknown profile: {profile}")
+    included = PROFILE_SKILL_INCLUDES.get(profile)
     excluded = PROFILE_SKILL_EXCLUDES.get(profile, set())
     items = []
     for skill_md in iter_skill_files():
@@ -1025,6 +1050,8 @@ def discover_skills(profile: str = "all") -> list[Skill]:
         if stage not in allowed:
             continue
         skill = skill_from_path(skill_md)
+        if included is not None and skill.name not in included:
+            continue
         if skill.name not in excluded:
             items.append(skill)
     return sorted(items, key=lambda s: (s.stage, s.name, s.relative_path))
@@ -1169,6 +1196,11 @@ def default_target_for_profile(profile: str) -> str:
 def profile_excluded_skills(profile: str) -> list[str]:
     all_names = {skill.name for skill in discover_skills("all")}
     return sorted(name for name in PROFILE_SKILL_EXCLUDES.get(profile, set()) if name in all_names)
+
+
+def profile_included_skills(profile: str) -> list[str]:
+    all_names = {skill.name for skill in discover_skills("all")}
+    return sorted(name for name in PROFILE_SKILL_INCLUDES.get(profile, set()) if name in all_names)
 
 
 def iter_project_files(project: Path) -> Iterable[Path]:
@@ -1376,6 +1408,7 @@ def build_install_plan(profile: str, target: str | None, mode: str) -> dict:
         "target": str(target_path),
         "skills_total": len(skills),
         "stages": sorted({s.stage for s in skills}),
+        "included_skills": profile_included_skills(profile),
         "excluded_skills": profile_excluded_skills(profile),
         "target_conflicts": [op for op in operations if op["target_exists"]],
         "operations": operations,
@@ -1723,6 +1756,7 @@ def cmd_install(args: argparse.Namespace) -> int:
             "profile": args.profile,
             "mode": args.mode,
             "target": str(target),
+            "included_skills": profile_included_skills(args.profile),
             "excluded_skills": profile_excluded_skills(args.profile),
             "results": results,
         }
@@ -4351,6 +4385,26 @@ def profile_manifest_report() -> tuple[list[dict], list[dict]]:
                     "items": sorted(unknown_excludes),
                 }
             )
+        manifest_includes = set(profile.get("includes", []))
+        expected_includes = PROFILE_SKILL_INCLUDES.get(profile_name, set())
+        if manifest_includes != expected_includes:
+            errors.append(
+                {
+                    "check": "manifest",
+                    "message": f"profile include drift: {profile_name}",
+                    "expected": sorted(expected_includes),
+                    "actual": sorted(manifest_includes),
+                }
+            )
+        unknown_includes = manifest_includes - installable_names
+        if unknown_includes:
+            errors.append(
+                {
+                    "check": "manifest",
+                    "message": f"profile includes unknown skill: {profile_name}",
+                    "items": sorted(unknown_includes),
+                }
+            )
 
     manifest_profiles = set(profiles.get("profiles", {}))
     extra = manifest_profiles - set(PROFILE_STAGE_PREFIXES)
@@ -4508,6 +4562,27 @@ def looks_like_placeholder(value: str) -> bool:
     return any(part in lowered for part in ("example", "placeholder", "changeme", "your", "test", "xxx", "token"))
 
 
+def classify_risky_line(rel: str, lines: list[str], index: int) -> tuple[str, bool]:
+    line = lines[index].strip()
+    window = "\n".join(lines[max(0, index - 3): index + 4]).lower()
+    lowered_rel = rel.lower()
+    lowered_line = line.lower()
+
+    if lowered_rel.startswith("vendor/"):
+        return "vendor-source-material", True
+    if lowered_rel.startswith("catalog/") and "safe-command-governance" in window:
+        return "generated-safety-catalog-entry", True
+    if "safe-command-governance" in lowered_rel or "safe-command-governance" in window:
+        return "safety-guidance-example", True
+    if any(marker in window for marker in ("danger:", "safer alternative:", "use only when:")):
+        return "documented-risk-with-safer-alternative", True
+    if line.startswith("|") or "pattern" in lowered_line or "risky command" in lowered_line:
+        return "documented-risk-pattern", True
+    if lowered_rel.endswith((".sh", ".py", ".js", ".mjs", ".ts")):
+        return "executable-instruction", False
+    return "documentation-example", False
+
+
 def scan_text_file(path: Path) -> tuple[list[dict], list[dict]]:
     secrets: list[dict] = []
     risks: list[dict] = []
@@ -4519,7 +4594,8 @@ def scan_text_file(path: Path) -> tuple[list[dict], list[dict]]:
         return secrets, risks
 
     rel = path.relative_to(ROOT).as_posix()
-    for lineno, line in enumerate(text.splitlines(), start=1):
+    lines = text.splitlines()
+    for lineno, line in enumerate(lines, start=1):
         for name, pattern in SECRET_PATTERNS.items():
             match = pattern.search(line)
             if not match:
@@ -4531,7 +4607,16 @@ def scan_text_file(path: Path) -> tuple[list[dict], list[dict]]:
 
         for name, pattern in RISKY_PATTERNS.items():
             if pattern.search(line):
-                risks.append({"file": rel, "line": lineno, "pattern": name})
+                classification, governed = classify_risky_line(rel, lines, lineno - 1)
+                risks.append(
+                    {
+                        "file": rel,
+                        "line": lineno,
+                        "pattern": name,
+                        "classification": classification,
+                        "governed": governed,
+                    }
+                )
     return secrets, risks
 
 
@@ -6675,6 +6760,7 @@ def cmd_catalog(args: argparse.Namespace) -> int:
         "codex_plugins": [plugin_dict(p) for p in plugins],
         "profiles": {k: sorted(v) for k, v in PROFILE_STAGE_PREFIXES.items()},
         "profile_excludes": {k: sorted(v) for k, v in PROFILE_SKILL_EXCLUDES.items()},
+        "profile_includes": {k: sorted(v) for k, v in PROFILE_SKILL_INCLUDES.items()},
     }
 
     CATALOG_ROOT.mkdir(parents=True, exist_ok=True)
@@ -6722,8 +6808,11 @@ def render_catalog_md(skills: list[Skill], vendor_skills: list[Skill], plugins: 
         "",
     ])
     for profile in sorted(PROFILE_STAGE_PREFIXES):
+        included = profile_included_skills(profile)
         excluded = profile_excluded_skills(profile)
-        if excluded:
+        if included:
+            lines.append(f"- `{profile}` includes only: {', '.join(f'`{name}`' for name in included)}")
+        elif excluded:
             lines.append(f"- `{profile}` excludes: {', '.join(f'`{name}`' for name in excluded)}")
         else:
             lines.append(f"- `{profile}` excludes: none")

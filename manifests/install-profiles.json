@@ -58,6 +58,37 @@
         "stage:quality"
       ]
     },
+    "ultra-lite": {
+      "description": "Compact high-discipline engineering profile inspired by Superpowers, Karpathy-style guardrails, and domain-context/ADR workflows. Installs only the small core needed for goal contracts, TDD, review, verification, safe command governance, and memory hygiene.",
+      "stages": [
+        "00-orchestration",
+        "06-development",
+        "07-testing-and-quality",
+        "09-operations-and-knowledge",
+        "90-codex-patterns"
+      ],
+      "components": [
+        "stage:orchestration",
+        "stage:development",
+        "stage:quality",
+        "stage:operations-knowledge",
+        "stage:codex-patterns"
+      ],
+      "includes": [
+        "agent-memory-dream-loop",
+        "code-review",
+        "domain-context-adr",
+        "engineering-core-loop",
+        "goal-driven-workflow",
+        "intent-contract",
+        "karpathy-discipline",
+        "output-quality-gate",
+        "safe-command-governance",
+        "test-driven-development",
+        "token-budgeting",
+        "verification-loop"
+      ]
+    },
     "hermes": {
       "description": "Hermes Agent target profile. Installs the broad Super Skill lifecycle while excluding Hermes-native mirrors that would duplicate built-in memory, skill evolution, prompt layering, toolset routing, Kanban, and checkpoint features.",
       "stages": [
