@@ -63,7 +63,7 @@ These projects prove the repository exposes the right skills, policies, and vali
 
 - `mini-saas-feedback-loop`: feature flag, kill switch, metrics, rollback, observability, release notes, and memory hook.
 - `cross-runtime-memory-adapter`: runtime policy mapping for Codex, Cursor, Trae, OpenCode, OpenClaw, and Claude Code.
-- `design-frontend-quality-gate`: DesignDNA tokens, accessible rendering, responsive constraints, and anti-slop checks.
+- `design-frontend-quality-gate`: DesignDNA tokens, accessible rendering, responsive constraints, anti-slop checks, design-live extension packaging, and design-capture runner generation.
 
 These live evals run code-based graders and unit tests. They still do not call an external LLM; they are the stable executable harness that future model-driven attempts should target.
 
@@ -85,6 +85,8 @@ bin/super-skill memory --json
 bin/super-skill triggers --json
 bin/super-skill evals --json
 bin/super-skill live-evals --json
+bin/super-skill design-live --project evals/live-projects/design-frontend-quality-gate/files/src --write-extension /tmp/super-skill-design-live-extension --force --json
+bin/super-skill design-capture --project evals/live-projects/design-frontend-quality-gate/files --url http://localhost:3000 --runner /tmp/super-skill-design-capture.mjs --dry-run --force --json
 bin/super-skill memory-plugin --dry-run --json
 bin/super-skill validate --json
 bin/super-skill audit --json

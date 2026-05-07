@@ -37,7 +37,14 @@ inspired by Impeccable's context-first design vocabulary. It does not replace
      emotional fit, and brand/product consistency.
    - Live browser pass: `bin/super-skill design-live --project <path>
      --target-url <url> --output .super-skill/design/live.html --json` when
-     true computed styles, element overlay, or variant probing matters.
+     true computed styles, element overlay, or variant probing matters. Add
+     `--write-extension .super-skill/design/extension` when the review should
+     happen inside a real Chrome/Chromium tab.
+   - Capture pass: `bin/super-skill design-capture --project <root>
+     --url <url> --screenshot .super-skill/design/live.png
+     --report .super-skill/design/capture.json --json` when an agent needs
+     browser-injected screenshot and computed-style evidence. Use `--dry-run`
+     in CI or offline environments that should not require Playwright.
    - Context gate: `bin/super-skill design-preflight --project <path> --json`
      before mutating a product UI when local files exist.
    - Deterministic scan: `bin/super-skill design-audit --project <path> --json`

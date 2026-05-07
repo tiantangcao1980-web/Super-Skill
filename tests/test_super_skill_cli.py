@@ -239,6 +239,7 @@ class SuperSkillCliTests(unittest.TestCase):
                 encoding="utf-8",
             )
             panel = root / ".super-skill" / "design" / "live.html"
+            extension = root / ".super-skill" / "design" / "extension"
             data = run_cli(
                 "design-live",
                 "--project",
@@ -247,15 +248,56 @@ class SuperSkillCliTests(unittest.TestCase):
                 "http://localhost:3000",
                 "--output",
                 str(panel),
+                "--write-extension",
+                str(extension),
             )
             self.assertTrue(panel.exists())
             self.assertEqual(data["schema"], "super-skill.design-live.v1")
             self.assertIn("computed-style-inspection", data["capabilities"])
+            self.assertIn("extension", data["outputs"])
             html = panel.read_text(encoding="utf-8")
             self.assertIn("getComputedStyle", html)
             self.assertIn("data-ss-design-overlay", html)
             self.assertIn("Live Variant", html)
             self.assertIn("contrast", html)
+            manifest = json.loads((extension / "manifest.json").read_text(encoding="utf-8"))
+            self.assertEqual(manifest["manifest_version"], 3)
+            self.assertEqual(manifest["action"]["default_popup"], "popup.html")
+            self.assertTrue((extension / "popup.html").exists())
+            self.assertTrue((extension / "popup.js").exists())
+            self.assertTrue((extension / "background.js").exists())
+            overlay = (extension / "overlay.js").read_text(encoding="utf-8")
+            self.assertIn("getComputedStyle", overlay)
+            self.assertIn("data-ss-design-overlay", overlay)
+
+    def test_design_capture_dry_run_writes_playwright_runner(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            runner = root / ".super-skill" / "design" / "capture.mjs"
+            data = run_cli(
+                "design-capture",
+                "--project",
+                str(root),
+                "--url",
+                "http://localhost:3000",
+                "--screenshot",
+                str(root / ".super-skill" / "design" / "live.png"),
+                "--report",
+                str(root / ".super-skill" / "design" / "capture.json"),
+                "--runner",
+                str(runner),
+                "--dry-run",
+            )
+            self.assertEqual(data["schema"], "super-skill.design-capture.v1")
+            self.assertTrue(data["dry_run"])
+            self.assertEqual(data["viewport"], {"width": 1440, "height": 900})
+            self.assertIn("screenshot-evidence", data["capabilities"])
+            self.assertTrue(runner.exists())
+            runner_text = runner.read_text(encoding="utf-8")
+            self.assertIn('import("playwright")', runner_text)
+            self.assertIn("page.evaluate(overlay)", runner_text)
+            self.assertIn("page.screenshot", runner_text)
+            self.assertIn("SS_DESIGN_OVERLAY", runner_text)
 
     def test_harness_assessment_reports_capabilities(self) -> None:
         data = run_cli("harness", "--project", ".")
@@ -681,6 +723,7 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertIn("design_preflight", tool_names)
         self.assertIn("design_extract", tool_names)
         self.assertIn("design_live", tool_names)
+        self.assertIn("design_capture", tool_names)
 
     def test_mcp_server_dispatches_autopilot_dry_run(self) -> None:
         ROOT = Path(__file__).resolve().parents[1]
@@ -812,6 +855,38 @@ class SuperSkillCliTests(unittest.TestCase):
             self.assertTrue(inner["ok"])
             self.assertTrue(out.exists())
             self.assertIn("computed-style-inspection", inner["data"]["capabilities"])
+
+    def test_mcp_server_dispatches_design_capture_dry_run(self) -> None:
+        ROOT = Path(__file__).resolve().parents[1]
+        server = ROOT / "plugins" / "super-skill-mcp-server" / "scripts" / "mcp_server.py"
+        with tempfile.TemporaryDirectory() as td:
+            runner = Path(td) / "capture.mjs"
+            dialogue = "\n".join([
+                '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{}}}',
+                json.dumps({
+                    "jsonrpc": "2.0", "id": 2, "method": "tools/call",
+                    "params": {
+                        "name": "design_capture",
+                        "arguments": {
+                            "project": td,
+                            "url": "http://localhost:3000",
+                            "runner": str(runner),
+                            "dry_run": True,
+                        },
+                    },
+                }),
+            ]) + "\n"
+            proc = subprocess.run(
+                [sys.executable, str(server)],
+                input=dialogue, capture_output=True, text=True, timeout=30, check=False,
+            )
+            lines = [json.loads(l) for l in proc.stdout.splitlines() if l.strip()]
+            call_reply = lines[1]
+            self.assertFalse(call_reply["result"].get("isError"))
+            inner = json.loads(call_reply["result"]["content"][0]["text"])
+            self.assertTrue(inner["ok"])
+            self.assertTrue(runner.exists())
+            self.assertIn("real-browser-script-injection", inner["data"]["capabilities"])
 
     def test_visualize_renders_html_for_latest_run(self) -> None:
         with tempfile.TemporaryDirectory() as td:

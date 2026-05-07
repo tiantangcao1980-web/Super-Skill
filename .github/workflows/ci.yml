@@ -23,6 +23,8 @@ jobs:
       - run: bin/super-skill design-preflight --project evals/live-projects/design-frontend-quality-gate/files --strict --json
       - run: bin/super-skill design-extract --project evals/live-projects/design-frontend-quality-gate/files/src --json
       - run: bin/super-skill design-live --project evals/live-projects/design-frontend-quality-gate/files/src --output /tmp/super-skill-design-live.html --json
+      - run: bin/super-skill design-live --project evals/live-projects/design-frontend-quality-gate/files/src --write-extension /tmp/super-skill-design-live-extension --force --json
+      - run: bin/super-skill design-capture --project evals/live-projects/design-frontend-quality-gate/files --url http://localhost:3000 --runner /tmp/super-skill-design-capture.mjs --dry-run --force --json
       - run: bin/super-skill design-audit --project evals/live-projects/design-frontend-quality-gate/files/src --fail-on-findings --json
       - run: bin/super-skill harness --json
       - run: bin/super-skill hermes --json

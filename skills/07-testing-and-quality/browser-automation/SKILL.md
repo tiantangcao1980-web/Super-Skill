@@ -24,6 +24,20 @@ description: |
 
 **默认推荐**:开发期 → Preview MCP;PR 前 → Playwright;探索 → browser-use。
 
+Super Skill 设计链路的浏览器现场能力:
+
+```bash
+# 生成可加载到真实 Chrome/Chromium tab 的设计 overlay 扩展包
+bin/super-skill design-live --project ./src --write-extension .super-skill/design/extension --json
+
+# 用 Playwright 自动打开页面、注入 overlay、截图并回传 computed-style report
+bin/super-skill design-capture --project . --url http://localhost:3000 \
+  --screenshot .super-skill/design/live.png \
+  --report .super-skill/design/capture.json --json
+```
+
+CI 不想安装 Playwright 时,用 `design-capture --dry-run --runner <path>` 验证注入脚本生成与接口契约。
+
 ---
 
 ## 工作流

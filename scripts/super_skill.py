@@ -5424,6 +5424,228 @@ def design_live_build(project: Path, target_url: str | None = None, max_items: i
     return payload
 
 
+def design_live_extension_files(overlay_script: str) -> dict[str, str]:
+    manifest = {
+        "manifest_version": 3,
+        "name": "Super Skill Design Live",
+        "version": "0.1.0",
+        "description": "Inject Super Skill design overlay for computed styles, contrast probes, and CSS variable variants.",
+        "permissions": ["activeTab", "scripting"],
+        "host_permissions": ["<all_urls>"],
+        "action": {
+            "default_title": "Super Skill Design Live",
+            "default_popup": "popup.html",
+        },
+        "background": {"service_worker": "background.js"},
+    }
+    popup_html = """<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Super Skill Design Live</title>
+  <style>
+    body { width: 260px; margin: 0; padding: 14px; color: #172033; background: #f8fafc; font: 13px/1.45 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    h1 { margin: 0 0 8px; font-size: 15px; }
+    p { margin: 0 0 12px; }
+    button { width: 100%; border: 1px solid #0f766e; border-radius: 6px; padding: 8px 10px; color: #ffffff; background: #0f766e; cursor: pointer; }
+    small { display: block; margin-top: 10px; color: #64748b; }
+  </style>
+</head>
+<body>
+  <h1>Super Skill Design Live</h1>
+  <p>Inject the local computed-style overlay into the current tab.</p>
+  <button id="inject">Inject overlay</button>
+  <small>No network calls. Evidence stays in the browser until you save it.</small>
+  <script src="popup.js"></script>
+</body>
+</html>
+"""
+    popup_js = """async function injectOverlay() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab || !tab.id) return;
+  await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    files: ["overlay.js"],
+  });
+  window.close();
+}
+
+document.getElementById("inject").addEventListener("click", injectOverlay);
+"""
+    background_js = """chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (!message || message.type !== "SUPER_SKILL_DESIGN_LIVE_INJECT") return false;
+  chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+    const tab = tabs[0];
+    if (!tab || !tab.id) {
+      sendResponse({ ok: false, error: "No active tab" });
+      return;
+    }
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ["overlay.js"],
+      });
+      sendResponse({ ok: true });
+    } catch (error) {
+      sendResponse({ ok: false, error: String(error && error.message || error) });
+    }
+  });
+  return true;
+});
+"""
+    readme = """# Super Skill Design Live Extension
+
+This unpacked Manifest V3 extension injects the Super Skill computed-style
+overlay into the active tab. It is meant for local design review and agent
+evidence capture.
+
+## Install
+
+1. Open `chrome://extensions`.
+2. Enable Developer mode.
+3. Load this directory as an unpacked extension.
+4. Open your product page, click the extension, then click Inject overlay.
+
+The extension does not call a network endpoint or persist browser history.
+"""
+    return {
+        "manifest.json": json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+        "overlay.js": overlay_script + "\n",
+        "popup.html": popup_html,
+        "popup.js": popup_js,
+        "background.js": background_js,
+        "README.md": readme,
+    }
+
+
+def write_design_live_extension(directory_arg: str, overlay_script: str, force: bool) -> dict:
+    directory = Path(directory_arg).expanduser()
+    if not directory.is_absolute():
+        directory = Path.cwd() / directory
+    directory = directory.resolve()
+    directory.mkdir(parents=True, exist_ok=True)
+
+    written: dict[str, str] = {}
+    for filename, content in design_live_extension_files(overlay_script).items():
+        written[filename] = write_design_output(str(directory / filename), content, force)
+    return {"directory": str(directory), "files": written}
+
+
+def parse_viewport(value: str) -> dict[str, int]:
+    match = re.match(r"^(\d{2,5})x(\d{2,5})$", str(value).strip())
+    if not match:
+        raise ValueError("viewport must use WIDTHxHEIGHT, for example 1440x900")
+    width = int(match.group(1))
+    height = int(match.group(2))
+    if width < 320 or height < 240:
+        raise ValueError("viewport is too small for design capture")
+    return {"width": width, "height": height}
+
+
+def resolve_project_output_path(path_arg: str, project_root: Path) -> Path:
+    path = Path(path_arg).expanduser()
+    if not path.is_absolute():
+        path = project_root / path
+    return path.resolve()
+
+
+def design_capture_runner_script() -> str:
+    return """import fs from "node:fs";
+
+const url = process.env.SS_DESIGN_URL;
+const screenshot = process.env.SS_DESIGN_SCREENSHOT;
+const report = process.env.SS_DESIGN_REPORT;
+const overlay = process.env.SS_DESIGN_OVERLAY || "";
+const viewport = JSON.parse(process.env.SS_DESIGN_VIEWPORT || '{"width":1440,"height":900}');
+const timeout = Number.parseInt(process.env.SS_DESIGN_TIMEOUT_MS || "30000", 10);
+const storageState = process.env.SS_DESIGN_STORAGE_STATE || "";
+const browserChannel = process.env.SS_DESIGN_BROWSER_CHANNEL || "";
+const waitUntil = process.env.SS_DESIGN_WAIT_UNTIL || "networkidle";
+const headed = process.env.SS_DESIGN_HEADED === "1";
+
+if (!url || !screenshot || !report) {
+  throw new Error("SS_DESIGN_URL, SS_DESIGN_SCREENSHOT, and SS_DESIGN_REPORT are required");
+}
+
+const consoleMessages = [];
+const launchOptions = { headless: !headed };
+if (browserChannel) launchOptions.channel = browserChannel;
+
+(async () => {
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch(launchOptions);
+  const contextOptions = { viewport };
+  if (storageState) contextOptions.storageState = storageState;
+  const context = await browser.newContext(contextOptions);
+  const page = await context.newPage();
+  page.on("console", (message) => {
+    if (["error", "warning"].includes(message.type())) {
+      consoleMessages.push({ type: message.type(), text: message.text() });
+    }
+  });
+  page.on("pageerror", (error) => {
+    consoleMessages.push({ type: "pageerror", text: String(error && error.message || error) });
+  });
+
+  await page.goto(url, { waitUntil, timeout });
+  await page.evaluate(overlay);
+  await page.waitForFunction(() => Boolean(window.__SUPER_SKILL_DESIGN_OVERLAY__), null, { timeout: 5000 }).catch(() => {});
+  await page.screenshot({ path: screenshot, fullPage: true });
+
+  const snapshot = await page.evaluate(() => {
+    const element = document.querySelector("main") || document.body;
+    const style = getComputedStyle(element);
+    const rect = element.getBoundingClientRect();
+    return {
+      title: document.title,
+      overlay_active: Boolean(window.__SUPER_SKILL_DESIGN_OVERLAY__),
+      sampled_selector: element.tagName.toLowerCase(),
+      sampled_computed_style: {
+        color: style.color,
+        backgroundColor: style.backgroundColor,
+        fontFamily: style.fontFamily,
+        fontSize: style.fontSize,
+        lineHeight: style.lineHeight,
+        padding: style.padding,
+        margin: style.margin,
+        borderRadius: style.borderRadius,
+      },
+      sampled_rect: {
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+      },
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      },
+    };
+  });
+
+  fs.writeFileSync(report, JSON.stringify({
+    ok: true,
+    schema: "super-skill.design-capture.report.v1",
+    url,
+    screenshot,
+    ...snapshot,
+    console_messages: consoleMessages,
+  }, null, 2) + "\\n");
+  await context.close();
+  await browser.close();
+})().catch((error) => {
+  fs.writeFileSync(report, JSON.stringify({
+    ok: false,
+    schema: "super-skill.design-capture.report.v1",
+    url,
+    screenshot,
+    error: String(error && error.stack || error),
+    console_messages: consoleMessages,
+  }, null, 2) + "\\n");
+  process.exit(1);
+});
+"""
+
+
 def write_design_output(path_arg: str, text: str, force: bool) -> str:
     path = Path(path_arg).expanduser()
     if not path.is_absolute():
@@ -5488,17 +5710,19 @@ def cmd_design_live(args: argparse.Namespace) -> int:
         return EXIT_USAGE
 
     payload = design_live_build(project, target_url=args.target_url, max_items=args.max_items)
-    outputs: dict[str, str] = {}
-    if args.output:
-        try:
+    outputs: dict[str, object] = {}
+    try:
+        if args.output:
             outputs["panel"] = write_design_output(args.output, payload["panel_html"], args.force)
-        except FileExistsError as exc:
-            message = f"output exists, use --force to overwrite: {exc}"
-            if args.json:
-                emit_json(False, {"message": message, "outputs": outputs}, code="DESIGN_LIVE_OUTPUT_EXISTS")
-            else:
-                print(f"error: {message}", file=sys.stderr)
-            return EXIT_USAGE
+        if args.write_extension:
+            outputs["extension"] = write_design_live_extension(args.write_extension, payload["overlay_script"], args.force)
+    except FileExistsError as exc:
+        message = f"output exists, use --force to overwrite: {exc}"
+        if args.json:
+            emit_json(False, {"message": message, "outputs": outputs}, code="DESIGN_LIVE_OUTPUT_EXISTS")
+        else:
+            print(f"error: {message}", file=sys.stderr)
+        return EXIT_USAGE
     payload["outputs"] = outputs
     if not args.include_html:
         payload.pop("panel_html", None)
@@ -5516,6 +5740,185 @@ def cmd_design_live(args: argparse.Namespace) -> int:
             print(f"{label}: {output}")
         if not outputs:
             print("Use --output <path> to write the HTML panel.")
+    return EXIT_OK
+
+
+def cmd_design_capture(args: argparse.Namespace) -> int:
+    try:
+        viewport = parse_viewport(args.viewport)
+    except ValueError as exc:
+        if args.json:
+            emit_json(False, {"message": str(exc)}, code="USAGE")
+        else:
+            print(f"error: {exc}", file=sys.stderr)
+        return EXIT_USAGE
+
+    project = Path(args.project)
+    if not project.expanduser().exists():
+        if args.json:
+            emit_json(False, {"message": f"project path not found: {project}"}, code="USAGE")
+        else:
+            print(f"error: project path not found: {project}", file=sys.stderr)
+        return EXIT_USAGE
+    project_root = project.expanduser().resolve()
+
+    screenshot_path = resolve_project_output_path(args.screenshot, project_root)
+    report_path = resolve_project_output_path(args.report, project_root)
+
+    runner_source = design_capture_runner_script()
+    runner_path: Path | None = None
+    temp_runner: Path | None = None
+    payload = {
+        "schema": "super-skill.design-capture.v1",
+        "project": str(project_root),
+        "url": args.url,
+        "screenshot": str(screenshot_path),
+        "report": str(report_path),
+        "viewport": viewport,
+        "timeout_ms": args.timeout_ms,
+        "wait_until": args.wait_until,
+        "headed": args.headed,
+        "browser_channel": args.browser_channel,
+        "storage_state": args.storage_state,
+        "requires": ["node", "playwright"],
+        "capabilities": [
+            "real-browser-script-injection",
+            "screenshot-evidence",
+            "computed-style-report",
+            "optional-auth-storage-state",
+            "dry-run-runner-generation",
+        ],
+        "dry_run": args.dry_run,
+    }
+
+    try:
+        if args.runner:
+            requested_runner = resolve_project_output_path(args.runner, project_root)
+            runner_path = Path(write_design_output(str(requested_runner), runner_source, args.force))
+            payload["runner"] = str(runner_path)
+        elif args.dry_run:
+            payload["runner"] = None
+        else:
+            with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".mjs", delete=False) as tmp:
+                tmp.write(runner_source)
+                temp_runner = Path(tmp.name)
+            runner_path = temp_runner
+            payload["runner"] = str(runner_path)
+    except FileExistsError as exc:
+        message = f"runner exists, use --force to overwrite: {exc}"
+        if args.json:
+            emit_json(False, {"message": message, **payload}, code="DESIGN_CAPTURE_OUTPUT_EXISTS")
+        else:
+            print(f"error: {message}", file=sys.stderr)
+        return EXIT_USAGE
+
+    if args.dry_run:
+        if args.json:
+            emit_json(True, payload)
+        else:
+            print("Design capture dry-run ready.")
+            if runner_path:
+                print(f"runner: {runner_path}")
+            print("Requires node + Playwright for real capture.")
+        return EXIT_OK
+
+    node = shutil.which("node")
+    if not node:
+        message = "node executable not found; install Node.js and Playwright to run design capture"
+        if temp_runner:
+            temp_runner.unlink(missing_ok=True)
+        if args.json:
+            emit_json(False, {"message": message, **payload}, code="DEPENDENCY_MISSING")
+        else:
+            print(f"error: {message}", file=sys.stderr)
+        return EXIT_DEPENDENCY
+
+    screenshot_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    env = os.environ.copy()
+    env.update({
+        "SS_DESIGN_URL": args.url,
+        "SS_DESIGN_SCREENSHOT": str(screenshot_path),
+        "SS_DESIGN_REPORT": str(report_path),
+        "SS_DESIGN_OVERLAY": design_live_overlay_script(),
+        "SS_DESIGN_VIEWPORT": json.dumps(viewport),
+        "SS_DESIGN_TIMEOUT_MS": str(args.timeout_ms),
+        "SS_DESIGN_WAIT_UNTIL": args.wait_until,
+        "SS_DESIGN_HEADED": "1" if args.headed else "0",
+    })
+    if args.storage_state:
+        env["SS_DESIGN_STORAGE_STATE"] = args.storage_state
+    if args.browser_channel:
+        env["SS_DESIGN_BROWSER_CHANNEL"] = args.browser_channel
+
+    assert runner_path is not None
+    try:
+        proc = subprocess.run(
+            [node, str(runner_path)],
+            cwd=str(project_root),
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=max(10, int(args.timeout_ms / 1000) + 15),
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        if temp_runner:
+            temp_runner.unlink(missing_ok=True)
+        stdout_tail = (exc.stdout or "")[-1000:]
+        stderr_tail = (exc.stderr or "")[-1000:]
+        if isinstance(stdout_tail, bytes):
+            stdout_tail = stdout_tail.decode(errors="replace")
+        if isinstance(stderr_tail, bytes):
+            stderr_tail = stderr_tail.decode(errors="replace")
+        payload.update({
+            "returncode": None,
+            "stdout_tail": stdout_tail,
+            "stderr_tail": stderr_tail,
+            "capture_report": None,
+        })
+        message = "design capture timed out; try a lower wait condition, larger --timeout-ms, or --dry-run first"
+        if args.json:
+            emit_json(False, {"message": message, **payload}, code="DESIGN_CAPTURE_TIMEOUT")
+        else:
+            print(f"error: {message}", file=sys.stderr)
+        return EXIT_RUNTIME
+
+    report_payload = None
+    if report_path.exists():
+        try:
+            report_payload = json.loads(report_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            report_payload = {"ok": False, "error": "capture report was not valid JSON"}
+    if temp_runner:
+        temp_runner.unlink(missing_ok=True)
+
+    payload.update({
+        "returncode": proc.returncode,
+        "stdout_tail": proc.stdout[-1000:],
+        "stderr_tail": proc.stderr[-1000:],
+        "capture_report": report_payload,
+    })
+    if proc.returncode != 0:
+        combined = f"{proc.stdout}\n{proc.stderr}\n{json.dumps(report_payload or {}, ensure_ascii=False)}"
+        missing = "Cannot find package 'playwright'" in combined or "ERR_MODULE_NOT_FOUND" in combined
+        message = (
+            "Playwright is not installed; run `npm i -D playwright && npx playwright install chromium` in the target project"
+            if missing
+            else "design capture failed; inspect stderr_tail and capture_report"
+        )
+        if args.json:
+            emit_json(False, {"message": message, **payload}, code="DEPENDENCY_MISSING" if missing else "DESIGN_CAPTURE_FAILED")
+        else:
+            print(f"error: {message}", file=sys.stderr)
+        return EXIT_DEPENDENCY if missing else EXIT_RUNTIME
+
+    if args.json:
+        emit_json(True, payload)
+    else:
+        print("Design capture complete.")
+        print(f"screenshot: {screenshot_path}")
+        print(f"report: {report_path}")
     return EXIT_OK
 
 
@@ -5996,6 +6399,7 @@ def cmd_describe(args: argparse.Namespace) -> int:
             {"name": "design-preflight", "purpose": "Check PRODUCT/DESIGN context, shape brief, tokens, visual refs, and anti-pattern readiness before UI mutation"},
             {"name": "design-extract", "purpose": "Extract design tokens, utility classes, component signals, and an optional DESIGN.md draft from frontend files"},
             {"name": "design-live", "purpose": "Generate a browser live design panel with overlay script, computed-style inspection, and CSS-variable variants"},
+            {"name": "design-capture", "purpose": "Inject the design live overlay in a real Playwright browser session and capture screenshot + computed-style report"},
             {"name": "design-audit", "purpose": "Scan frontend files for deterministic AI design anti-patterns and quality risks"},
             {"name": "harness", "purpose": "Assess AI-first harness readiness for this or another project"},
             {"name": "hermes", "purpose": "Assess Hermes-inspired self-improving agent system readiness"},
@@ -6487,11 +6891,29 @@ def build_parser() -> argparse.ArgumentParser:
     design_live_p.add_argument("--project", default=".", help="project root or frontend surface to summarize")
     design_live_p.add_argument("--target-url", default=None, help="optional URL the overlay should be used against")
     design_live_p.add_argument("--output", default=None, help="optional path for generated live panel HTML")
+    design_live_p.add_argument("--write-extension", default=None, help="optional directory for an unpacked Chrome extension bundle")
     design_live_p.add_argument("--max-items", type=int, default=8, help="maximum extraction signals to summarize")
     design_live_p.add_argument("--force", action="store_true", help="overwrite existing panel output")
     design_live_p.add_argument("--include-html", action="store_true", help="include generated panel HTML in JSON output")
     design_live_p.add_argument("--json", action="store_true")
     design_live_p.set_defaults(func=cmd_design_live)
+
+    design_capture_p = sub.add_parser("design-capture", help="inject design overlay in a real browser session and capture evidence")
+    design_capture_p.add_argument("--project", default=".", help="project root used as the capture working directory")
+    design_capture_p.add_argument("--url", required=True, help="URL to open in Playwright before injecting the overlay")
+    design_capture_p.add_argument("--screenshot", default=".super-skill/design/live.png", help="screenshot output path")
+    design_capture_p.add_argument("--report", default=".super-skill/design/capture.json", help="computed-style capture report path")
+    design_capture_p.add_argument("--runner", default=None, help="optional path to write the generated Playwright runner")
+    design_capture_p.add_argument("--viewport", default="1440x900", help="browser viewport as WIDTHxHEIGHT")
+    design_capture_p.add_argument("--timeout-ms", type=int, default=30000, help="navigation and capture timeout in milliseconds")
+    design_capture_p.add_argument("--wait-until", choices=["load", "domcontentloaded", "networkidle"], default="networkidle")
+    design_capture_p.add_argument("--storage-state", default=None, help="optional Playwright storage-state JSON for authenticated sessions")
+    design_capture_p.add_argument("--browser-channel", default=None, help="optional Playwright Chromium channel, for example chrome")
+    design_capture_p.add_argument("--headed", action="store_true", help="run a visible browser window instead of headless capture")
+    design_capture_p.add_argument("--dry-run", action="store_true", help="only write/describe the runner without launching a browser")
+    design_capture_p.add_argument("--force", action="store_true", help="overwrite existing runner output")
+    design_capture_p.add_argument("--json", action="store_true")
+    design_capture_p.set_defaults(func=cmd_design_capture)
 
     harness_p = sub.add_parser("harness", help="assess AI-first harness readiness")
     harness_p.add_argument("--project", default=".")

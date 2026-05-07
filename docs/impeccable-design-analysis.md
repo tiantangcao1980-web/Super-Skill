@@ -46,7 +46,11 @@ structure.
   a JSON sidecar plus optional `DESIGN.md` draft.
 - `bin/super-skill design-live` for generating a browser live panel with an
   injectable overlay script, computed-style inspection, contrast probes, and
-  CSS-variable live variants.
+  CSS-variable live variants, plus an optional unpacked Chrome/Chromium
+  extension bundle.
+- `bin/super-skill design-capture` for optional Playwright browser injection,
+  screenshot evidence, and computed-style report capture; the dry-run mode keeps
+  CI dependency-light.
 - Deterministic `bin/super-skill design-audit` checks for repeatable AI UI
   patterns such as generic purple/cyan palettes, gradient text, decorative side
   borders, nested cards, pure black/white defaults, low-contrast text, skipped
@@ -59,8 +63,9 @@ structure.
 
 - No vendored Impeccable skill distribution.
 - No duplicate `impeccable` skill name.
-- No browser extension, Puppeteer/JS detector, or new runtime dependency in the
-  core Super Skill CLI.
+- No mandatory Puppeteer/Playwright runtime dependency in the core Super Skill
+  CLI. Browser capture is opt-in and reports a clear dependency hint when the
+  target project has not installed Playwright.
 
 This keeps Super Skill dependency-light and avoids a forked copy of a fast-moving
 design project.
@@ -86,6 +91,12 @@ bin/super-skill design-extract --project <frontend-path> \
 bin/super-skill design-live --project <frontend-path> \
   --target-url http://localhost:3000 \
   --output .super-skill/design/live.html --json
+bin/super-skill design-live --project <frontend-path> \
+  --write-extension .super-skill/design/extension --json
+bin/super-skill design-capture --project <project-root> \
+  --url http://localhost:3000 \
+  --screenshot .super-skill/design/live.png \
+  --report .super-skill/design/capture.json --json
 ```
 
 Use the scans as gates, not as substitutes for design judgment.

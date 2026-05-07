@@ -11,6 +11,7 @@ Desktop / Claude Code / Cursor / any MCP-aware client and call:
   - design_preflight(project=".", strict=False, max_findings=50)
   - design_extract(project=".", write_sidecar=None, write_design=None)
   - design_live(project=".", target_url=None, output=None)
+  - design_capture(project=".", url, screenshot=None, report=None, dry_run=False)
   - design_audit(project=".", max_findings=200)
 
 The tools wrap `bin/super-skill` via subprocess. We deliberately do not
@@ -175,10 +176,34 @@ TOOLS = [
                 "project": {"type": "string", "default": ".", "description": "Project root or frontend surface to summarize"},
                 "target_url": {"type": "string", "description": "Optional URL the overlay should be used against"},
                 "output": {"type": "string", "description": "Optional path for generated live panel HTML"},
+                "write_extension": {"type": "string", "description": "Optional directory for an unpacked Chrome extension bundle"},
                 "max_items": {"type": "integer", "default": 8},
                 "force": {"type": "boolean", "default": False},
                 "include_html": {"type": "boolean", "default": False},
             },
+        },
+    },
+    {
+        "name": "design_capture",
+        "description": "Inject the design live overlay in a real Playwright browser session and capture screenshot + computed-style report.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "project": {"type": "string", "default": ".", "description": "Project root used as the capture working directory"},
+                "url": {"type": "string", "description": "URL to open before injecting the overlay"},
+                "screenshot": {"type": "string", "description": "Optional screenshot output path"},
+                "report": {"type": "string", "description": "Optional computed-style report output path"},
+                "runner": {"type": "string", "description": "Optional path to write the generated Playwright runner"},
+                "viewport": {"type": "string", "default": "1440x900"},
+                "timeout_ms": {"type": "integer", "default": 30000},
+                "wait_until": {"type": "string", "enum": ["load", "domcontentloaded", "networkidle"], "default": "networkidle"},
+                "storage_state": {"type": "string", "description": "Optional Playwright storage-state JSON path"},
+                "browser_channel": {"type": "string", "description": "Optional Playwright Chromium channel, for example chrome"},
+                "headed": {"type": "boolean", "default": False},
+                "dry_run": {"type": "boolean", "default": False},
+                "force": {"type": "boolean", "default": False},
+            },
+            "required": ["url"],
         },
     },
 ]
@@ -251,12 +276,43 @@ def build_argv_design_live(args: dict) -> list[str]:
         argv += ["--target-url", args["target_url"]]
     if args.get("output"):
         argv += ["--output", args["output"]]
+    if args.get("write_extension"):
+        argv += ["--write-extension", args["write_extension"]]
     if args.get("max_items") is not None:
         argv += ["--max-items", str(args["max_items"])]
     if args.get("force"):
         argv += ["--force"]
     if args.get("include_html"):
         argv += ["--include-html"]
+    return argv
+
+
+def build_argv_design_capture(args: dict) -> list[str]:
+    argv = ["design-capture", "--project", args.get("project", ".")]
+    if args.get("url"):
+        argv += ["--url", args["url"]]
+    if args.get("screenshot"):
+        argv += ["--screenshot", args["screenshot"]]
+    if args.get("report"):
+        argv += ["--report", args["report"]]
+    if args.get("runner"):
+        argv += ["--runner", args["runner"]]
+    if args.get("viewport"):
+        argv += ["--viewport", args["viewport"]]
+    if args.get("timeout_ms") is not None:
+        argv += ["--timeout-ms", str(args["timeout_ms"])]
+    if args.get("wait_until"):
+        argv += ["--wait-until", args["wait_until"]]
+    if args.get("storage_state"):
+        argv += ["--storage-state", args["storage_state"]]
+    if args.get("browser_channel"):
+        argv += ["--browser-channel", args["browser_channel"]]
+    if args.get("headed"):
+        argv += ["--headed"]
+    if args.get("dry_run"):
+        argv += ["--dry-run"]
+    if args.get("force"):
+        argv += ["--force"]
     return argv
 
 
@@ -268,6 +324,7 @@ TOOL_DISPATCH = {
     "design_preflight": build_argv_design_preflight,
     "design_extract": build_argv_design_extract,
     "design_live": build_argv_design_live,
+    "design_capture": build_argv_design_capture,
 }
 
 

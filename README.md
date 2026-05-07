@@ -97,6 +97,17 @@ bin/super-skill design-live --project ./src \
   --target-url http://localhost:3000 \
   --output .super-skill/design/live.html --json
 
+# 同步生成可加载的 Chrome/Chromium unpacked extension
+bin/super-skill design-live --project ./src \
+  --write-extension .super-skill/design/extension --json
+
+# 生成/运行真实浏览器注入截图链路；dry-run 不要求安装 Playwright
+bin/super-skill design-capture --project . \
+  --url http://localhost:3000 \
+  --screenshot .super-skill/design/live.png \
+  --report .super-skill/design/capture.json \
+  --runner .super-skill/design/capture.mjs --dry-run --json
+
 # 扫描前端文件中的 AI 设计套路和可机器发现的设计质量风险
 bin/super-skill design-audit --project ./src --json
 
@@ -289,6 +300,8 @@ bin/super-skill audit --json
 bin/super-skill design-preflight --project evals/live-projects/design-frontend-quality-gate/files --json
 bin/super-skill design-extract --project evals/live-projects/design-frontend-quality-gate/files/src --json
 bin/super-skill design-live --project evals/live-projects/design-frontend-quality-gate/files/src --output /tmp/super-skill-design-live.html --json
+bin/super-skill design-live --project evals/live-projects/design-frontend-quality-gate/files/src --write-extension /tmp/super-skill-design-live-extension --force --json
+bin/super-skill design-capture --project evals/live-projects/design-frontend-quality-gate/files --url http://localhost:3000 --runner /tmp/super-skill-design-capture.mjs --dry-run --force --json
 bin/super-skill design-audit --project evals/live-projects/design-frontend-quality-gate/files/src --fail-on-findings --json
 bin/super-skill harness --json
 bin/super-skill hermes --json
@@ -303,7 +316,7 @@ python3 -m unittest discover -s tests
 npm --prefix packages/designdna-cli test
 ```
 
-CI 会运行 `doctor`、`validate`、`plan`、Hermes profile plan、`audit`、`design-preflight`、`design-extract`、`design-live`、`design-audit`、`harness`、`hermes`、`memory`、`triggers`、`evals`、`live-evals`、`memory-plugin` dry-run、Python CLI 测试，以及 DesignDNA CLI 测试，确保结构、兼容、安全、自动触发、设计上下文门禁、设计提取、浏览器现场面板、设计反套路扫描、验证性项目、live 项目 grader、harness readiness、self-improving agent readiness、agent memory readiness 和基础工具链可用。
+CI 会运行 `doctor`、`validate`、`plan`、Hermes profile plan、`audit`、`design-preflight`、`design-extract`、`design-live`、`design-capture` dry-run、`design-audit`、`harness`、`hermes`、`memory`、`triggers`、`evals`、`live-evals`、`memory-plugin` dry-run、Python CLI 测试，以及 DesignDNA CLI 测试，确保结构、兼容、安全、自动触发、设计上下文门禁、设计提取、浏览器现场面板、扩展包、浏览器注入截图链路、设计反套路扫描、验证性项目、live 项目 grader、harness readiness、self-improving agent readiness、agent memory readiness 和基础工具链可用。
 
 ## 文档
 

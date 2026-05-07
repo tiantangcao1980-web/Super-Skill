@@ -59,6 +59,22 @@
         "argv": ["{python}", "-c", "from pathlib import Path\nhtml=Path('.super-skill/design/live.html').read_text(encoding='utf-8')\nassert 'getComputedStyle' in html\nassert 'data-ss-design-overlay' in html\nassert 'Live Variant' in html\nassert 'contrast' in html"]
       },
       {
+        "id": "design-live-extension",
+        "argv": ["{root}/bin/super-skill", "design-live", "--project", "src", "--target-url", "http://localhost:3000", "--write-extension", ".super-skill/design/extension", "--json"]
+      },
+      {
+        "id": "design-live-extension-check",
+        "argv": ["{python}", "-c", "from pathlib import Path\nimport json\nroot=Path('.super-skill/design/extension')\nmanifest=json.loads((root/'manifest.json').read_text(encoding='utf-8'))\nassert manifest['manifest_version'] == 3\nassert (root/'overlay.js').exists()\nassert (root/'popup.html').exists()\nassert 'getComputedStyle' in (root/'overlay.js').read_text(encoding='utf-8')"]
+      },
+      {
+        "id": "design-capture-dry-run",
+        "argv": ["{root}/bin/super-skill", "design-capture", "--project", ".", "--url", "http://localhost:3000", "--runner", ".super-skill/design/capture.mjs", "--dry-run", "--json"]
+      },
+      {
+        "id": "design-capture-runner-check",
+        "argv": ["{python}", "-c", "from pathlib import Path\nrunner=Path('.super-skill/design/capture.mjs').read_text(encoding='utf-8')\nassert 'import(\"playwright\")' in runner\nassert 'page.evaluate(overlay)' in runner\nassert 'page.screenshot' in runner\nassert 'super-skill.design-capture.report.v1' in runner"]
+      },
+      {
         "id": "design-audit",
         "argv": ["{root}/bin/super-skill", "design-audit", "--project", "src", "--fail-on-findings", "--json"]
       },
