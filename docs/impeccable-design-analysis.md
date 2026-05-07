@@ -50,7 +50,8 @@ structure.
   extension bundle.
 - `bin/super-skill design-capture` for optional Playwright browser injection,
   screenshot evidence, and computed-style report capture; the dry-run mode keeps
-  CI dependency-light.
+  CI dependency-light, and `--backend browser-use` supports exploratory CLI or
+  authenticated-session capture.
 - Deterministic `bin/super-skill design-audit` checks for repeatable AI UI
   patterns such as generic purple/cyan palettes, gradient text, decorative side
   borders, nested cards, pure black/white defaults, low-contrast text, skipped
@@ -64,8 +65,9 @@ structure.
 - No vendored Impeccable skill distribution.
 - No duplicate `impeccable` skill name.
 - No mandatory Puppeteer/Playwright runtime dependency in the core Super Skill
-  CLI. Browser capture is opt-in and reports a clear dependency hint when the
-  target project has not installed Playwright.
+  CLI. Playwright is available as a root dev dependency for this repository's
+  verification work, while downstream projects can still use dry-run or
+  browser-use.
 
 This keeps Super Skill dependency-light and avoids a forked copy of a fast-moving
 design project.
@@ -97,6 +99,11 @@ bin/super-skill design-capture --project <project-root> \
   --url http://localhost:3000 \
   --screenshot .super-skill/design/live.png \
   --report .super-skill/design/capture.json --json
+bin/super-skill design-capture --project <project-root> \
+  --backend browser-use \
+  --url http://localhost:3000 \
+  --screenshot .super-skill/design/browser-use.png \
+  --report .super-skill/design/browser-use.json --json
 ```
 
 Use the scans as gates, not as substitutes for design judgment.

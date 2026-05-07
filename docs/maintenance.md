@@ -60,7 +60,7 @@ Then update NOTICE and run validation.
 - `bin/super-skill design-preflight --project <project-root> --json` reports PRODUCT/DESIGN context, shape brief, token, visual reference, and anti-pattern readiness.
 - `bin/super-skill design-extract --project <frontend-path> --json` reports extracted design tokens, component signals, utility classes, recommendations, and optional sidecar / DESIGN.md draft outputs.
 - `bin/super-skill design-live --project <frontend-path> --json` generates a browser live panel with overlay script, computed-style inspection, contrast probes, and CSS-variable variants; add `--write-extension <dir>` to produce an unpacked Chrome/Chromium extension.
-- `bin/super-skill design-capture --project <project-root> --url <url> --json` injects the overlay through Playwright and writes screenshot + computed-style report evidence; use `--dry-run --runner <path>` in CI when Playwright is not installed.
+- `bin/super-skill design-capture --project <project-root> --url <url> --json` injects the overlay through Playwright and writes screenshot + computed-style report evidence; use `--dry-run --runner <path>` in CI when Playwright is not installed, or `--backend browser-use` for CLI/authenticated-session capture.
 - `bin/super-skill harness --json` reports the AI-first harness capability matrix.
 - `docs/harness-engineering-validation.md` records the source-derived harness criteria, current evidence, and remaining runtime gaps.
 - `bin/super-skill hermes --json` reports the Hermes-style self-improving agent capability matrix.

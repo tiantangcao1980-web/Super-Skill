@@ -72,7 +72,7 @@
       },
       {
         "id": "design-capture-runner-check",
-        "argv": ["{python}", "-c", "from pathlib import Path\nrunner=Path('.super-skill/design/capture.mjs').read_text(encoding='utf-8')\nassert 'import(\"playwright\")' in runner\nassert 'page.evaluate(overlay)' in runner\nassert 'page.screenshot' in runner\nassert 'super-skill.design-capture.report.v1' in runner"]
+        "argv": ["{python}", "-c", "from pathlib import Path\nrunner=Path('.super-skill/design/capture.mjs').read_text(encoding='utf-8')\nassert 'SS_DESIGN_PLAYWRIGHT_MODULE' in runner\nassert 'import(playwrightModule)' in runner\nassert 'page.evaluate(overlay)' in runner\nassert 'page.screenshot' in runner\nassert 'super-skill.design-capture.report.v1' in runner"]
       },
       {
         "id": "design-audit",

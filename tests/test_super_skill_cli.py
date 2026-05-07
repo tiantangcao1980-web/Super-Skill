@@ -294,10 +294,32 @@ class SuperSkillCliTests(unittest.TestCase):
             self.assertIn("screenshot-evidence", data["capabilities"])
             self.assertTrue(runner.exists())
             runner_text = runner.read_text(encoding="utf-8")
-            self.assertIn('import("playwright")', runner_text)
+            self.assertIn("SS_DESIGN_PLAYWRIGHT_MODULE", runner_text)
+            self.assertIn("import(playwrightModule)", runner_text)
             self.assertIn("page.evaluate(overlay)", runner_text)
             self.assertIn("page.screenshot", runner_text)
             self.assertIn("SS_DESIGN_OVERLAY", runner_text)
+
+    def test_design_capture_browser_use_dry_run_reports_cli_plan(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            data = run_cli(
+                "design-capture",
+                "--project",
+                str(root),
+                "--backend",
+                "browser-use",
+                "--url",
+                "http://localhost:3000",
+                "--dry-run",
+            )
+            self.assertEqual(data["schema"], "super-skill.design-capture.v1")
+            self.assertEqual(data["backend"], "browser-use")
+            self.assertTrue(data["dry_run"])
+            self.assertIsNone(data["runner"])
+            commands = [" ".join(command) for command in data["planned_commands"]]
+            self.assertTrue(any(command.startswith("browser-use open") for command in commands))
+            self.assertTrue(any("screenshot" in command for command in commands))
 
     def test_harness_assessment_reports_capabilities(self) -> None:
         data = run_cli("harness", "--project", ".")
@@ -869,6 +891,7 @@ class SuperSkillCliTests(unittest.TestCase):
                         "name": "design_capture",
                         "arguments": {
                             "project": td,
+                            "backend": "playwright",
                             "url": "http://localhost:3000",
                             "runner": str(runner),
                             "dry_run": True,

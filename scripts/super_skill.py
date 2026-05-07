@@ -5550,6 +5550,25 @@ def resolve_project_output_path(path_arg: str, project_root: Path) -> Path:
     return path.resolve()
 
 
+def resolve_node_module_url(node: str, module_name: str, roots: list[Path]) -> str | None:
+    script = (
+        "const { pathToFileURL } = require('node:url');"
+        "console.log(pathToFileURL(require.resolve(process.argv[1])).href);"
+    )
+    for root in roots:
+        proc = subprocess.run(
+            [node, "-e", script, module_name],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+        if proc.returncode == 0 and proc.stdout.strip():
+            return proc.stdout.strip()
+    return None
+
+
 def design_capture_runner_script() -> str:
     return """import fs from "node:fs";
 
@@ -5563,6 +5582,7 @@ const storageState = process.env.SS_DESIGN_STORAGE_STATE || "";
 const browserChannel = process.env.SS_DESIGN_BROWSER_CHANNEL || "";
 const waitUntil = process.env.SS_DESIGN_WAIT_UNTIL || "networkidle";
 const headed = process.env.SS_DESIGN_HEADED === "1";
+const playwrightModule = process.env.SS_DESIGN_PLAYWRIGHT_MODULE || "playwright";
 
 if (!url || !screenshot || !report) {
   throw new Error("SS_DESIGN_URL, SS_DESIGN_SCREENSHOT, and SS_DESIGN_REPORT are required");
@@ -5573,7 +5593,9 @@ const launchOptions = { headless: !headed };
 if (browserChannel) launchOptions.channel = browserChannel;
 
 (async () => {
-  const { chromium } = await import("playwright");
+  const playwright = await import(playwrightModule);
+  const chromium = playwright.chromium || (playwright.default && playwright.default.chromium);
+  if (!chromium) throw new Error("Playwright Chromium API was not available");
   const browser = await chromium.launch(launchOptions);
   const contextOptions = { viewport };
   if (storageState) contextOptions.storageState = storageState;
@@ -5644,6 +5666,186 @@ if (browserChannel) launchOptions.channel = browserChannel;
   process.exit(1);
 });
 """
+
+
+def design_capture_snapshot_script() -> str:
+    return """JSON.stringify((() => {
+  const element = document.querySelector("main") || document.body;
+  const style = getComputedStyle(element);
+  const rect = element.getBoundingClientRect();
+  return {
+    title: document.title,
+    overlay_active: Boolean(window.__SUPER_SKILL_DESIGN_OVERLAY__),
+    sampled_selector: element.tagName.toLowerCase(),
+    sampled_computed_style: {
+      color: style.color,
+      backgroundColor: style.backgroundColor,
+      fontFamily: style.fontFamily,
+      fontSize: style.fontSize,
+      lineHeight: style.lineHeight,
+      padding: style.padding,
+      margin: style.margin,
+      borderRadius: style.borderRadius,
+    },
+    sampled_rect: {
+      width: Math.round(rect.width),
+      height: Math.round(rect.height),
+    },
+    viewport: {
+      width: window.innerWidth,
+      height: window.innerHeight,
+    },
+  };
+})())"""
+
+
+def parse_browser_use_json_result(stdout: str) -> dict:
+    for line in stdout.splitlines():
+        if line.startswith("result:"):
+            raw = line[len("result:"):].strip()
+            return json.loads(raw)
+    raise ValueError("browser-use eval did not return a JSON result line")
+
+
+def run_browser_use_command(argv: list[str], timeout: int) -> subprocess.CompletedProcess:
+    return subprocess.run(argv, capture_output=True, text=True, timeout=timeout, check=False)
+
+
+def cmd_design_capture_browser_use(
+    args: argparse.Namespace,
+    project_root: Path,
+    screenshot_path: Path,
+    report_path: Path,
+    viewport: dict[str, int],
+    payload: dict,
+) -> int:
+    browser_use = shutil.which("browser-use")
+    payload["backend"] = "browser-use"
+    payload["requires"] = ["browser-use"]
+    payload["limitations"] = [
+        "browser-use uses its managed or connected browser viewport; use Playwright for deterministic viewport control",
+        "browser-use is best for exploratory or authenticated-session capture, not CI visual regression gates",
+    ]
+    planned_commands = [
+        ["browser-use", "open", args.url],
+        ["browser-use", "eval", "<super-skill overlay script>"],
+        ["browser-use", "screenshot", str(screenshot_path), "--full"],
+        ["browser-use", "eval", "<computed-style JSON snapshot>"],
+    ]
+    payload["planned_commands"] = planned_commands
+    payload["runner"] = None
+    if args.dry_run:
+        if args.json:
+            emit_json(True, payload)
+        else:
+            print("Design capture browser-use dry-run ready.")
+            for command in planned_commands:
+                print(" ".join(shlex.quote(part) for part in command))
+        return EXIT_OK
+
+    if not browser_use:
+        message = "browser-use executable not found; install it or use --backend playwright"
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(json.dumps({
+            "ok": False,
+            "schema": "super-skill.design-capture.report.v1",
+            "backend": "browser-use",
+            "url": args.url,
+            "screenshot": str(screenshot_path),
+            "error": message,
+        }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        if args.json:
+            emit_json(False, {"message": message, **payload, "capture_report": str(report_path)}, code="DEPENDENCY_MISSING")
+        else:
+            print(f"error: {message}", file=sys.stderr)
+        return EXIT_DEPENDENCY
+
+    screenshot_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    timeout = max(10, int(args.timeout_ms / 1000) + 15)
+    steps = [
+        ("open", [browser_use, "open", args.url]),
+        ("inject", [browser_use, "eval", design_live_overlay_script()]),
+        ("screenshot", [browser_use, "screenshot", str(screenshot_path), "--full"]),
+        ("snapshot", [browser_use, "eval", design_capture_snapshot_script()]),
+    ]
+    results = []
+    snapshot: dict | None = None
+    for step_id, argv in steps:
+        try:
+            proc = run_browser_use_command(argv, timeout=timeout)
+        except subprocess.TimeoutExpired as exc:
+            message = f"browser-use step timed out: {step_id}"
+            report_path.write_text(json.dumps({
+                "ok": False,
+                "schema": "super-skill.design-capture.report.v1",
+                "backend": "browser-use",
+                "url": args.url,
+                "screenshot": str(screenshot_path),
+                "error": message,
+                "stdout_tail": (exc.stdout or "")[-1000:] if isinstance(exc.stdout, str) else "",
+                "stderr_tail": (exc.stderr or "")[-1000:] if isinstance(exc.stderr, str) else "",
+            }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            if args.json:
+                emit_json(False, {"message": message, **payload}, code="DESIGN_CAPTURE_TIMEOUT")
+            else:
+                print(f"error: {message}", file=sys.stderr)
+            return EXIT_RUNTIME
+        results.append({
+            "id": step_id,
+            "returncode": proc.returncode,
+            "stdout_tail": proc.stdout[-1000:],
+            "stderr_tail": proc.stderr[-1000:],
+        })
+        if proc.returncode != 0:
+            message = f"browser-use step failed: {step_id}"
+            report_path.write_text(json.dumps({
+                "ok": False,
+                "schema": "super-skill.design-capture.report.v1",
+                "backend": "browser-use",
+                "url": args.url,
+                "screenshot": str(screenshot_path),
+                "error": message,
+                "steps": results,
+            }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            if args.json:
+                emit_json(False, {"message": message, **payload, "steps": results}, code="DESIGN_CAPTURE_FAILED")
+            else:
+                print(f"error: {message}", file=sys.stderr)
+            return EXIT_RUNTIME
+        if step_id == "snapshot":
+            try:
+                snapshot = parse_browser_use_json_result(proc.stdout)
+            except Exception as exc:
+                message = f"browser-use snapshot could not be parsed: {exc}"
+                if args.json:
+                    emit_json(False, {"message": message, **payload, "steps": results}, code="DESIGN_CAPTURE_FAILED")
+                else:
+                    print(f"error: {message}", file=sys.stderr)
+                return EXIT_RUNTIME
+
+    report = {
+        "ok": True,
+        "schema": "super-skill.design-capture.report.v1",
+        "backend": "browser-use",
+        "url": args.url,
+        "screenshot": str(screenshot_path),
+        "requested_viewport": viewport,
+        **(snapshot or {}),
+        "steps": results,
+    }
+    report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    payload.update({
+        "capture_report": report,
+        "returncode": 0,
+    })
+    if args.json:
+        emit_json(True, payload)
+    else:
+        print("Design capture complete via browser-use.")
+        print(f"screenshot: {screenshot_path}")
+        print(f"report: {report_path}")
+    return EXIT_OK
 
 
 def write_design_output(path_arg: str, text: str, force: bool) -> str:
@@ -5774,6 +5976,7 @@ def cmd_design_capture(args: argparse.Namespace) -> int:
         "url": args.url,
         "screenshot": str(screenshot_path),
         "report": str(report_path),
+        "backend": args.backend,
         "viewport": viewport,
         "timeout_ms": args.timeout_ms,
         "wait_until": args.wait_until,
@@ -5790,6 +5993,9 @@ def cmd_design_capture(args: argparse.Namespace) -> int:
         ],
         "dry_run": args.dry_run,
     }
+
+    if args.backend == "browser-use":
+        return cmd_design_capture_browser_use(args, project_root, screenshot_path, report_path, viewport, payload)
 
     try:
         if args.runner:
@@ -5847,9 +6053,13 @@ def cmd_design_capture(args: argparse.Namespace) -> int:
         "SS_DESIGN_HEADED": "1" if args.headed else "0",
     })
     if args.storage_state:
-        env["SS_DESIGN_STORAGE_STATE"] = args.storage_state
+        env["SS_DESIGN_STORAGE_STATE"] = str(resolve_project_output_path(args.storage_state, project_root))
     if args.browser_channel:
         env["SS_DESIGN_BROWSER_CHANNEL"] = args.browser_channel
+    playwright_module = resolve_node_module_url(node, "playwright", [project_root, ROOT, Path.cwd()])
+    if playwright_module:
+        env["SS_DESIGN_PLAYWRIGHT_MODULE"] = playwright_module
+        payload["playwright_module"] = playwright_module
 
     assert runner_path is not None
     try:
@@ -6900,7 +7110,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     design_capture_p = sub.add_parser("design-capture", help="inject design overlay in a real browser session and capture evidence")
     design_capture_p.add_argument("--project", default=".", help="project root used as the capture working directory")
-    design_capture_p.add_argument("--url", required=True, help="URL to open in Playwright before injecting the overlay")
+    design_capture_p.add_argument("--backend", choices=["playwright", "browser-use"], default="playwright", help="capture backend: deterministic Playwright or browser-use CLI session")
+    design_capture_p.add_argument("--url", required=True, help="URL to open before injecting the overlay")
     design_capture_p.add_argument("--screenshot", default=".super-skill/design/live.png", help="screenshot output path")
     design_capture_p.add_argument("--report", default=".super-skill/design/capture.json", help="computed-style capture report path")
     design_capture_p.add_argument("--runner", default=None, help="optional path to write the generated Playwright runner")

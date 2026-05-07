@@ -103,10 +103,22 @@ bin/super-skill design-live --project ./src \
 
 # 生成/运行真实浏览器注入截图链路；dry-run 不要求安装 Playwright
 bin/super-skill design-capture --project . \
+  --backend playwright \
   --url http://localhost:3000 \
   --screenshot .super-skill/design/live.png \
   --report .super-skill/design/capture.json \
   --runner .super-skill/design/capture.mjs --dry-run --json
+
+# 已安装/可安装 Playwright 后，可去掉 --dry-run 执行真实截图
+npm install
+npm run playwright:install
+
+# 需要复用 CLI/真实会话探索时，也可以使用 browser-use 后端
+bin/super-skill design-capture --project . \
+  --backend browser-use \
+  --url http://localhost:3000 \
+  --screenshot .super-skill/design/browser-use.png \
+  --report .super-skill/design/browser-use.json --json
 
 # 扫描前端文件中的 AI 设计套路和可机器发现的设计质量风险
 bin/super-skill design-audit --project ./src --json

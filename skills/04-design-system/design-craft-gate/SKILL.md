@@ -44,7 +44,9 @@ inspired by Impeccable's context-first design vocabulary. It does not replace
      --url <url> --screenshot .super-skill/design/live.png
      --report .super-skill/design/capture.json --json` when an agent needs
      browser-injected screenshot and computed-style evidence. Use `--dry-run`
-     in CI or offline environments that should not require Playwright.
+     in CI or offline environments that should not require Playwright. Use
+     `--backend browser-use` for exploratory or authenticated-session capture,
+     then promote stable paths back to Playwright.
    - Context gate: `bin/super-skill design-preflight --project <path> --json`
      before mutating a product UI when local files exist.
    - Deterministic scan: `bin/super-skill design-audit --project <path> --json`

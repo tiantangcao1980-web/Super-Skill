@@ -190,6 +190,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "project": {"type": "string", "default": ".", "description": "Project root used as the capture working directory"},
+                "backend": {"type": "string", "enum": ["playwright", "browser-use"], "default": "playwright"},
                 "url": {"type": "string", "description": "URL to open before injecting the overlay"},
                 "screenshot": {"type": "string", "description": "Optional screenshot output path"},
                 "report": {"type": "string", "description": "Optional computed-style report output path"},
@@ -289,6 +290,8 @@ def build_argv_design_live(args: dict) -> list[str]:
 
 def build_argv_design_capture(args: dict) -> list[str]:
     argv = ["design-capture", "--project", args.get("project", ".")]
+    if args.get("backend"):
+        argv += ["--backend", args["backend"]]
     if args.get("url"):
         argv += ["--url", args["url"]]
     if args.get("screenshot"):

@@ -34,9 +34,16 @@ bin/super-skill design-live --project ./src --write-extension .super-skill/desig
 bin/super-skill design-capture --project . --url http://localhost:3000 \
   --screenshot .super-skill/design/live.png \
   --report .super-skill/design/capture.json --json
+
+# 用 browser-use CLI 复用持久浏览器/真实会话做探索式捕获
+bin/super-skill design-capture --project . --backend browser-use \
+  --url http://localhost:3000 \
+  --screenshot .super-skill/design/browser-use.png \
+  --report .super-skill/design/browser-use.json --json
 ```
 
 CI 不想安装 Playwright 时,用 `design-capture --dry-run --runner <path>` 验证注入脚本生成与接口契约。
+需要稳定质量门禁时使用 Playwright;需要未知路径探索、已登录真实会话或 CLI 快速操作时使用 browser-use,再把成功路径固化成 Playwright。
 
 ---
 
