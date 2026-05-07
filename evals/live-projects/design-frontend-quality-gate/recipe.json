@@ -13,8 +13,11 @@
   "acceptance": {
     "required_files": [
       "AGENTS.md",
+      "PRODUCT.md",
+      "DESIGN.md",
       "design/tokens.json",
       "docs/design-quality.md",
+      "docs/shape-brief.md",
       "src/render_dashboard.py",
       "tests/test_dashboard_quality.py"
     ],
@@ -22,6 +25,10 @@
       {
         "path": "docs/design-quality.md",
         "patterns": ["design-craft-gate", "PRODUCT.md", "DESIGN.md", "DesignDNA", "brand", "quality", "accessibility", "responsive", "anti-pattern"]
+      },
+      {
+        "path": "docs/shape-brief.md",
+        "patterns": ["Shape Brief", "Surface", "User goal", "Evidence"]
       },
       {
         "path": "src/render_dashboard.py",
@@ -35,6 +42,14 @@
       }
     ],
     "commands": [
+      {
+        "id": "design-preflight",
+        "argv": ["{root}/bin/super-skill", "design-preflight", "--project", ".", "--strict", "--json"]
+      },
+      {
+        "id": "design-audit",
+        "argv": ["{root}/bin/super-skill", "design-audit", "--project", "src", "--fail-on-findings", "--json"]
+      },
       {
         "id": "dashboard-quality-tests",
         "argv": ["{python}", "-m", "unittest", "discover", "-s", "tests"]

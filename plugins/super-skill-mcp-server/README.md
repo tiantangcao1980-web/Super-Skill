@@ -1,7 +1,8 @@
 # Super Skill MCP Server
 
 A minimal stdlib-only MCP (Model Context Protocol) server that exposes
-`bin/super-skill autopilot`, `resume`, `llm-eval`, and `design-audit` as MCP tools.
+`bin/super-skill autopilot`, `resume`, `llm-eval`, `design-preflight`, and
+`design-audit` as MCP tools.
 
 ## Why
 
@@ -37,6 +38,7 @@ or the equivalent on your platform:
 | `autopilot` | Run intent → spec → design → ralph-loop impl → simplifier → quality gate → memory candidate. Returns the run journal. |
 | `resume` | Resume the latest (or named) autopilot run. With `list=true`, only show pending vs completed phases. |
 | `llm_eval` | Run the contract → impl → gate round trip (used for testing the harness itself). |
+| `design_preflight` | Check PRODUCT/DESIGN context, shape brief, tokens, visual references, and anti-pattern readiness before UI mutation. |
 | `design_audit` | Scan frontend files for deterministic AI design anti-patterns and quality risks. |
 
 The LLM-backed tools accept `provider: "stub" | "anthropic"`. Stub is offline

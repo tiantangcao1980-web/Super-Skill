@@ -32,6 +32,8 @@ inspired by Impeccable's context-first design vocabulary. It does not replace
 4. **Critique and audit.** Run a two-pass review:
    - Human-readable critique: hierarchy, clarity, copy, state coverage,
      emotional fit, and brand/product consistency.
+   - Context gate: `bin/super-skill design-preflight --project <path> --json`
+     before mutating a product UI when local files exist.
    - Deterministic scan: `bin/super-skill design-audit --project <path> --json`
      when local files exist.
 5. **Polish and harden.** Fix high-severity findings, then verify accessibility,
@@ -72,8 +74,8 @@ stable design language:
 - **shape**: plan the UX/UI and acceptance evidence before code.
 - **craft**: build the shaped surface with visual iteration.
 - **critique**: review hierarchy, clarity, fit, and anti-patterns.
-- **audit**: run accessibility, responsive, performance, and deterministic
-  anti-pattern checks.
+- **audit**: run context, accessibility, responsive, performance, and
+  deterministic anti-pattern checks.
 - **polish**: align final implementation with tokens and shipping standards.
 - **harden**: cover errors, loading, empty states, i18n, text overflow, and
   reduced motion.
@@ -92,8 +94,9 @@ them:
 - Prefer OKLCH or documented palette ramps for new colors.
 - Avoid pure `#000000` and pure `#ffffff` as default surfaces/text.
 - Treat gray-on-color, default purple/cyan gradients, nested cards, side-tab
-  accents, overused fonts, and bounce/elastic motion as suspicious until proven
-  intentional.
+  accents, low-contrast gray text, skipped heading levels, cramped padding,
+  flat type hierarchy, overused fonts, and bounce/elastic motion as suspicious
+  until proven intentional.
 - Keep line length near 65-75 characters for prose.
 - Animate transform/opacity/color, not layout properties.
 - Use cards only when they represent repeated objects, modals, or genuinely

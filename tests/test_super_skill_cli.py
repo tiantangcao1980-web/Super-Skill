@@ -92,8 +92,20 @@ class SuperSkillCliTests(unittest.TestCase):
                   transition: width 300ms ease;
                   animation: bounce 1s infinite;
                   font-size: 10px;
+                  padding: 4px;
+                  text-align: justify;
+                  line-height: 1;
+                  letter-spacing: 0.24em;
                 }
+                .centered { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+                .chip { border-radius: 999px; text-transform: uppercase; font-size: 11px; }
                 </style>
+                <div class="rounded-xl border-l-4 shadow-2xl text-gray-400 bg-white p-4 gap-4 space-y-4 font-serif italic">
+                  <h1 class="text-xl">Overview</h1>
+                  <h3 class="text-xl">Details</h3>
+                  <svg class="w-12 h-12 rounded-2xl"></svg>
+                  <p style="max-width: 100ch">Long prose region</p>
+                </div>
                 """,
                 encoding="utf-8",
             )
@@ -106,6 +118,15 @@ class SuperSkillCliTests(unittest.TestCase):
             self.assertIn("side-tab", rules)
             self.assertIn("layout-transition", rules)
             self.assertIn("tiny-text", rules)
+            self.assertIn("cramped-padding", rules)
+            self.assertIn("justified-text", rules)
+            self.assertIn("tight-leading", rules)
+            self.assertIn("wide-tracking", rules)
+            self.assertIn("border-accent-on-rounded", rules)
+            self.assertIn("low-contrast", rules)
+            self.assertIn("skipped-heading", rules)
+            self.assertIn("flat-type-hierarchy", rules)
+            self.assertGreaterEqual(len(rules), 18)
 
     def test_design_audit_clean_fixture_keeps_high_score(self) -> None:
         data = run_cli(
@@ -115,6 +136,42 @@ class SuperSkillCliTests(unittest.TestCase):
         )
         self.assertEqual(data["findings_total"], 0)
         self.assertGreaterEqual(data["score"], 95)
+
+    def test_design_preflight_reports_context_and_mutation_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "PRODUCT.md").write_text("User goal: ship a focused dashboard.\nAcceptance criteria: clear status.", encoding="utf-8")
+            (root / "DESIGN.md").write_text("Design system: calm product UI with documented typography and color palette.", encoding="utf-8")
+            (root / "docs").mkdir()
+            (root / "docs" / "shape-brief.md").write_text("Shape brief: dashboard surface, clear hierarchy, responsive evidence.", encoding="utf-8")
+            (root / "design").mkdir()
+            (root / "design" / "tokens.json").write_text('{"colors":{"bg":"#f8fafc"}}', encoding="utf-8")
+            (root / "src").mkdir()
+            (root / "src" / "page.html").write_text("<main><h1>Dashboard</h1><p>Status is clear.</p></main>", encoding="utf-8")
+
+            data = run_cli("design-preflight", "--project", td, "--strict")
+            self.assertEqual(data["mutation"], "open")
+            self.assertGreaterEqual(data["score"], 85)
+            check_ids = {check["id"] for check in data["checks"]}
+            self.assertIn("product-context", check_ids)
+            self.assertIn("shape-brief", check_ids)
+            self.assertIn("anti-pattern-gate", check_ids)
+            self.assertIn("DESIGN_CRAFT_PREFLIGHT", data["preflight"])
+
+    def test_design_preflight_strict_blocks_missing_context(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            proc = subprocess.run(
+                [sys.executable, str(CLI), "design-preflight", "--project", td, "--strict", "--json"],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                timeout=30,
+                check=False,
+            )
+            self.assertNotEqual(proc.returncode, 0)
+            payload = json.loads(proc.stdout)
+            self.assertFalse(payload["ok"])
+            self.assertEqual(payload["error"]["code"], "DESIGN_PREFLIGHT_BLOCKED")
 
     def test_harness_assessment_reports_capabilities(self) -> None:
         data = run_cli("harness", "--project", ".")
@@ -537,6 +594,7 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertIn("resume", tool_names)
         self.assertIn("llm_eval", tool_names)
         self.assertIn("design_audit", tool_names)
+        self.assertIn("design_preflight", tool_names)
 
     def test_mcp_server_dispatches_autopilot_dry_run(self) -> None:
         ROOT = Path(__file__).resolve().parents[1]
@@ -586,6 +644,37 @@ class SuperSkillCliTests(unittest.TestCase):
             inner = json.loads(call_reply["result"]["content"][0]["text"])
             self.assertTrue(inner["ok"])
             self.assertGreater(inner["data"]["findings_total"], 0)
+
+    def test_mcp_server_dispatches_design_preflight(self) -> None:
+        ROOT = Path(__file__).resolve().parents[1]
+        server = ROOT / "plugins" / "super-skill-mcp-server" / "scripts" / "mcp_server.py"
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "PRODUCT.md").write_text("User goal: dashboard.\nAcceptance criteria: readable.", encoding="utf-8")
+            (root / "DESIGN.md").write_text("Design system: tokenized calm UI.", encoding="utf-8")
+            (root / "docs").mkdir()
+            (root / "docs" / "shape-brief.md").write_text("Shape brief: status dashboard.", encoding="utf-8")
+            (root / "design").mkdir()
+            (root / "design" / "tokens.json").write_text('{"space": 16}', encoding="utf-8")
+            (root / "src").mkdir()
+            (root / "src" / "page.html").write_text("<main><h1>Dashboard</h1></main>", encoding="utf-8")
+            dialogue = "\n".join([
+                '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{}}}',
+                json.dumps({
+                    "jsonrpc": "2.0", "id": 2, "method": "tools/call",
+                    "params": {"name": "design_preflight", "arguments": {"project": td, "strict": True}},
+                }),
+            ]) + "\n"
+            proc = subprocess.run(
+                [sys.executable, str(server)],
+                input=dialogue, capture_output=True, text=True, timeout=30, check=False,
+            )
+            lines = [json.loads(l) for l in proc.stdout.splitlines() if l.strip()]
+            call_reply = lines[1]
+            self.assertFalse(call_reply["result"].get("isError"))
+            inner = json.loads(call_reply["result"]["content"][0]["text"])
+            self.assertTrue(inner["ok"])
+            self.assertEqual(inner["data"]["mutation"], "open")
 
     def test_visualize_renders_html_for_latest_run(self) -> None:
         with tempfile.TemporaryDirectory() as td:

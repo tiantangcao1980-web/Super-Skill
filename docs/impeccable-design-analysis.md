@@ -39,10 +39,13 @@ structure.
 - `teach`, `document`, `shape`, `craft`, `critique`, `audit`, `polish`, and
   focused remediation modes as a Super Skill command vocabulary.
 - `DESIGN_CRAFT_PREFLIGHT` as a compact context and mutation gate.
+- Deterministic `bin/super-skill design-preflight` checks for product/design
+  context, shape brief, tokens, visual references, and anti-pattern readiness.
 - Deterministic `bin/super-skill design-audit` checks for repeatable AI UI
   patterns such as generic purple/cyan palettes, gradient text, decorative side
-  borders, nested cards, pure black/white defaults, bounce motion, layout
-  transitions, and tiny text.
+  borders, nested cards, pure black/white defaults, low-contrast text, skipped
+  heading levels, flat type hierarchy, cramped padding, monotone spacing, bounce
+  motion, layout transitions, and tiny text.
 - Eval coverage that requires product/design context and anti-pattern evidence
   in the design-to-frontend quality path.
 
@@ -70,6 +73,7 @@ Run:
 
 ```bash
 bin/super-skill design-audit --project <frontend-path> --json
+bin/super-skill design-preflight --project <project-root> --strict --json
 ```
 
-Use the scan as a gate, not as a substitute for design judgment.
+Use the scans as gates, not as substitutes for design judgment.

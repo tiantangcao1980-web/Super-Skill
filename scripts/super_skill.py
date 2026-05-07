@@ -269,6 +269,176 @@ DESIGN_AUDIT_RULES = [
         "pattern": re.compile(r"font-size\s*:\s*(?:[0-9](?:\.\d+)?|1[01](?:\.\d+)?)px|\btext-\[?10px\]?|\btext-\[?11px\]?", re.I),
         "recommendation": "Keep auxiliary text at 12px+ and body text larger unless a platform guideline says otherwise.",
     },
+    {
+        "id": "all-caps-body",
+        "category": "typography",
+        "severity": "P3",
+        "pattern": re.compile(r"text-transform\s*:\s*uppercase|\buppercase\b|letter-spacing[^;\n]*(?:0\.[12]\d+|\d+)em", re.I),
+        "recommendation": "Reserve all-caps for short labels; keep body and action copy in normal case.",
+    },
+    {
+        "id": "border-accent-on-rounded",
+        "category": "ai-slop",
+        "severity": "P2",
+        "pattern": re.compile(
+            r"(?:rounded-[\w\[\]-]+|border-radius\s*:)[^;\n]{0,120}(?:border-[lrse]-(?:2|3|4|8)|border-(?:left|right))|"
+            r"(?:border-[lrse]-(?:2|3|4|8)|border-(?:left|right))[^;\n]{0,120}(?:rounded-[\w\[\]-]+|border-radius\s*:)",
+            re.I,
+        ),
+        "recommendation": "Avoid decorative accent strips on rounded cards; encode status with structure, copy, or semantic tokens.",
+    },
+    {
+        "id": "cramped-padding",
+        "category": "layout",
+        "severity": "P2",
+        "pattern": re.compile(r"\b(?:p|px|py)-[01]\b|padding\s*:\s*(?:0|[1-7]px)\b|padding-(?:left|right|top|bottom)\s*:\s*(?:0|[1-7]px)\b", re.I),
+        "recommendation": "Increase touch and reading space; cramped padding makes generated UI feel brittle.",
+    },
+    {
+        "id": "dark-glow",
+        "category": "ai-slop",
+        "severity": "P2",
+        "pattern": re.compile(r"\bshadow-(?:2xl|glow)\b|box-shadow\s*:[^;\n]*(?:rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\.[4-9]|0\s+0\s+\d+px)", re.I),
+        "recommendation": "Replace heavy glow shadows with elevation tokens, borders, or local contrast.",
+    },
+    {
+        "id": "everything-centered",
+        "category": "layout",
+        "severity": "P2",
+        "pattern": re.compile(
+            r"\bmin-h-screen\b[^;\n]{0,160}\b(?:items-center[^;\n]{0,80}justify-center|justify-center[^;\n]{0,80}items-center)\b|"
+            r"display\s*:\s*flex[^;\n]{0,120}(?:align-items\s*:\s*center[^;\n]{0,80}justify-content\s*:\s*center|justify-content\s*:\s*center[^;\n]{0,80}align-items\s*:\s*center)",
+            re.I,
+        ),
+        "recommendation": "Center only the element that benefits from it; product surfaces usually need scan-friendly alignment.",
+    },
+    {
+        "id": "hero-eyebrow-chip",
+        "category": "ai-slop",
+        "severity": "P3",
+        "pattern": re.compile(r"\b(?:eyebrow|badge|pill)\b[^;\n]{0,120}\b(?:rounded-full|uppercase|text-xs)\b|\brounded-full\b[^;\n]{0,120}\b(?:uppercase|tracking-wide|text-xs)\b", re.I),
+        "recommendation": "Use eyebrow chips only when they carry real state or navigation value.",
+    },
+    {
+        "id": "icon-tile-stack",
+        "category": "ai-slop",
+        "severity": "P2",
+        "pattern": re.compile(r"(?:<svg|lucide|Icon[A-Z]\w*)[^;\n]{0,160}\b(?:w-1[024]|h-1[024]|p-[456]|rounded-(?:xl|2xl|3xl)|icon-tile)\b", re.I),
+        "recommendation": "Do not use oversized icon tiles as filler; make icons support concrete actions or entities.",
+    },
+    {
+        "id": "italic-serif-display",
+        "category": "typography",
+        "severity": "P3",
+        "pattern": re.compile(r"(?:font-serif|serif)[^;\n]{0,120}\bitalic\b|\bitalic\b[^;\n]{0,120}(?:font-serif|serif)|font-style\s*:\s*italic[^;\n]{0,120}serif", re.I),
+        "recommendation": "Use italic serif display type only when the brand voice calls for editorial contrast.",
+    },
+    {
+        "id": "justified-text",
+        "category": "typography",
+        "severity": "P2",
+        "pattern": re.compile(r"text-align\s*:\s*justify|\btext-justify\b", re.I),
+        "recommendation": "Avoid justified UI text; it creates uneven word spacing and hurts scanning.",
+    },
+    {
+        "id": "line-length",
+        "category": "typography",
+        "severity": "P2",
+        "pattern": re.compile(r"max-width\s*:\s*(?:9\d|[1-9]\d{2,})ch|\bmax-w-\[(?:9\d|[1-9]\d{2,})ch\]|\bprose-(?:xl|2xl)\b", re.I),
+        "recommendation": "Keep prose near 65-75 characters; split or constrain long reading lines.",
+    },
+    {
+        "id": "low-contrast",
+        "category": "accessibility",
+        "severity": "P1",
+        "pattern": re.compile(
+            r"\btext-(?:gray|slate|zinc|neutral|stone)-(?:300|400|500)\b[^;\n]{0,120}\bbg-(?:white|gray-50|slate-50|zinc-50|neutral-50|stone-50)\b|"
+            r"\bbg-(?:white|gray-50|slate-50|zinc-50|neutral-50|stone-50)\b[^;\n]{0,120}\btext-(?:gray|slate|zinc|neutral|stone)-(?:300|400|500)\b|"
+            r"color\s*:\s*#(?:9ca3af|a1a1aa|94a3b8|a3a3a3|9e9e9e)\b",
+            re.I,
+        ),
+        "recommendation": "Use contrast-checked foreground tokens, especially for labels, helper text, and controls.",
+    },
+    {
+        "id": "monotonous-spacing",
+        "category": "layout",
+        "severity": "P3",
+        "pattern": re.compile(r"\b(?:p-4|gap-4|space-y-4)\b[^;\n]{0,160}\b(?:p-4|gap-4|space-y-4)\b[^;\n]{0,160}\b(?:p-4|gap-4|space-y-4)\b", re.I),
+        "recommendation": "Vary spacing by hierarchy; repeated p-4/gap-4 everywhere flattens the layout.",
+    },
+    {
+        "id": "single-font",
+        "category": "typography",
+        "severity": "P3",
+        "pattern": re.compile(r"font-family\s*:\s*(?:Inter|Roboto|Arial|Helvetica|Geist|Plus Jakarta Sans)\s*,?\s*(?:sans-serif)?\s*;", re.I),
+        "recommendation": "Document the type choice or introduce a purposeful pairing/scale instead of a generic single-font default.",
+    },
+    {
+        "id": "tight-leading",
+        "category": "typography",
+        "severity": "P2",
+        "pattern": re.compile(r"\bleading-(?:none|tight)\b|line-height\s*:\s*(?:0\.\d+|1(?:\.0)?|1[0-4]px)\b", re.I),
+        "recommendation": "Increase line-height for readable text; reserve tight leading for large display type.",
+    },
+    {
+        "id": "wide-tracking",
+        "category": "typography",
+        "severity": "P3",
+        "pattern": re.compile(r"\btracking-(?:wide|wider|widest)\b|letter-spacing\s*:\s*(?:0\.[2-9]\d*|[1-9]\d*)em", re.I),
+        "recommendation": "Avoid wide tracking on readable text; use spacing and weight for hierarchy.",
+    },
+]
+
+DESIGN_PREFLIGHT_PRODUCT_FILES = [
+    "PRODUCT.md",
+    "product.md",
+    "docs/PRODUCT.md",
+    "docs/product.md",
+    "docs/product-spec.md",
+    "docs/prd.md",
+    "PRD.md",
+]
+
+DESIGN_PREFLIGHT_DESIGN_FILES = [
+    "DESIGN.md",
+    "design.md",
+    "docs/DESIGN.md",
+    "docs/design.md",
+    "docs/design-quality.md",
+    "design/tokens.json",
+    "tokens.json",
+]
+
+DESIGN_PREFLIGHT_SHAPE_FILES = [
+    "docs/shape-brief.md",
+    "shape-brief.md",
+    "design/shape-brief.md",
+    ".super-skill/design/shape-brief.md",
+]
+
+DESIGN_PREFLIGHT_VISUAL_FILES = [
+    "docs/screenshots",
+    "screenshots",
+    "design/screenshots",
+    "design/reference",
+    "design/references",
+    "public",
+    "assets",
+]
+
+DESIGN_AUDIT_DOCUMENT_RULES = [
+    {
+        "id": "skipped-heading",
+        "category": "accessibility",
+        "severity": "P1",
+        "recommendation": "Keep heading levels sequential so assistive tech and scanning users can follow structure.",
+    },
+    {
+        "id": "flat-type-hierarchy",
+        "category": "typography",
+        "severity": "P2",
+        "recommendation": "Give heading levels distinct scale, weight, or spacing instead of one repeated text size.",
+    },
 ]
 
 GOAL_VAGUE_RE = re.compile(
@@ -4355,6 +4525,64 @@ def design_audit_files(project: Path) -> tuple[Path, list[Path]]:
     return project, sorted(files)
 
 
+def line_number_for_offset(text: str, offset: int) -> int:
+    return text.count("\n", 0, offset) + 1
+
+
+def design_heading_matches(text: str) -> list[tuple[int, int, str]]:
+    matches: list[tuple[int, int, str]] = []
+    for match in re.finditer(r"<h([1-6])\b[^>]*>", text, re.I):
+        matches.append((int(match.group(1)), match.start(), match.group(0)))
+    return matches
+
+
+def design_audit_document_findings(text: str, rel: str) -> list[dict]:
+    findings: list[dict] = []
+    headings = design_heading_matches(text)
+
+    previous_level: int | None = None
+    for level, offset, snippet in headings:
+        if (previous_level is None and level > 1) or (previous_level is not None and level - previous_level > 1):
+            rule = DESIGN_AUDIT_DOCUMENT_RULES[0]
+            findings.append(
+                {
+                    "rule": rule["id"],
+                    "category": rule["category"],
+                    "severity": rule["severity"],
+                    "file": rel,
+                    "line": line_number_for_offset(text, offset),
+                    "snippet": snippet.strip()[:180],
+                    "recommendation": rule["recommendation"],
+                }
+            )
+            break
+        previous_level = level
+
+    heading_sizes: dict[int, str] = {}
+    for match in re.finditer(r"<h([1-6])\b[^>]*class=[\"']([^\"']+)[\"'][^>]*>", text, re.I):
+        level = int(match.group(1))
+        class_value = match.group(2)
+        size_match = re.search(r"\btext-(?:xs|sm|base|lg|xl|[2-9]xl|\[[^\]]+\])\b", class_value, re.I)
+        if size_match:
+            heading_sizes[level] = size_match.group(0).lower()
+    if len(heading_sizes) >= 2 and len(set(heading_sizes.values())) == 1:
+        first = next(re.finditer(r"<h([1-6])\b[^>]*class=[\"']([^\"']+)[\"'][^>]*>", text, re.I))
+        rule = DESIGN_AUDIT_DOCUMENT_RULES[1]
+        findings.append(
+            {
+                "rule": rule["id"],
+                "category": rule["category"],
+                "severity": rule["severity"],
+                "file": rel,
+                "line": line_number_for_offset(text, first.start()),
+                "snippet": first.group(0).strip()[:180],
+                "recommendation": rule["recommendation"],
+            }
+        )
+
+    return findings
+
+
 def design_audit_scan(project: Path, max_findings: int = 200) -> dict:
     base, files = design_audit_files(project)
     findings: list[dict] = []
@@ -4396,6 +4624,12 @@ def design_audit_scan(project: Path, max_findings: int = 200) -> dict:
                 if len(findings) >= max_findings:
                     truncated = True
                     break
+        if len(findings) < max_findings:
+            for finding in design_audit_document_findings(text, rel):
+                if len(findings) >= max_findings:
+                    truncated = True
+                    break
+                findings.append(finding)
 
     by_severity: dict[str, int] = {}
     by_rule: dict[str, int] = {}
@@ -4419,6 +4653,162 @@ def design_audit_scan(project: Path, max_findings: int = 200) -> dict:
         "status": status,
         "truncated": truncated,
         "findings": findings,
+    }
+
+
+def path_exists_with_exact_case(path: Path) -> bool:
+    return path.exists() and path.parent.exists() and any(child.name == path.name for child in path.parent.iterdir())
+
+
+def existing_relative_paths(project: Path, candidates: list[str]) -> list[str]:
+    base = project.expanduser().resolve()
+    if base.is_file():
+        base = base.parent
+    found: list[str] = []
+    for candidate in candidates:
+        path = base / candidate
+        if path_exists_with_exact_case(path):
+            found.append(candidate)
+    return found
+
+
+def project_contains_text(project: Path, patterns: list[re.Pattern], suffixes: set[str] | None = None) -> bool:
+    base = project.expanduser().resolve()
+    files = [base] if base.is_file() else [p for p in base.rglob("*") if p.is_file()]
+    suffixes = suffixes or {".md", ".json", ".css", ".html", ".js", ".jsx", ".ts", ".tsx", ".vue", ".svelte"}
+    for path in files:
+        if any(part in DESIGN_AUDIT_IGNORES for part in path.relative_to(base if base.is_dir() else base.parent).parts):
+            continue
+        if path.suffix.lower() not in suffixes:
+            continue
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        if any(pattern.search(text) for pattern in patterns):
+            return True
+    return False
+
+
+def design_preflight_scan(project: Path, max_findings: int = 50) -> dict:
+    base = project.expanduser().resolve()
+    product_files = existing_relative_paths(base, DESIGN_PREFLIGHT_PRODUCT_FILES)
+    design_files = existing_relative_paths(base, DESIGN_PREFLIGHT_DESIGN_FILES)
+    shape_files = existing_relative_paths(base, DESIGN_PREFLIGHT_SHAPE_FILES)
+    visual_paths = existing_relative_paths(base, DESIGN_PREFLIGHT_VISUAL_FILES)
+    if not visual_paths and base.exists():
+        image_suffixes = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"}
+        search_root = base.parent if base.is_file() else base
+        for path in search_root.rglob("*"):
+            if any(part in DESIGN_AUDIT_IGNORES for part in path.relative_to(search_root).parts):
+                continue
+            if path.is_file() and path.suffix.lower() in image_suffixes:
+                visual_paths.append(path.relative_to(search_root).as_posix())
+                break
+
+    token_files = [path for path in design_files if "token" in path.lower()]
+    token_signals = bool(token_files) or project_contains_text(base, [re.compile(r"--(?:color|space|radius|font)-", re.I)])
+    shape_signal = bool(shape_files) or project_contains_text(
+        base,
+        [re.compile(r"\bshape brief\b", re.I), re.compile(r"DESIGN_CRAFT_PREFLIGHT")],
+        suffixes={".md", ".txt"},
+    )
+    product_signal = bool(product_files) or project_contains_text(
+        base,
+        [re.compile(r"\b(?:persona|job-to-be-done|user goal|acceptance criteria|PRD)\b", re.I)],
+        suffixes={".md", ".txt"},
+    )
+    design_signal = bool(design_files) or project_contains_text(
+        base,
+        [re.compile(r"\b(?:design system|design tokens|brand|typography|color palette)\b", re.I)],
+        suffixes={".md", ".txt", ".json"},
+    )
+
+    audit = design_audit_scan(base, max_findings=max_findings)
+    blocking_findings = [finding for finding in audit["findings"] if finding["severity"] in {"P0", "P1"}]
+    anti_pattern_gate_ok = not blocking_findings
+    anti_pattern_status = "planned" if audit["files_scanned"] == 0 else audit["status"]
+
+    checks = [
+        {
+            "id": "product-context",
+            "ok": product_signal,
+            "evidence": product_files,
+            "recommendation": "Add PRODUCT.md, PRD, or equivalent user/problem context before UI mutation.",
+        },
+        {
+            "id": "design-context",
+            "ok": design_signal,
+            "evidence": design_files,
+            "recommendation": "Add DESIGN.md, design-quality notes, brand rules, or existing component context.",
+        },
+        {
+            "id": "shape-brief",
+            "ok": shape_signal,
+            "evidence": shape_files,
+            "recommendation": "Write a short shape brief covering surface, user goal, constraints, direction, anti-goals, and evidence.",
+        },
+        {
+            "id": "tokens",
+            "ok": token_signals,
+            "evidence": token_files,
+            "recommendation": "Document reusable color, spacing, radius, and typography tokens.",
+        },
+        {
+            "id": "visual-references",
+            "ok": bool(visual_paths),
+            "evidence": visual_paths[:5],
+            "recommendation": "Add screenshots, Figma exports, reference images, or browser captures when visual fidelity matters.",
+        },
+        {
+            "id": "anti-pattern-gate",
+            "ok": anti_pattern_gate_ok,
+            "evidence": {
+                "files_scanned": audit["files_scanned"],
+                "findings_total": audit["findings_total"],
+                "blocking_findings": len(blocking_findings),
+                "status": anti_pattern_status,
+            },
+            "recommendation": "Run design-audit on the frontend surface and fix P0/P1 findings before shipping.",
+        },
+    ]
+    weights = {
+        "product-context": 20,
+        "design-context": 20,
+        "shape-brief": 20,
+        "tokens": 15,
+        "visual-references": 10,
+        "anti-pattern-gate": 15,
+    }
+    score = max(0, 100 - sum(weights[check["id"]] for check in checks if not check["ok"]))
+    blocking_ids = {"product-context", "design-context", "shape-brief", "anti-pattern-gate"}
+    mutation_open = all(check["ok"] for check in checks if check["id"] in blocking_ids)
+    status = "ready" if mutation_open and score >= 85 else ("needs-context" if score >= 60 else "blocked")
+    preflight = "\n".join(
+        [
+            "DESIGN_CRAFT_PREFLIGHT:",
+            f"context={'pass' if product_signal and design_signal else 'missing'}",
+            f"product_register={'brand' if design_signal else 'unknown'}",
+            f"shape_brief={'pass' if shape_signal else 'missing'}",
+            f"tokens={'pass' if token_signals else 'missing'}",
+            f"visual_refs={'pass' if visual_paths else 'skipped:missing'}",
+            f"anti_pattern_gate={'pass' if audit['files_scanned'] > 0 and not blocking_findings else ('planned' if anti_pattern_gate_ok else 'blocked')}",
+            f"mutation={'open' if mutation_open else 'blocked'}",
+        ]
+    )
+    return {
+        "project": str(base),
+        "score": score,
+        "status": status,
+        "mutation": "open" if mutation_open else "blocked",
+        "checks": checks,
+        "preflight": preflight,
+        "audit_summary": {
+            "files_scanned": audit["files_scanned"],
+            "findings_total": audit["findings_total"],
+            "findings_by_severity": audit["findings_by_severity"],
+            "status": anti_pattern_status,
+        },
     }
 
 
@@ -4446,6 +4836,30 @@ def cmd_design_audit(args: argparse.Namespace) -> int:
             )
         if payload["truncated"]:
             print(f"Findings truncated at {args.max_findings}.")
+    return EXIT_RUNTIME if not ok else EXIT_OK
+
+
+def cmd_design_preflight(args: argparse.Namespace) -> int:
+    project = Path(args.project)
+    if not project.expanduser().exists():
+        if args.json:
+            emit_json(False, {"message": f"project path not found: {project}"}, code="USAGE")
+        else:
+            print(f"error: project path not found: {project}", file=sys.stderr)
+        return EXIT_USAGE
+
+    payload = design_preflight_scan(project, max_findings=args.max_findings)
+    ok = not args.strict or payload["mutation"] == "open"
+    if args.json:
+        emit_json(ok, payload, code="DESIGN_PREFLIGHT_BLOCKED" if not ok else None)
+    else:
+        print(f"Design preflight: {payload['status']} ({payload['score']}/100)")
+        print(payload["preflight"])
+        for check in payload["checks"]:
+            mark = "ok" if check["ok"] else "missing"
+            print(f"- {check['id']}: {mark}")
+            if not check["ok"]:
+                print(f"  recommendation: {check['recommendation']}")
     return EXIT_RUNTIME if not ok else EXIT_OK
 
 
@@ -4872,6 +5286,7 @@ def cmd_describe(args: argparse.Namespace) -> int:
             {"name": "install", "purpose": "Install a profile into a flat agent skill directory"},
             {"name": "goal", "purpose": "Build an audit-friendly Codex /goal command with scope, evidence, stop-if guards, and token budget"},
             {"name": "audit", "purpose": "Check duplicates, manifests, compatibility links, secrets, and risky patterns"},
+            {"name": "design-preflight", "purpose": "Check PRODUCT/DESIGN context, shape brief, tokens, visual refs, and anti-pattern readiness before UI mutation"},
             {"name": "design-audit", "purpose": "Scan frontend files for deterministic AI design anti-patterns and quality risks"},
             {"name": "harness", "purpose": "Assess AI-first harness readiness for this or another project"},
             {"name": "hermes", "purpose": "Assess Hermes-inspired self-improving agent system readiness"},
@@ -5342,6 +5757,13 @@ def build_parser() -> argparse.ArgumentParser:
     design_audit_p.add_argument("--fail-on-findings", action="store_true", help="exit non-zero when any finding exists")
     design_audit_p.add_argument("--json", action="store_true")
     design_audit_p.set_defaults(func=cmd_design_audit)
+
+    design_preflight_p = sub.add_parser("design-preflight", help="check design context before UI mutation")
+    design_preflight_p.add_argument("--project", default=".", help="project root or frontend surface to check")
+    design_preflight_p.add_argument("--max-findings", type=int, default=50)
+    design_preflight_p.add_argument("--strict", action="store_true", help="exit non-zero when required context or anti-pattern gate is blocked")
+    design_preflight_p.add_argument("--json", action="store_true")
+    design_preflight_p.set_defaults(func=cmd_design_preflight)
 
     harness_p = sub.add_parser("harness", help="assess AI-first harness readiness")
     harness_p.add_argument("--project", default=".")

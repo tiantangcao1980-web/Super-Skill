@@ -20,6 +20,7 @@ jobs:
       - run: bin/super-skill plan --profile core --json
       - run: bin/super-skill plan --profile hermes --json
       - run: bin/super-skill audit --json
+      - run: bin/super-skill design-preflight --project evals/live-projects/design-frontend-quality-gate/files --strict --json
       - run: bin/super-skill design-audit --project evals/live-projects/design-frontend-quality-gate/files/src --fail-on-findings --json
       - run: bin/super-skill harness --json
       - run: bin/super-skill hermes --json

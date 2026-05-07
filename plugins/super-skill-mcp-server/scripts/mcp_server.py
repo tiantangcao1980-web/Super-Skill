@@ -8,6 +8,7 @@ Desktop / Claude Code / Cursor / any MCP-aware client and call:
   - autopilot(prompt, provider="stub", project=".", run_id=None, ...)
   - resume(project=".", run_id=None, list=False, ...)
   - llm_eval(prompt=None, provider="stub")
+  - design_preflight(project=".", strict=False, max_findings=50)
   - design_audit(project=".", max_findings=200)
 
 The tools wrap `bin/super-skill` via subprocess. We deliberately do not
@@ -137,6 +138,18 @@ TOOLS = [
             },
         },
     },
+    {
+        "name": "design_preflight",
+        "description": "Check PRODUCT/DESIGN context, shape brief, tokens, visual references, and anti-pattern readiness before UI mutation.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "project": {"type": "string", "default": ".", "description": "Project root or frontend surface to check"},
+                "max_findings": {"type": "integer", "default": 50},
+                "strict": {"type": "boolean", "default": False},
+            },
+        },
+    },
 ]
 
 
@@ -179,11 +192,21 @@ def build_argv_design_audit(args: dict) -> list[str]:
     return argv
 
 
+def build_argv_design_preflight(args: dict) -> list[str]:
+    argv = ["design-preflight", "--project", args.get("project", ".")]
+    if args.get("max_findings") is not None:
+        argv += ["--max-findings", str(args["max_findings"])]
+    if args.get("strict"):
+        argv += ["--strict"]
+    return argv
+
+
 TOOL_DISPATCH = {
     "autopilot": build_argv_autopilot,
     "resume": build_argv_resume,
     "llm_eval": build_argv_llm_eval,
     "design_audit": build_argv_design_audit,
+    "design_preflight": build_argv_design_preflight,
 }
 
 

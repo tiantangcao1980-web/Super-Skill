@@ -84,6 +84,9 @@ bin/super-skill plan --profile core --json
 # 审计去重、manifest、兼容软链、入口文件、疑似密钥和风险命令
 bin/super-skill audit --json
 
+# UI 变更前检查 PRODUCT/DESIGN、shape brief、tokens、视觉参考和反套路门禁
+bin/super-skill design-preflight --project ./app --strict --json
+
 # 扫描前端文件中的 AI 设计套路和可机器发现的设计质量风险
 bin/super-skill design-audit --project ./src --json
 
@@ -273,6 +276,8 @@ bin/super-skill validate
 bin/super-skill plan --profile core --json
 bin/super-skill plan --profile hermes --json
 bin/super-skill audit --json
+bin/super-skill design-preflight --project evals/live-projects/design-frontend-quality-gate/files --json
+bin/super-skill design-audit --project evals/live-projects/design-frontend-quality-gate/files/src --fail-on-findings --json
 bin/super-skill harness --json
 bin/super-skill hermes --json
 bin/super-skill memory --json
@@ -286,7 +291,7 @@ python3 -m unittest discover -s tests
 npm --prefix packages/designdna-cli test
 ```
 
-CI 会运行 `doctor`、`validate`、`plan`、Hermes profile plan、`audit`、`design-audit`、`harness`、`hermes`、`memory`、`triggers`、`evals`、`live-evals`、`memory-plugin` dry-run、Python CLI 测试，以及 DesignDNA CLI 测试，确保结构、兼容、安全、自动触发、设计反套路扫描、验证性项目、live 项目 grader、harness readiness、self-improving agent readiness、agent memory readiness 和基础工具链可用。
+CI 会运行 `doctor`、`validate`、`plan`、Hermes profile plan、`audit`、`design-preflight`、`design-audit`、`harness`、`hermes`、`memory`、`triggers`、`evals`、`live-evals`、`memory-plugin` dry-run、Python CLI 测试，以及 DesignDNA CLI 测试，确保结构、兼容、安全、自动触发、设计上下文门禁、设计反套路扫描、验证性项目、live 项目 grader、harness readiness、self-improving agent readiness、agent memory readiness 和基础工具链可用。
 
 ## 文档
 

@@ -26,7 +26,7 @@ commands; they are reusable design work modes.
 | Mode | Use when | Output |
 | --- | --- | --- |
 | `critique` | A design needs judgment before changes | findings ranked by user impact and risk |
-| `audit` | A design needs machine-checkable quality evidence | a11y/responsive/performance/anti-pattern report |
+| `audit` | A design needs machine-checkable quality evidence | preflight/a11y/responsive/performance/anti-pattern report |
 | `polish` | The implementation is close but uneven | token alignment, copy, states, spacing, visual QA fixes |
 | `harden` | Edge cases are missing | error/loading/empty/i18n/overflow/reduced-motion coverage |
 | `typeset` | Typography feels generic or hard to scan | font, scale, hierarchy, line-length fixes |

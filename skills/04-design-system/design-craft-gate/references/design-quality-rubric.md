@@ -26,6 +26,7 @@ Above 85 is acceptable if P0/P1 are absent and the user goal is satisfied.
 - context loaded or assumptions documented
 - shape brief exists for new work
 - token/component alignment checked
+- `design-preflight` passes or missing context is explicitly documented
 - deterministic anti-pattern scan run when files exist
 - accessibility labels and contrast checked
 - responsive behavior checked for mobile and desktop
