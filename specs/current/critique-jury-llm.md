@@ -1,6 +1,6 @@
 # Spec: Critique Jury — wire real LLM providers
 
-- Status: **building**
+- Status: **building** (offline fixtures shipped; real-LLM round-trip remains user-driven)
 - Owner: super-skill maintainers
 - Last-updated: 2026-05-19
 - Tracked-by: `scripts/super_skill.py::critique_jury_*`, `AUTOPILOT_PHASES[07-gate]`
@@ -22,14 +22,14 @@ Phase 6 today produces a Critique Jury panel with 5 panelist scores under stub p
 
 ## Plan
 
-- [ ] Add `tests/fixtures/critique-jury/*.json` for 5 cases:
+- [x] Add `tests/fixtures/critique-jury/*.json` for 5 cases:
     - happy.json — pass, composite = 8.6
     - warn.json — warn, composite = 7.0
     - fail.json — fail, composite = 4.0
     - panel-verdict-mismatch.json — claims `verdict: pass` but composite recomputes to 4.2 → ok must be False
     - malformed.json — invalid JSON / missing panel
-- [ ] Test `autopilot_grade_gate()` on each.
-- [ ] Same wiring for `llm_grade_gate()`.
+- [x] Test `autopilot_grade_gate()` on each.
+- [ ] Same wiring for `llm_grade_gate()` (one-shot llm-eval path; can be added incrementally).
 - [ ] Document the weights table in `skills/07-testing-and-quality/output-quality-gate/SKILL.md`.
 
 ## Acceptance

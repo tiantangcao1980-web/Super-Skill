@@ -1,0 +1,20 @@
+{
+  "matches_intent": false,
+  "evidence_present": false,
+  "missing": ["acceptance item 2 not addressed", "no tests included"],
+  "score": 4,
+  "verdict": "fail",
+  "panel": {
+    "critic":   {"score": 3, "must_fix": ["acceptance item 2"], "notes": "Output drifted from contract."},
+    "brand":    {"score": 5, "must_fix": ["accent hex hardcoded #6366f1"], "notes": "AI default indigo."},
+    "a11y":     {"score": 4, "must_fix": ["no focus ring", "color-only error"], "notes": "Multiple WCAG misses."},
+    "copy":     {"score": 5, "must_fix": ["lorem ipsum in section 3"], "notes": "Filler copy shipped."},
+    "designer": {"score": 4, "must_fix": [], "notes": "Layout default; no intentional choice."}
+  },
+  "composite": 4.0,
+  "threshold": 8.0,
+  "round": 3,
+  "max_rounds": 3,
+  "fallback_policy": "ship_best",
+  "trace": "fixture-fail-003"
+}

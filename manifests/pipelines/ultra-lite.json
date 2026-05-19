@@ -4,7 +4,7 @@
   "name": "ultra-lite",
   "label": "Ultra-lite engineering pipeline",
   "version": "0.1.0",
-  "description": "Minimum-viable Super Skill loop for small-scope code work. Skips business case / launch / commerce stages; keeps intent contract → ralph → simplifier → critique jury → memory candidate.",
+  "description": "Minimum-viable Super Skill loop for small-scope code work. Skips research / business case / launch / pilot / commerce / ops phases; keeps intent contract → ralph → simplifier → critique jury. Stages reuse AUTOPILOT_PHASES prompt fragments via phase_id_for_resume so the existing runner can execute it unchanged.",
   "inspired_by": "open-design's plugin authors who want a short pipeline without the full 12-phase commercial flow.",
   "od": {
     "kind": "pipeline",
@@ -12,38 +12,36 @@
     "pipeline": {
       "stages": [
         {
-          "id": "00-intent",
+          "id": "01-intent",
           "label": "Intent Contract",
           "atoms": ["intent-contract-form"],
-          "output": "00-intent-contract.md"
+          "output": "01-intent-contract.md",
+          "phase_id_for_resume": "01-intent"
         },
         {
-          "id": "01-impl",
+          "id": "05-impl",
           "label": "Implementation (Ralph loop)",
           "atoms": ["ralph-attempt"],
-          "output": "01-implementation.md",
+          "output": "05-implementation.md",
+          "phase_id_for_resume": "05-impl",
           "repeat": true,
           "until": "tests.pass || iterations >= 10"
         },
         {
-          "id": "02-simplify",
+          "id": "06-simplify",
           "label": "Code Simplifier",
           "atoms": ["code-simplifier"],
-          "output": "02-simplified.md"
+          "output": "06-simplified.md",
+          "phase_id_for_resume": "06-simplify"
         },
         {
-          "id": "03-gate",
-          "label": "Output Quality Gate (Critique Jury)",
+          "id": "07-gate",
+          "label": "Output Quality Gate",
           "atoms": ["critique-jury"],
-          "output": "03-quality-gate.json",
+          "output": "07-quality-gate.json",
+          "phase_id_for_resume": "07-gate",
           "repeat": true,
           "until": "critique.score >= 8 || iterations >= 3"
-        },
-        {
-          "id": "04-memory",
-          "label": "Memory Candidate",
-          "atoms": ["memory-candidate-emit"],
-          "output": "04-memory.md"
         }
       ]
     }

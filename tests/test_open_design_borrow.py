@@ -145,6 +145,48 @@ class CritiqueJuryTests(unittest.TestCase):
         self.assertLess(composite, self.mod.CRITIQUE_JURY_THRESHOLD - 1.5)
         self.assertEqual(self.mod.critique_jury_verdict(composite), "fail")
 
+    def _read_fixture(self, name: str) -> str:
+        return (FIXTURES / "critique-jury" / name).read_text(encoding="utf-8")
+
+    def test_fixture_happy(self) -> None:
+        result = self.mod.autopilot_grade_gate(self._read_fixture("happy.json"))
+        self.assertTrue(result["parsed"])
+        self.assertEqual(result["verdict"], "pass")
+        self.assertGreaterEqual(result["composite_recomputed"], 8.0)
+        self.assertEqual(result["canonical_verdict"], "pass")
+        self.assertTrue(result["ok"])
+
+    def test_fixture_warn(self) -> None:
+        result = self.mod.autopilot_grade_gate(self._read_fixture("warn.json"))
+        self.assertTrue(result["parsed"])
+        self.assertEqual(result["verdict"], "warn")
+        self.assertAlmostEqual(result["composite_recomputed"], 7.0, delta=0.1)
+        self.assertEqual(result["canonical_verdict"], "warn")
+        self.assertTrue(result["ok"], "warn must still pass the ok-gate (it's a soft signal)")
+
+    def test_fixture_fail(self) -> None:
+        result = self.mod.autopilot_grade_gate(self._read_fixture("fail.json"))
+        self.assertTrue(result["parsed"])
+        self.assertEqual(result["verdict"], "fail")
+        self.assertLess(result["composite_recomputed"], 6.5)
+        self.assertEqual(result["canonical_verdict"], "fail")
+        self.assertFalse(result["ok"])
+
+    def test_fixture_panel_verdict_mismatch(self) -> None:
+        result = self.mod.autopilot_grade_gate(self._read_fixture("panel-verdict-mismatch.json"))
+        self.assertTrue(result["parsed"])
+        self.assertEqual(result["verdict"], "pass", "LLM claimed pass...")
+        self.assertLess(result["composite_recomputed"], 6.5,
+                        "...but recompute shows the panel actually fails")
+        self.assertEqual(result["canonical_verdict"], "fail")
+        self.assertFalse(result["ok"], "lying verdict must be caught")
+
+    def test_fixture_malformed(self) -> None:
+        result = self.mod.autopilot_grade_gate(self._read_fixture("malformed.json"))
+        self.assertFalse(result["parsed"], "malformed JSON must report parsed=False")
+        # Lenient regex still finds the verdict keyword string, but ok must be False.
+        self.assertFalse(result["ok"])
+
     def test_grader_catches_panel_verdict_mismatch(self) -> None:
         """A model that claims `verdict: pass` while the panel sums below the
         threshold must be marked not-ok by the recompute safeguard."""
@@ -343,6 +385,39 @@ class AutopilotPipelineManifestTests(unittest.TestCase):
     def test_ultra_lite_pipeline_validates(self) -> None:
         data = run_cli("atoms", "--validate", str(ROOT / "manifests" / "pipelines" / "ultra-lite.json"))
         self.assertEqual(data["failures"], [])
+
+    def test_autopilot_loader_resolves_default_pipeline(self) -> None:
+        """Phase 2 of atom-runner: the JSON pipeline now drives stage ordering."""
+        phases, meta = self.mod.autopilot_load_pipeline(None)
+        self.assertEqual(len(phases), 12)
+        self.assertEqual(meta["pipeline_name"], "autopilot")
+        # First/last phase ids must match the in-code constant for back-compat.
+        self.assertEqual(phases[0][0], self.mod.AUTOPILOT_PHASES[0][0])
+        self.assertEqual(phases[-1][0], self.mod.AUTOPILOT_PHASES[-1][0])
+
+    def test_autopilot_loader_resolves_ultra_lite(self) -> None:
+        phases, meta = self.mod.autopilot_load_pipeline(
+            ROOT / "manifests" / "pipelines" / "ultra-lite.json"
+        )
+        self.assertEqual(len(phases), 4)
+        self.assertEqual(meta["pipeline_name"], "ultra-lite")
+        # Stages are taken from the JSON id, prompt fragment is the in-code one.
+        self.assertEqual(phases[0][0], "01-intent")  # JSON id preserved
+        self.assertEqual(phases[3][0], "07-gate")
+
+    def test_autopilot_loader_rejects_unknown_phase_id(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "bad.json"
+            p.write_text(json.dumps({
+                "name": "broken", "specVersion": "1.0.0", "version": "0.0.1",
+                "od": {"pipeline": {"stages": [
+                    {"id": "wat", "atoms": ["intent-contract-form"],
+                     "output": "wat.md", "phase_id_for_resume": "wat-no-such-phase"}
+                ]}}
+            }), encoding="utf-8")
+            phases, meta = self.mod.autopilot_load_pipeline(p)
+            self.assertEqual(phases, [])
+            self.assertIn("unknown phase ids", meta["error"])
 
 
 class DocsBorrowingTests(unittest.TestCase):

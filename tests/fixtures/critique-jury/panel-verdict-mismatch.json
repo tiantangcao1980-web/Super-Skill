@@ -1,0 +1,21 @@
+{
+  "matches_intent": true,
+  "evidence_present": true,
+  "missing": [],
+  "score": 9,
+  "verdict": "pass",
+  "panel": {
+    "critic":   {"score": 3, "must_fix": ["fails contract"], "notes": "Drifted from goal."},
+    "brand":    {"score": 4, "must_fix": ["indigo default"], "notes": "AI tell present."},
+    "a11y":     {"score": 4, "must_fix": ["no focus ring"], "notes": "WCAG miss."},
+    "copy":     {"score": 5, "must_fix": ["lorem in body"], "notes": "Filler text."},
+    "designer": {"score": 8, "must_fix": [], "notes": "Looks pretty."}
+  },
+  "composite": 8.6,
+  "threshold": 8.0,
+  "round": 1,
+  "max_rounds": 3,
+  "fallback_policy": "ship_best",
+  "trace": "fixture-mismatch-004",
+  "_note_for_human_reviewer": "Verdict and composite claim PASS but the per-panel scores recompute to ~4.2 (well below threshold). The grader must catch this lie via canonical_verdict and mark ok=False."
+}

@@ -1,6 +1,6 @@
 # Spec: Promote `dev-tool-adapter` from wrapper-gen to runtime contract
 
-- Status: **draft**
+- Status: **building** (v1 interface + detect-only path shipped; `run()` reserved for atom-runner Phase 2)
 - Owner: super-skill maintainers
 - Last-updated: 2026-05-19
 - Tracked-by: `skills/90-codex-patterns/dev-tool-adapter/SKILL.md`, `bin/super-skill adapt`
@@ -34,12 +34,14 @@ interface AgentAdapter {
 
 ## Plan
 
-- [ ] Land the TS type file.
-- [ ] Land a Python `super_skill_adapters/protocol.py` mirror.
-- [ ] Implement `null-adapter` (always returns `detection=None`).
-- [ ] Implement `claude-code-adapter` PATH-scan detection.
-- [ ] Add `bin/super-skill adapt --runtime <id> --detect-only` to call the adapter's `detect()` + report.
-- [ ] Document the precedence: native adapter > codegen wrapper fallback.
+- [x] Land the TS type file (`skills/90-codex-patterns/dev-tool-adapter/references/agent-adapter.d.ts`).
+- [x] Land a Python `super_skill_adapters/protocol.py` mirror.
+- [x] Implement `null-adapter` (always returns `detection=None`).
+- [x] Implement `claude-code-adapter` PATH-scan detection.
+- [x] Implement `codex-adapter` PATH-scan detection.
+- [x] Add `bin/super-skill adapt --runtime <id> --detect-only` to call the adapter's `detect()` + report.
+- [ ] Implement `run()` / `cancel()` / `resume()` — gated on atom-runner Phase 2 (so the pipeline runner can drive the adapter directly).
+- [ ] Document the precedence in `skills/90-codex-patterns/dev-tool-adapter/SKILL.md`: native adapter > codegen wrapper fallback.
 
 ## Acceptance
 

@@ -36,13 +36,17 @@ Rewrite the autopilot runner so:
 - [x] Land `bin/super-skill atoms --validate manifests/pipelines/*.json` wired into CI.
 - [x] Land integrity test: pipeline JSON `stage.id` / `output` / `label` arrays must match the in-code `AUTOPILOT_PHASES` tuple list 1:1 so they cannot drift.
 
-### Phase 2 — runner refactor (next PR)
-- [ ] Extract every atom's prompt fragment from `llm_call_stub()` and the `AUTOPILOT_PHASES` tuple into a per-atom dict (`{atom_id: {system_prefix, output_filename, run_fn, ...}}`).
+### Phase 2 — runner refactor (this PR — partial)
+- [x] Add `autopilot_load_pipeline(path) -> (phases, meta)` that reads `manifests/pipelines/*.json` and yields the same 5-tuple shape `AUTOPILOT_PHASES` produces.
+- [x] `run_autopilot_inner` consumes the loader output by default; in-code `AUTOPILOT_PHASES` stays as the fallback safety net and as the prompt-fragment source.
+- [x] Add `bin/super-skill autopilot --pipeline <path>` (already announced in Phase 3) — landed here because it's free once the loader exists.
+- [x] `run.json` now carries `pipeline: { name, label, path, spec_version, stage_count }` for audit.
+- [ ] Extract every atom's prompt fragment from `llm_call_stub()` and the `AUTOPILOT_PHASES` tuple into a per-atom dict (`{atom_id: {system_prefix, output_filename, run_fn, ...}}`) — needed before plugin-authored pipelines can use atoms that aren't in the canonical 12.
 - [ ] Build `autopilot_run_pipeline(pipeline_json, workspace, provider, model)` that loops over `pipeline.stages`, expanding atoms in order, honoring `repeat: true` + `until:`.
-- [ ] Keep the existing `cmd_autopilot` as a thin wrapper that loads the default pipeline JSON and calls the new runner.
+- [ ] Make AUTOPILOT_PHASES a pure derivation from the JSON pipeline (delete the constant once the prompt fragments live elsewhere).
 
 ### Phase 3 — plugin authoring (later)
-- [ ] Add `bin/super-skill autopilot --pipeline path/to/pipeline.json`.
+- [x] `bin/super-skill autopilot --pipeline path/to/pipeline.json` (delivered in Phase 2).
 - [ ] Discovery: when a skill folder ships `pipeline.json`, surface it via `bin/super-skill list --pipelines`.
 
 ## `until:` evaluator semantics (v1)

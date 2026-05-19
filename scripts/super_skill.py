@@ -3650,6 +3650,71 @@ def autopilot_pending_marker(workspace: Path) -> Path:
     return workspace / "pending.json"
 
 
+def autopilot_default_pipeline_path() -> Path:
+    return ROOT / "manifests" / "pipelines" / "autopilot.json"
+
+
+def autopilot_load_pipeline(path: Path | None) -> tuple[list[tuple], dict]:
+    """Load a pipeline JSON and return (phases_in_order, meta_info).
+
+    Each returned tuple has the same shape as `AUTOPILOT_PHASES`:
+      (phase_id, label, canonical_skill, output_filename, system_prefix).
+
+    The JSON provides ordering + atom references + output filenames. Per-phase
+    prompt fragments still come from the in-code AUTOPILOT_PHASES table,
+    looked up by `phase_id_for_resume` (or `stage.id` if absent). This keeps
+    backward-compatibility with existing run.json checkpoints. Future
+    PR (atom-runner Phase 3) can move the prompt fragments out into a per-atom
+    dict so the JSON becomes the complete source of truth.
+
+    Returns ([], {error: ...}) if the file is missing or any stage references
+    an unknown phase id.
+    """
+    if path is None:
+        path = autopilot_default_pipeline_path()
+    path = path.expanduser().resolve()
+    if not path.exists():
+        return [], {"error": f"pipeline file not found: {path}"}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        return [], {"error": f"pipeline JSON parse failed: {exc}"}
+
+    stages = (data.get("od") or {}).get("pipeline", {}).get("stages") or []
+    if not stages:
+        return [], {"error": "pipeline has no stages"}
+
+    phase_index = {p[0]: p for p in AUTOPILOT_PHASES}
+    resolved: list[tuple] = []
+    missing: list[str] = []
+    for stage in stages:
+        resume_id = stage.get("phase_id_for_resume") or stage.get("id")
+        phase_tuple = phase_index.get(resume_id)
+        if phase_tuple is None:
+            missing.append(f"{stage.get('id')} -> {resume_id}")
+            continue
+        # Override phase_id / label / output from the JSON to honor the
+        # ultra-lite use case where the pipeline keeps the in-code prompt
+        # but renumbers phases for compactness.
+        phase_id = stage.get("id") or phase_tuple[0]
+        label = stage.get("label") or phase_tuple[1]
+        canonical_skill = phase_tuple[2]
+        output_filename = stage.get("output") or phase_tuple[3]
+        system_prefix = phase_tuple[4]
+        resolved.append((phase_id, label, canonical_skill, output_filename, system_prefix))
+
+    if missing:
+        return [], {"error": f"pipeline stages with unknown phase ids: {missing}"}
+
+    return resolved, {
+        "pipeline_path": str(path),
+        "pipeline_name": data.get("name"),
+        "pipeline_label": data.get("label"),
+        "spec_version": data.get("specVersion"),
+        "stage_count": len(resolved),
+    }
+
+
 def run_autopilot_inner(
     prompt: str | None,
     provider: str,
@@ -3664,6 +3729,7 @@ def run_autopilot_inner(
     based_on: str | None,
     feedback: str | None,
     hitl: str | None = None,
+    pipeline_path: Path | None = None,
 ) -> tuple[bool, dict]:
     """Pure-function autopilot core. Returns (overall_ok, payload).
 
@@ -3707,7 +3773,23 @@ def run_autopilot_inner(
     hitl_set = set((hitl or "").split(",")) if hitl else set()
     hitl_set.discard("")
 
-    phases_to_run = [p for p in AUTOPILOT_PHASES if p[0] not in skip_set]
+    # atom-runner Phase 2: load the pipeline JSON (default = autopilot.json).
+    # If the file is missing or invalid, fall back to the in-code constant so
+    # the runner never breaks on a missing pipeline file.
+    base_phases = AUTOPILOT_PHASES
+    pipeline_meta: dict = {}
+    loaded_phases, pipeline_meta = autopilot_load_pipeline(pipeline_path)
+    if loaded_phases:
+        base_phases = loaded_phases
+    elif pipeline_path is not None:
+        # Explicit --pipeline override that failed to load = hard error.
+        return False, {
+            "message": pipeline_meta.get("error", "pipeline load failed"),
+            "_error_code": "USAGE",
+        }
+    # Implicit default failure: log but use in-code phases as safety net.
+
+    phases_to_run = [p for p in base_phases if p[0] not in skip_set]
     requested_skills = sorted({p[2] for p in phases_to_run})
 
     # If a previous run paused via HITL, clear the marker before continuing.
@@ -3846,6 +3928,7 @@ def run_autopilot_inner(
         "parent_run_id": based_on if iteration else None,
         "feedback": feedback if iteration else None,
         "lineage": lineage,
+        "pipeline": pipeline_meta or None,
         "phases": [
             {k: v for k, v in pr.items() if k != "text"}
             for pr in phase_results
@@ -3865,6 +3948,8 @@ def run_autopilot_inner(
 
 
 def cmd_autopilot(args: argparse.Namespace) -> int:
+    pipeline_arg = getattr(args, "pipeline", None)
+    pipeline_path = Path(pipeline_arg).expanduser().resolve() if pipeline_arg else None
     overall_ok, payload = run_autopilot_inner(
         prompt=args.prompt,
         provider=args.provider,
@@ -3879,6 +3964,7 @@ def cmd_autopilot(args: argparse.Namespace) -> int:
         based_on=getattr(args, "based_on", None),
         feedback=getattr(args, "feedback", None),
         hitl=getattr(args, "hitl", None),
+        pipeline_path=pipeline_path,
     )
     if payload.get("_error_code") == "USAGE":
         msg = payload.get("message", "usage error")
@@ -7693,7 +7779,59 @@ def adapt_hermes_instructions(canonical: Path) -> list[str]:
 
 
 def cmd_adapt(args: argparse.Namespace) -> int:
+    # --detect-only path: use the AgentAdapter protocol instead of codegen.
+    # Spec: specs/current/agent-adapter-runtime.md
+    if args.detect_only:
+        runtime_id = args.runtime or args.tool
+        if not runtime_id:
+            msg = ("--detect-only requires --runtime <id> (or --tool <id> for the legacy alias). "
+                   "Known runtimes: null, claude-code, codex.")
+            if args.json:
+                emit_json(False, {"message": msg}, code="USAGE")
+            else:
+                print(f"error: {msg}", file=sys.stderr)
+            return EXIT_USAGE
+        # Lazy-import the adapter package so legacy adapt code path doesn't pay.
+        try:
+            sys.path.insert(0, str(ROOT / "scripts"))
+            from super_skill_adapters import detect_runtime  # type: ignore
+        except Exception as exc:
+            if args.json:
+                emit_json(False, {"message": f"adapter import failed: {exc}"}, code="DEPENDENCY_MISSING")
+            else:
+                print(f"error: adapter import failed: {exc}", file=sys.stderr)
+            return EXIT_RUNTIME
+        result = detect_runtime(runtime_id)
+        payload = result.to_dict()
+        if args.json:
+            emit_json(True, payload)
+        else:
+            d = payload["detection"]
+            print(f"adapter: {payload['id']} ({payload['displayName']})")
+            if d:
+                print(f"  detected: {d['executablePath']}")
+                print(f"  version: {d.get('version', '')}")
+                print(f"  auth: {d.get('authState')}")
+                if d.get("configDir"):
+                    print(f"  config: {d['configDir']}")
+                if d.get("skillsDir"):
+                    print(f"  skills: {d['skillsDir']}")
+            else:
+                print("  detected: none")
+            caps = payload["capabilities"]
+            print(f"  capabilities: streaming={caps['streaming']} resume={caps['resume']} "
+                  f"surgicalEdit={caps['surgicalEdit']} permissions={caps['permissionMode']}")
+            print(f"  recommendation: {payload['recommendation']}")
+        return EXIT_OK
+
     tool = args.tool
+    if not tool:
+        if args.json:
+            emit_json(False, {"message": "--tool is required for codegen mode (omit --detect-only)"},
+                      code="USAGE")
+        else:
+            print("error: --tool is required when --detect-only is not set", file=sys.stderr)
+        return EXIT_USAGE
     project = Path(args.project).resolve()
     canonical = ROOT
     skills = discover_skills("all")
@@ -7993,9 +8131,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     adapt_p = sub.add_parser(
         "adapt",
-        help="generate per-tool runtime wrappers (cursor/trae/windsurf/opencode/claude-code/codex/openclaw/hermes)",
+        help="generate per-tool runtime wrappers, or detect a runtime via the AgentAdapter protocol",
     )
-    adapt_p.add_argument("--tool", choices=ADAPT_TOOLS, required=True)
+    adapt_p.add_argument("--tool", choices=ADAPT_TOOLS, required=False,
+                         help="generate a wrapper for this tool (codegen mode)")
+    adapt_p.add_argument("--runtime", choices=sorted(["null", "claude-code", "codex"]), default=None,
+                         help="adapter id to consult via the AgentAdapter protocol (use with --detect-only)")
+    adapt_p.add_argument("--detect-only", action="store_true",
+                         help="run detect() + capabilities() on --runtime; no file writes")
     adapt_p.add_argument("--project", default=".", help="project root that should receive the wrapper (default: cwd)")
     adapt_p.add_argument("--target", default=None, help="explicit output path (default: tool-specific convention)")
     adapt_p.add_argument("--force", action="store_true", help="overwrite existing wrapper files")
@@ -8025,6 +8168,16 @@ def build_parser() -> argparse.ArgumentParser:
     auto_p.add_argument("--run-id", default=None, help="explicit run id (default: timestamped)")
     auto_p.add_argument("--max-ralph-rounds", type=int, default=20)
     auto_p.add_argument("--skip", default=None, help="comma-separated phase ids to skip (e.g. '03-design,08-memory')")
+    auto_p.add_argument(
+        "--pipeline",
+        default=None,
+        metavar="PATH",
+        help=(
+            "path to a pipeline JSON that drives stage ordering "
+            "(default: manifests/pipelines/autopilot.json). "
+            "Try `--pipeline manifests/pipelines/ultra-lite.json` for a minimal 4-phase run."
+        ),
+    )
     auto_p.add_argument("--force", action="store_true", help="regenerate phase artifacts even if present")
     auto_p.add_argument("--dry-run", action="store_true")
     auto_p.add_argument("--show-outputs", action="store_true")
