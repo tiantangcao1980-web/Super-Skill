@@ -235,7 +235,12 @@ class SuperSkillCliTests(unittest.TestCase):
             (root / "src").mkdir()
             (root / "src" / "page.html").write_text("<main><h1>Dashboard</h1><p>Status is clear.</p></main>", encoding="utf-8")
 
-            data = run_cli("design-preflight", "--project", td, "--strict")
+            # This temp fixture deliberately has no images. With the new
+            # honest --strict (specs/current/design-audit-strict.md) we must
+            # explicitly --skip visual-references; the rest of the gate is
+            # still enforced.
+            data = run_cli("design-preflight", "--project", td, "--strict",
+                           "--skip", "visual-references")
             self.assertEqual(data["mutation"], "open")
             self.assertGreaterEqual(data["score"], 85)
             check_ids = {check["id"] for check in data["checks"]}
@@ -243,6 +248,7 @@ class SuperSkillCliTests(unittest.TestCase):
             self.assertIn("shape-brief", check_ids)
             self.assertIn("anti-pattern-gate", check_ids)
             self.assertIn("DESIGN_CRAFT_PREFLIGHT", data["preflight"])
+            self.assertEqual(data["skipped"], ["visual-references"])
 
     def test_design_preflight_strict_blocks_missing_context(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -902,6 +908,11 @@ class SuperSkillCliTests(unittest.TestCase):
             (root / "docs" / "shape-brief.md").write_text("Shape brief: status dashboard.", encoding="utf-8")
             (root / "design").mkdir()
             (root / "design" / "tokens.json").write_text('{"space": 16}', encoding="utf-8")
+            # Drop a tiny SVG reference so honest --strict passes through MCP.
+            (root / "design" / "reference.svg").write_text(
+                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><rect width="8" height="8" fill="#eee"/></svg>',
+                encoding="utf-8",
+            )
             (root / "src").mkdir()
             (root / "src" / "page.html").write_text("<main><h1>Dashboard</h1></main>", encoding="utf-8")
             dialogue = "\n".join([
@@ -1349,6 +1360,155 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertEqual(lang, "python")
         self.assertIn("bigger", code)
         self.assertNotIn("tiny", code)
+
+
+class NegativeFixtureTests(unittest.TestCase):
+    """Prove the validation/audit gates actually reject bad input.
+
+    The happy-path tests confirm the gates pass on clean material; without
+    these negative fixtures, a regression that disables a gate entirely
+    would still look green.
+    """
+
+    def _materialize(self, td: Path, dirname: str, body: str,
+                     skill_name: str, skill_desc: str) -> "object":
+        mod = _load_super_skill_module()
+        path = td / dirname / "SKILL.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(body, encoding="utf-8")
+        return mod.Skill(
+            name=skill_name, description=skill_desc, path=path.parent,
+            stage="00-orchestration", source="core",
+            relative_path=path.parent.as_posix(),
+        )
+
+    def test_validate_skill_rejects_missing_frontmatter(self) -> None:
+        mod = _load_super_skill_module()
+        with tempfile.TemporaryDirectory() as td:
+            skill = self._materialize(
+                Path(td), "broken-skill",
+                "# No frontmatter at all\n\nSome content.\n",
+                skill_name="broken-skill", skill_desc="",
+            )
+            errors, _warnings = mod.validate_skill(skill)
+            self.assertTrue(any("frontmatter" in e for e in errors),
+                            msg=f"expected frontmatter error, got {errors}")
+            self.assertTrue(any("description" in e for e in errors),
+                            msg=f"expected description error, got {errors}")
+
+    def test_validate_skill_rejects_invalid_name_format(self) -> None:
+        mod = _load_super_skill_module()
+        body = "---\nname: Bad_Name_With_Underscores\ndescription: " + ("x" * 30) + "\n---\nbody\n"
+        with tempfile.TemporaryDirectory() as td:
+            skill = self._materialize(
+                Path(td), "bad-dir", body,
+                skill_name="Bad_Name_With_Underscores",
+                skill_desc="x" * 30,
+            )
+            errors, _warnings = mod.validate_skill(skill)
+            self.assertTrue(any("invalid name" in e for e in errors),
+                            msg=f"expected invalid-name error, got {errors}")
+
+    def test_validate_skill_warns_on_short_description(self) -> None:
+        mod = _load_super_skill_module()
+        body = "---\nname: ok-skill\ndescription: too short\n---\nbody\n"
+        with tempfile.TemporaryDirectory() as td:
+            skill = self._materialize(
+                Path(td), "ok-skill", body,
+                skill_name="ok-skill", skill_desc="too short",
+            )
+            _errors, warnings = mod.validate_skill(skill)
+            self.assertTrue(any("short" in w for w in warnings),
+                            msg=f"expected short-description warning, got {warnings}")
+
+    def test_secret_patterns_match_known_bad_strings(self) -> None:
+        """Synthesize the literals at runtime so the audit scanner does not
+        see them in this source file."""
+        mod = _load_super_skill_module()
+        cases = {
+            "private-key-block": "-----" + "BEGIN " + "RSA PRIVATE " + "KEY-----",
+            "github-token": "gh" + "p_" + "A" * 36,
+            "aws-access-key": "AK" + "IA" + "B" * 16,
+            "openai-api-key": "s" + "k-" + "C" * 32,
+            "hardcoded-secret-assignment":
+                "api" + "_key" + ' = "' + "AbCdEf0123456789AbCdEf0123456789" + '"',
+        }
+        for name, bad in cases.items():
+            pattern = mod.SECRET_PATTERNS[name]
+            self.assertIsNotNone(pattern.search(bad),
+                                 msg=f"pattern {name} should match {bad!r}")
+
+    def test_risky_patterns_match_known_dangerous_commands(self) -> None:
+        """Synthesize at runtime so the audit scanner does not see these
+        literals in this source file."""
+        mod = _load_super_skill_module()
+        cases = {
+            "rm-rf": "r" + "m " + "-rf" + " /tmp/something",
+            "git-reset-hard": "g" + "it " + "reset " + "--hard" + " HEAD~3",
+            "curl-pipe-shell": "c" + "url" + " https://example.com/install.sh "
+                               + "|" + " ba" + "sh",
+            "chmod-777": "ch" + "mod " + "777" + " secrets.txt",
+        }
+        for name, bad in cases.items():
+            pattern = mod.RISKY_PATTERNS[name]
+            self.assertIsNotNone(pattern.search(bad),
+                                 msg=f"pattern {name} should match {bad!r}")
+
+    def test_design_preflight_require_rejects_missing_visual_refs(self) -> None:
+        """--require visual-references must exit non-zero when the fixture
+        has no images — proves the new flag actually enforces. Uses the
+        dedicated strict-missing negative fixture (the live-eval fixture
+        now ships a real SVG so it can no longer host this negative case)."""
+        fixture = ROOT / "tests" / "fixtures" / "design-preflight-strict-missing"
+        proc = subprocess.run(
+            [sys.executable, str(CLI), "design-preflight",
+             "--project", str(fixture),
+             "--require", "visual-references", "--json"],
+            cwd=ROOT, capture_output=True, text=True, timeout=30, check=False,
+        )
+        self.assertNotEqual(proc.returncode, 0,
+                            msg="--require visual-references should fail when fixture has no images")
+        payload = json.loads(proc.stdout)
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["error"]["code"], "DESIGN_PREFLIGHT_BLOCKED")
+        self.assertIn("visual-references", payload["error"]["required_failed"])
+
+    def test_design_preflight_require_unknown_id_returns_usage_error(self) -> None:
+        proc = subprocess.run(
+            [sys.executable, str(CLI), "design-preflight",
+             "--project", ".", "--require", "not-a-real-check", "--json"],
+            cwd=ROOT, capture_output=True, text=True, timeout=30, check=False,
+        )
+        self.assertNotEqual(proc.returncode, 0)
+        payload = json.loads(proc.stdout)
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["error"]["code"], "USAGE")
+
+    def test_goal_min_score_rejects_weak_contract(self) -> None:
+        proc = subprocess.run(
+            [sys.executable, str(CLI), "goal",
+             "--objective", "demo", "--done", "tests pass",
+             "--stop-if", "scope creep", "--min-score", "70", "--json"],
+            cwd=ROOT, capture_output=True, text=True, timeout=15, check=False,
+        )
+        self.assertNotEqual(proc.returncode, 0,
+                            msg="weak goal contract should fail --min-score 70")
+        payload = json.loads(proc.stdout)
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["error"]["code"], "GOAL_BELOW_MIN_SCORE")
+
+    def test_goal_min_score_accepts_strong_contract(self) -> None:
+        data = run_cli(
+            "goal",
+            "--objective", "Implement openspec/changes/add-rerank exactly as specified",
+            "--done", "Each task in openspec/changes/add-rerank/tasks.md is checked off",
+            "--done", "`npm test` exits 0",
+            "--done", "Each SHALL has a passing test in tests/retrieval",
+            "--stop-if", "git diff touches auth/ outside scope",
+            "--stop-if", "A new dependency requires npm install",
+            "--min-score", "70",
+        )
+        self.assertGreaterEqual(data["score"], 70)
 
 
 if __name__ == "__main__":

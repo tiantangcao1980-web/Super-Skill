@@ -1,0 +1,20 @@
+{
+  "matches_intent": true,
+  "evidence_present": true,
+  "missing": ["a11y: missing alt text on hero image", "copy: CTA verb is generic"],
+  "score": 7,
+  "verdict": "warn",
+  "panel": {
+    "critic":   {"score": 8, "must_fix": [], "notes": "Acceptance met but error states thin."},
+    "brand":    {"score": 7, "must_fix": ["color palette has 2 untokenized hex"], "notes": "Mostly on-brand."},
+    "a11y":     {"score": 6, "must_fix": ["hero image missing alt"], "notes": "Focus order OK; alt text gaps."},
+    "copy":     {"score": 6, "must_fix": ["generic CTA"], "notes": "Voice ok but CTAs read templated."},
+    "designer": {"score": 7, "must_fix": [], "notes": "Layout works; visual rhythm thin."}
+  },
+  "composite": 7.0,
+  "threshold": 8.0,
+  "round": 2,
+  "max_rounds": 3,
+  "fallback_policy": "ship_best",
+  "trace": "fixture-warn-002"
+}

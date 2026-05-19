@@ -1,0 +1,20 @@
+{
+  "matches_intent": true,
+  "evidence_present": true,
+  "missing": [],
+  "score": 9,
+  "verdict": "pass",
+  "panel": {
+    "critic":   {"score": 9, "must_fix": [], "notes": "Meets contract; all acceptance items pass."},
+    "brand":    {"score": 9, "must_fix": [], "notes": "Tokens honored; no AI-default accent."},
+    "a11y":     {"score": 8, "must_fix": [], "notes": "Semantic landmarks present; contrast OK."},
+    "copy":     {"score": 8, "must_fix": [], "notes": "Voice consistent; no filler."},
+    "designer": {"score": 8, "must_fix": [], "notes": "Hierarchy clear; spacing rhythmic."}
+  },
+  "composite": 8.6,
+  "threshold": 8.0,
+  "round": 1,
+  "max_rounds": 3,
+  "fallback_policy": "ship_best",
+  "trace": "fixture-happy-001"
+}

@@ -1,6 +1,14 @@
 {
-  "generated_at": 1778166790,
+  "generated_at": 1779187882,
   "installable_skills": [
+    {
+      "name": "atom-catalog",
+      "description": "Use when assembling a custom Super Skill pipeline (autopilot, auto-flow, fanout track, or a third-party harness) from named atomic capabilities rather than hard-coded phases. Lists the implemented and reserved atom ids, the canonical `until` signal vocabulary, and the rule for declaring `od.pipeline.stages[*].atoms[]`.",
+      "stage": "00-orchestration",
+      "stage_label": "Orchestration",
+      "source": "core",
+      "path": "skills/00-orchestration/atom-catalog"
+    },
     {
       "name": "auto-flow",
       "description": "端到端工作流自动化:用户给一句需求,本 skill 串联 9 个 skill + 2 个 plugin,从需求澄清一直跑到交付。 Phase 0 强制做需求\"完整性 + 可行性\" gate(11 项必填,缺一项就回问用户,**不放行**);通过后自动进 7 幕,每个开发幕用 ralph-loop(默认 20 轮)+ code-simplifier 配合;最终交付。 中间默认不打扰用户,**仅在 6 个预设触发点停下来**:需求不全 / Ralph 超 20 轮 / 卡住 / 付费决策 / 破坏性操作 / 验证 ❌。 触发词:「全自动开发」「auto-flow」「从需求到交付」「自动化全流程」「我只想提需求」「auto pilot」「自动跑」「全流程自动」「一条龙」「端到端开发」。 本 skill 是 design-dev-flow 的**驱动器**:design-dev-flow 是声明式 7 幕,auto-flow 让它真的跑起来。",

@@ -1,0 +1,194 @@
+{
+  "version": "0.1.0",
+  "inspired_by": "nexu-io/open-design § first-party atom catalog. Atoms are the atomic capabilities a skill (or phase) composes into a pipeline; plugins reference them by stable id rather than reimplementing the prompt fragment.",
+  "until_signals": {
+    "version": "v1",
+    "vocabulary": [
+      "critique.score",
+      "iterations",
+      "user.confirmed",
+      "preview.ok",
+      "tests.pass",
+      "verdict.pass"
+    ],
+    "note": "Plugins MUST only use these signal names in `until:` expressions. Unknown signals cause `bin/super-skill atoms --validate` to fail."
+  },
+  "atoms": [
+    {
+      "id": "intent-contract-form",
+      "label": "Intent contract form",
+      "status": "implemented",
+      "skill": "intent-contract",
+      "task_kinds": ["new-generation", "tune-collab", "code-migration"],
+      "emits": [],
+      "notes": "Phase 01 input gate. Produces goal / acceptance / evidence / non-goals."
+    },
+    {
+      "id": "research-note",
+      "label": "Research note",
+      "status": "implemented",
+      "skill": "requirement-analysis",
+      "task_kinds": ["new-generation"],
+      "emits": [],
+      "notes": "Phase 00. Wraps user-research + market-research framings."
+    },
+    {
+      "id": "business-case-report",
+      "label": "Business case report",
+      "status": "implemented",
+      "skill": "business-case",
+      "task_kinds": ["new-generation"],
+      "emits": [],
+      "notes": "Phase 02. Six required sections + explicit go/no-go."
+    },
+    {
+      "id": "product-spec",
+      "label": "Product spec",
+      "status": "implemented",
+      "skill": "product-spec",
+      "task_kinds": ["new-generation"],
+      "emits": []
+    },
+    {
+      "id": "design-direction",
+      "label": "Design direction",
+      "status": "implemented",
+      "skill": "design-templates",
+      "task_kinds": ["new-generation"],
+      "emits": []
+    },
+    {
+      "id": "ralph-attempt",
+      "label": "Ralph loop attempt",
+      "status": "implemented",
+      "skill": "ralph-loop",
+      "task_kinds": ["new-generation", "code-migration", "tune-collab"],
+      "emits": ["iterations", "tests.pass"],
+      "notes": "Single iterate-and-verify pass. Loops until `iterations >= N || tests.pass`."
+    },
+    {
+      "id": "code-simplifier",
+      "label": "Code simplifier",
+      "status": "implemented",
+      "skill": "code-simplifier",
+      "task_kinds": ["new-generation", "code-migration", "tune-collab"],
+      "emits": []
+    },
+    {
+      "id": "critique-jury",
+      "label": "Critique jury (5-panel)",
+      "status": "implemented",
+      "skill": "output-quality-gate",
+      "task_kinds": ["new-generation", "code-migration", "tune-collab"],
+      "emits": ["critique.score", "verdict.pass"],
+      "notes": "Five panelists (critic/brand/a11y/copy/designer), weighted composite, 3 rounds, fallback_policy=ship_best."
+    },
+    {
+      "id": "launch-readiness-plan",
+      "label": "Launch readiness plan",
+      "status": "implemented",
+      "skill": "deployment-patterns",
+      "task_kinds": ["new-generation"],
+      "emits": []
+    },
+    {
+      "id": "pilot-plan",
+      "label": "Pilot / gradual rollout plan",
+      "status": "implemented",
+      "skill": "experiment-driven-delivery",
+      "task_kinds": ["new-generation", "tune-collab"],
+      "emits": []
+    },
+    {
+      "id": "commercial-delivery-plan",
+      "label": "Commercial delivery plan",
+      "status": "implemented",
+      "skill": "agentic-product-iteration",
+      "task_kinds": ["new-generation"],
+      "emits": []
+    },
+    {
+      "id": "ops-retrospective",
+      "label": "Ops and retrospective",
+      "status": "implemented",
+      "skill": "observability-triage-loop",
+      "task_kinds": ["new-generation", "tune-collab"],
+      "emits": []
+    },
+    {
+      "id": "memory-candidate-emit",
+      "label": "Memory candidate emit",
+      "status": "implemented",
+      "skill": "agent-memory-dream-loop",
+      "task_kinds": ["new-generation", "tune-collab", "code-migration"],
+      "emits": [],
+      "notes": "Emits a reviewable memory candidate; NEVER stores raw prompt / raw response."
+    },
+    {
+      "id": "design-craft-gate",
+      "label": "Design craft preflight",
+      "status": "implemented",
+      "skill": "design-craft-gate",
+      "task_kinds": ["new-generation", "tune-collab"],
+      "emits": []
+    },
+    {
+      "id": "design-audit-scan",
+      "label": "Design anti-slop audit",
+      "status": "implemented",
+      "skill": "anti-slop",
+      "task_kinds": ["new-generation", "tune-collab"],
+      "emits": []
+    },
+    {
+      "id": "discovery-question-form",
+      "label": "Discovery question form",
+      "status": "planned",
+      "skill": null,
+      "task_kinds": ["new-generation", "tune-collab"],
+      "emits": ["user.confirmed"],
+      "notes": "Reserved id for ambiguous-brief turn-1 question form (mirrors open-design)."
+    },
+    {
+      "id": "direction-picker",
+      "label": "Direction picker",
+      "status": "planned",
+      "skill": null,
+      "task_kinds": ["new-generation", "tune-collab"],
+      "emits": ["user.confirmed"],
+      "notes": "Reserved id for 3-5 direction picker before final commit."
+    },
+    {
+      "id": "figma-extract",
+      "label": "Figma node tree + token extractor",
+      "status": "planned",
+      "skill": null,
+      "task_kinds": ["figma-migration"],
+      "emits": []
+    },
+    {
+      "id": "token-map",
+      "label": "Token map onto active design system",
+      "status": "planned",
+      "skill": null,
+      "task_kinds": ["code-migration", "figma-migration"],
+      "emits": []
+    },
+    {
+      "id": "diff-review",
+      "label": "Rewrite-as-diff review",
+      "status": "planned",
+      "skill": null,
+      "task_kinds": ["code-migration", "tune-collab"],
+      "emits": []
+    },
+    {
+      "id": "live-artifact",
+      "label": "Live artifact (dashboard / preview)",
+      "status": "planned",
+      "skill": null,
+      "task_kinds": ["new-generation", "tune-collab"],
+      "emits": ["preview.ok"]
+    }
+  ]
+}

@@ -203,6 +203,95 @@ DESIGN_AUDIT_IGNORES = {
 DESIGN_AUDIT_SEVERITY_WEIGHTS = {"P0": 25, "P1": 12, "P2": 6, "P3": 3}
 
 DESIGN_AUDIT_RULES = [
+    # ------------------------------------------------------------------
+    # Seven cardinal sins (borrowed from nexu-io/open-design + refero_skill).
+    # These are P0: must-fix on sight. They sit at the top of the rule list so
+    # design-audit reports them first.
+    # ------------------------------------------------------------------
+    {
+        "id": "tailwind-indigo-hex",
+        "category": "ai-slop",
+        "severity": "P0",
+        "pattern": re.compile(
+            r"(?:color|background(?:-color)?|fill|stroke|--accent)\s*[:=]\s*['\"]?"
+            r"#(?:6366f1|4f46e5|4338ca|3730a3|8b5cf6|7c3aed|a855f7)\b",
+            re.I,
+        ),
+        "recommendation": "Default Tailwind indigo is the textbook AI tell. Use var(--accent) bound to the brand.",
+    },
+    {
+        "id": "trust-two-stop-gradient",
+        "category": "ai-slop",
+        "severity": "P0",
+        "pattern": re.compile(
+            r"linear-gradient\([^)]*?\b(?:purple|violet|indigo)\b[^)]*?\b(?:blue|cyan|sky)\b|"
+            r"linear-gradient\([^)]*?\b(?:blue|sky)\b[^)]*?\bcyan\b|"
+            r"linear-gradient\([^)]*?\bindigo\b[^)]*?\b(?:pink|fuchsia|rose)\b|"
+            r"\bfrom-(?:purple|violet|indigo)-\d+\b[^;\n]{0,60}\bto-(?:blue|cyan|sky|pink|fuchsia|rose)-\d+\b",
+            re.I,
+        ),
+        "recommendation": "Two-stop purple/indigo→blue/cyan/pink gradients on hero surfaces are the canonical AI-template cliché. Use a flat tokenized surface plus deliberate typography hierarchy.",
+    },
+    {
+        "id": "emoji-feature-icon",
+        "category": "ai-slop",
+        "severity": "P0",
+        "pattern": re.compile(
+            r"<(?:h[1-6]|button|li)\b[^>]*>[^<\n]{0,40}[✨⚡✅\U0001f3af\U0001f389\U0001f4a1\U0001f525\U0001f680\U0001f31f\U0001f4a5\U0001f31f]|"
+            r"class\s*=\s*['\"][^'\"]*\bicon\b[^'\"]*['\"][^>]*>[^<\n]{0,40}[✨⚡\U0001f3af\U0001f389\U0001f4a1\U0001f525\U0001f680\U0001f31f]",
+            re.I,
+        ),
+        "recommendation": "Replace emoji with 1.6-1.8px monoline SVG icons using currentColor; emoji as feature icons is the loudest AI tell.",
+    },
+    {
+        "id": "invented-metric",
+        "category": "ai-slop",
+        "severity": "P0",
+        "pattern": re.compile(
+            r"\b\d+(?:\.\d+)?\s*[x×]\s*(?:faster|more\s+(?:productive|efficient|reliable)|better|smarter)\b|"
+            r"\b99\.\d+%\s*(?:uptime|reliability|accuracy)\b|"
+            r"\b\d{2,}%\s+(?:increase|improvement|boost)\b(?![^<]{0,80}(?:source|cite|ref|footnote))",
+            re.I,
+        ),
+        "recommendation": "Either cite a real source / footnote (`<sup>1</sup>`) for the metric, or replace with a labelled placeholder until evidence exists.",
+    },
+    {
+        "id": "lorem-filler-copy",
+        "category": "ai-slop",
+        "severity": "P0",
+        "pattern": re.compile(
+            r"\blorem\s+ipsum\b|"
+            r"\bfeature\s+(?:one|two|three|1|2|3)\b|"
+            r"\b(?:placeholder|sample)\s+(?:text|content|copy)\b|"
+            r"\byour\s+(?:text|content|headline)\s+here\b",
+            re.I,
+        ),
+        "recommendation": "Empty sections are design problems to solve with composition or empty states — not by inventing words.",
+    },
+    {
+        "id": "ai-dashboard-tile",
+        "category": "ai-slop",
+        "severity": "P0",
+        "pattern": re.compile(
+            r"\brounded-(?:xl|2xl|3xl)\b[^;\n]{0,80}\bborder-l-(?:[3-8])\b[^;\n]{0,80}\bborder-(?:red|orange|amber|yellow|green|emerald|teal|cyan|blue|indigo|violet|purple|pink|rose)-\d+\b|"
+            r"border-radius\s*:\s*(?:[8-9]|[1-9]\d+)px[^\n]{0,160}border-(?:left|inline-start)\s*:\s*[3-8]px\s+solid\s+(?:#(?!d|e|f)[0-9a-f]{6}|var\(--(?:accent|success|warning|danger|info))",
+            re.I,
+        ),
+        "recommendation": "The rounded card + colored left-border combo is the canonical AI dashboard tile. Drop the radius or drop the left border — not both at once.",
+    },
+    {
+        "id": "placeholder-cdn",
+        "category": "ai-slop",
+        "severity": "P1",
+        "pattern": re.compile(
+            r"https?://(?:images?\.)?(?:unsplash\.com|placehold\.co|placekitten\.com|picsum\.photos|via\.placeholder\.com)\b",
+            re.I,
+        ),
+        "recommendation": "External placeholder CDNs are fragile and obvious. Ship local SVG placeholders or real assets.",
+    },
+    # ------------------------------------------------------------------
+    # Existing rules (P1-P3 craft heuristics).
+    # ------------------------------------------------------------------
     {
         "id": "gradient-text",
         "category": "ai-slop",
@@ -1943,6 +2032,133 @@ def cmd_triggers(args: argparse.Namespace) -> int:
     return EXIT_RUNTIME if failures else EXIT_OK
 
 
+# --- atom catalog (manifests/atoms.json) ---------------------------------
+
+def atom_catalog_path() -> Path:
+    return ROOT / "manifests" / "atoms.json"
+
+
+def load_atom_catalog() -> dict:
+    path = atom_catalog_path()
+    if not path.exists():
+        return {"version": None, "atoms": [], "until_signals": {"vocabulary": []}}
+    return read_json_file(path) or {}
+
+
+def _extract_atom_refs(payload) -> tuple[list[str], list[str]]:
+    """Walk a nested dict/list and return (atom_ids, until_signal_names)."""
+    atom_ids: list[str] = []
+    signals: list[str] = []
+
+    def walk(node):
+        if isinstance(node, dict):
+            stages = node.get("stages") or node.get("pipeline")
+            if isinstance(stages, list):
+                for stage in stages:
+                    if isinstance(stage, dict):
+                        atoms = stage.get("atoms")
+                        if isinstance(atoms, list):
+                            atom_ids.extend(str(a) for a in atoms if isinstance(a, str))
+                        until = stage.get("until")
+                        if isinstance(until, str):
+                            for token in re.findall(r"[a-zA-Z][\w.]*", until):
+                                if "." in token or token == "iterations":
+                                    signals.append(token)
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    walk(payload)
+    return atom_ids, signals
+
+
+def cmd_atoms(args: argparse.Namespace) -> int:
+    catalog = load_atom_catalog()
+    atoms = catalog.get("atoms", [])
+    if args.status != "all":
+        atoms_view = [a for a in atoms if a.get("status") == args.status]
+    else:
+        atoms_view = atoms
+
+    failures: list[dict] = []
+    warnings: list[dict] = []
+    validation: dict | None = None
+
+    if args.validate:
+        target = Path(args.validate).expanduser()
+        if not target.exists():
+            failures.append({"check": "validate-path", "message": f"file not found: {target}"})
+        else:
+            try:
+                if target.suffix.lower() in {".yaml", ".yml"}:
+                    raw = target.read_text(encoding="utf-8")
+                    # minimal YAML→JSON shim: try json first, else best-effort key:value
+                    try:
+                        payload = json.loads(raw)
+                    except Exception:
+                        try:
+                            import yaml  # type: ignore
+                            payload = yaml.safe_load(raw)
+                        except Exception as exc:
+                            payload = None
+                            failures.append({"check": "validate-parse", "message": f"YAML parse failed: {exc}"})
+                else:
+                    payload = read_json_file(target)
+            except Exception as exc:
+                payload = None
+                failures.append({"check": "validate-parse", "message": str(exc)})
+
+            if payload is not None:
+                referenced_atoms, referenced_signals = _extract_atom_refs(payload)
+                catalog_ids = {a.get("id") for a in atoms}
+                planned_ids = {a.get("id") for a in atoms if a.get("status") == "planned"}
+                signal_vocab = set(catalog.get("until_signals", {}).get("vocabulary", []))
+                for atom_id in referenced_atoms:
+                    if atom_id not in catalog_ids:
+                        failures.append({"check": "unknown-atom", "atom": atom_id})
+                    elif atom_id in planned_ids:
+                        warnings.append({"check": "planned-atom", "atom": atom_id,
+                                         "message": "atom is reserved but not yet implemented"})
+                for signal in referenced_signals:
+                    if signal not in signal_vocab:
+                        failures.append({"check": "unknown-until-signal", "signal": signal})
+                validation = {
+                    "file": str(target),
+                    "referenced_atoms": referenced_atoms,
+                    "referenced_signals": referenced_signals,
+                }
+
+    payload = {
+        "version": catalog.get("version"),
+        "atoms_total": len(atoms),
+        "implemented": sum(1 for a in atoms if a.get("status") == "implemented"),
+        "planned": sum(1 for a in atoms if a.get("status") == "planned"),
+        "until_signals": catalog.get("until_signals", {}),
+        "atoms": atoms_view,
+        "warnings": warnings,
+        "failures": failures,
+        "validation": validation,
+    }
+
+    if args.json:
+        emit_json(not failures, payload, code="ATOM_VALIDATION_FAILED" if failures else None)
+    else:
+        print(f"Atom catalog v{catalog.get('version')}: {payload['atoms_total']} total "
+              f"({payload['implemented']} implemented, {payload['planned']} reserved)")
+        signals = payload["until_signals"].get("vocabulary", [])
+        if signals:
+            print(f"until signals: {', '.join(signals)}")
+        for atom in atoms_view:
+            print(f"  [{atom.get('status','?'):11s}] {atom.get('id'):28s} -> {atom.get('skill') or '<none>'}")
+        for warning in warnings:
+            print(f"  warning: {warning}")
+        for failure in failures:
+            print(f"  FAIL: {failure}")
+    return EXIT_RUNTIME if failures else EXIT_OK
+
+
 def eval_project_dirs() -> list[Path]:
     root = EVALS_ROOT / "projects"
     if not root.exists():
@@ -2629,13 +2845,34 @@ def llm_call_stub(stage: str, system: str, user: str) -> dict:
                 ```
                 """)
     elif stage in ("gate", "06-gate", "07-gate"):
+        # Critique Jury: five panelist scores + weighted composite.
+        # Stub picks deterministic per-panel scores that clear the 8.0 threshold
+        # so the happy-path CI flow stays green. Real LLM mode is expected to
+        # emit per-panel rationale and let the composite formula compute the
+        # ship/warn/fail verdict.
+        panel = {
+            "critic":   {"score": 9, "must_fix": [], "notes": "Meets contract; acceptance items satisfied (stub)."},
+            "brand":    {"score": 9, "must_fix": [], "notes": "Token honored; no AI-default accent (stub)."},
+            "a11y":     {"score": 8, "must_fix": [], "notes": "Semantic structure OK; focus states present (stub)."},
+            "copy":     {"score": 8, "must_fix": [], "notes": "Concise, no filler copy (stub)."},
+            "designer": {"score": 8, "must_fix": [], "notes": "Layout balanced; type hierarchy clear (stub)."},
+        }
+        composite = critique_jury_composite(panel)
+        verdict = critique_jury_verdict(composite)
         body = json.dumps(
             {
                 "matches_intent": True,
                 "evidence_present": True,
                 "missing": [],
-                "score": 8,
-                "verdict": "pass",
+                "score": int(round(composite)),
+                "verdict": verdict,
+                "panel": panel,
+                "composite": composite,
+                "threshold": CRITIQUE_JURY_THRESHOLD,
+                "weights": CRITIQUE_JURY_WEIGHTS,
+                "round": 1,
+                "max_rounds": CRITIQUE_JURY_MAX_ROUNDS,
+                "fallback_policy": "ship_best",
                 "trace": f"stub-{digest}",
             },
             ensure_ascii=False,
@@ -2825,6 +3062,58 @@ def llm_grade_gate(text: str) -> dict:
         return {"parsed": False, "verdict": verdict, "score": None, "ok": verdict in ("pass", "warn")}
 
 
+# --- Critique Jury (Phase 6 multi-panel scoring) -------------------------
+#
+# Borrowed from nexu-io/open-design's Critique Theater design:
+# five fixed panelists, weighted composite, threshold-driven convergence.
+# Super Skill keeps the contract provider-neutral and stub-friendly so CI can
+# verify the schema without an LLM.
+
+CRITIQUE_JURY_WEIGHTS: dict[str, float] = {
+    # critic carries the heaviest weight: "does it meet the brief?"
+    "critic": 0.40,
+    "brand": 0.20,
+    "a11y": 0.20,
+    "copy": 0.20,
+    # designer aesthetic notes travel for human review but do not gate ship.
+    # Same v1 choice open-design made; weight is exposed so the contract can
+    # be re-tuned without changing the schema.
+    "designer": 0.00,
+}
+CRITIQUE_JURY_PANELS = tuple(CRITIQUE_JURY_WEIGHTS.keys())
+CRITIQUE_JURY_THRESHOLD = 8.0
+CRITIQUE_JURY_MAX_ROUNDS = 3
+
+
+def critique_jury_composite(panel: dict) -> float:
+    """Compute weighted composite from a per-panelist score dict.
+
+    Missing panelists are scored as 0; the weights sum is preserved so
+    incomplete panels deterministically under-shoot the threshold.
+    """
+    total = 0.0
+    for role, weight in CRITIQUE_JURY_WEIGHTS.items():
+        entry = panel.get(role) if isinstance(panel, dict) else None
+        score = 0.0
+        if isinstance(entry, dict):
+            try:
+                score = float(entry.get("score", 0) or 0)
+            except (TypeError, ValueError):
+                score = 0.0
+        elif isinstance(entry, (int, float)):
+            score = float(entry)
+        total += weight * score
+    return round(total, 2)
+
+
+def critique_jury_verdict(composite: float) -> str:
+    if composite >= CRITIQUE_JURY_THRESHOLD:
+        return "pass"
+    if composite >= CRITIQUE_JURY_THRESHOLD - 1.5:
+        return "warn"
+    return "fail"
+
+
 # --- autopilot: autonomous harness-engineering closed loop ---------------
 #
 # A runnable end-to-end orchestrator that takes one user prompt and walks it
@@ -2862,10 +3151,16 @@ AUTOPILOT_PHASES = [
         "redundant comments, future-proofing shims. Preserve observable behavior. "
         "Output the simplified deliverable."),
     ("07-gate",          "Output Quality Gate",         "output-quality-gate",       "07-quality-gate.json",
-        "Stage 6: 测试与验证. Apply `output-quality-gate`. Score the simplified deliverable "
-        "against the original contract. Strict JSON only: "
+        "Stage 6: 测试与验证. Apply `output-quality-gate` as a **Critique Jury**: five fixed "
+        "panelists (critic, brand, a11y, copy, designer) score the simplified deliverable "
+        "0-10 independently. Verdict is derived from the weighted composite "
+        "(critic 0.40 + brand 0.20 + a11y 0.20 + copy 0.20 + designer 0.00); "
+        "composite ≥ 8.0 = pass, ≥ 6.5 = warn, < 6.5 = fail. Strict JSON only: "
         '{"matches_intent": bool, "evidence_present": bool, "missing": [str], "score": int(0..10), '
-        '"verdict": "pass"|"warn"|"fail", "trace": str}.'),
+        '"verdict": "pass"|"warn"|"fail", "panel": {"critic": {"score": int, "must_fix": [str], "notes": str}, '
+        '"brand": {...}, "a11y": {...}, "copy": {...}, "designer": {...}}, '
+        '"composite": float, "threshold": 8.0, "round": int, "max_rounds": 3, '
+        '"fallback_policy": "ship_best", "trace": str}.'),
     ("08-launch",        "Launch Readiness",            "deployment-patterns",       "08-launch-readiness.md",
         "Stage 7: 上线准备 / 商业化准备. Apply `deployment-patterns` (with "
         "`experiment-driven-delivery`/`observability-triage-loop` framings). "
@@ -3194,13 +3489,36 @@ def autopilot_grade_gate(text: str) -> dict:
     try:
         body = json.loads(text)
         verdict = body.get("verdict")
-        return {
+        panel = body.get("panel") if isinstance(body.get("panel"), dict) else None
+        composite = body.get("composite")
+        # Recompute composite from panel for tamper-evidence: a model that
+        # claims verdict=pass while the panel scores say otherwise gets caught.
+        recomputed = None
+        if panel:
+            recomputed = critique_jury_composite(panel)
+            if composite is None:
+                composite = recomputed
+        result = {
             "parsed": True,
             "verdict": verdict,
             "score": body.get("score"),
             "missing": body.get("missing", []),
+            "panel": panel,
+            "composite": composite,
+            "composite_recomputed": recomputed,
+            "threshold": body.get("threshold", CRITIQUE_JURY_THRESHOLD),
+            "round": body.get("round"),
             "ok": bool(body.get("matches_intent")) and verdict in ("pass", "warn"),
         }
+        # If a panel is present, the verdict must agree with the recomputed
+        # composite under the canonical threshold; otherwise mark not-ok so the
+        # gate cannot be gamed by misreporting verdict.
+        if panel and recomputed is not None:
+            canonical_verdict = critique_jury_verdict(recomputed)
+            result["canonical_verdict"] = canonical_verdict
+            if canonical_verdict == "fail":
+                result["ok"] = False
+        return result
     except Exception:
         m = re.search(r"verdict[\"'\s:]*([a-z]+)", text, re.I)
         return {"parsed": False, "verdict": (m.group(1).lower() if m else None), "score": None, "ok": False}
@@ -3332,6 +3650,71 @@ def autopilot_pending_marker(workspace: Path) -> Path:
     return workspace / "pending.json"
 
 
+def autopilot_default_pipeline_path() -> Path:
+    return ROOT / "manifests" / "pipelines" / "autopilot.json"
+
+
+def autopilot_load_pipeline(path: Path | None) -> tuple[list[tuple], dict]:
+    """Load a pipeline JSON and return (phases_in_order, meta_info).
+
+    Each returned tuple has the same shape as `AUTOPILOT_PHASES`:
+      (phase_id, label, canonical_skill, output_filename, system_prefix).
+
+    The JSON provides ordering + atom references + output filenames. Per-phase
+    prompt fragments still come from the in-code AUTOPILOT_PHASES table,
+    looked up by `phase_id_for_resume` (or `stage.id` if absent). This keeps
+    backward-compatibility with existing run.json checkpoints. Future
+    PR (atom-runner Phase 3) can move the prompt fragments out into a per-atom
+    dict so the JSON becomes the complete source of truth.
+
+    Returns ([], {error: ...}) if the file is missing or any stage references
+    an unknown phase id.
+    """
+    if path is None:
+        path = autopilot_default_pipeline_path()
+    path = path.expanduser().resolve()
+    if not path.exists():
+        return [], {"error": f"pipeline file not found: {path}"}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        return [], {"error": f"pipeline JSON parse failed: {exc}"}
+
+    stages = (data.get("od") or {}).get("pipeline", {}).get("stages") or []
+    if not stages:
+        return [], {"error": "pipeline has no stages"}
+
+    phase_index = {p[0]: p for p in AUTOPILOT_PHASES}
+    resolved: list[tuple] = []
+    missing: list[str] = []
+    for stage in stages:
+        resume_id = stage.get("phase_id_for_resume") or stage.get("id")
+        phase_tuple = phase_index.get(resume_id)
+        if phase_tuple is None:
+            missing.append(f"{stage.get('id')} -> {resume_id}")
+            continue
+        # Override phase_id / label / output from the JSON to honor the
+        # ultra-lite use case where the pipeline keeps the in-code prompt
+        # but renumbers phases for compactness.
+        phase_id = stage.get("id") or phase_tuple[0]
+        label = stage.get("label") or phase_tuple[1]
+        canonical_skill = phase_tuple[2]
+        output_filename = stage.get("output") or phase_tuple[3]
+        system_prefix = phase_tuple[4]
+        resolved.append((phase_id, label, canonical_skill, output_filename, system_prefix))
+
+    if missing:
+        return [], {"error": f"pipeline stages with unknown phase ids: {missing}"}
+
+    return resolved, {
+        "pipeline_path": str(path),
+        "pipeline_name": data.get("name"),
+        "pipeline_label": data.get("label"),
+        "spec_version": data.get("specVersion"),
+        "stage_count": len(resolved),
+    }
+
+
 def run_autopilot_inner(
     prompt: str | None,
     provider: str,
@@ -3346,6 +3729,7 @@ def run_autopilot_inner(
     based_on: str | None,
     feedback: str | None,
     hitl: str | None = None,
+    pipeline_path: Path | None = None,
 ) -> tuple[bool, dict]:
     """Pure-function autopilot core. Returns (overall_ok, payload).
 
@@ -3389,7 +3773,23 @@ def run_autopilot_inner(
     hitl_set = set((hitl or "").split(",")) if hitl else set()
     hitl_set.discard("")
 
-    phases_to_run = [p for p in AUTOPILOT_PHASES if p[0] not in skip_set]
+    # atom-runner Phase 2: load the pipeline JSON (default = autopilot.json).
+    # If the file is missing or invalid, fall back to the in-code constant so
+    # the runner never breaks on a missing pipeline file.
+    base_phases = AUTOPILOT_PHASES
+    pipeline_meta: dict = {}
+    loaded_phases, pipeline_meta = autopilot_load_pipeline(pipeline_path)
+    if loaded_phases:
+        base_phases = loaded_phases
+    elif pipeline_path is not None:
+        # Explicit --pipeline override that failed to load = hard error.
+        return False, {
+            "message": pipeline_meta.get("error", "pipeline load failed"),
+            "_error_code": "USAGE",
+        }
+    # Implicit default failure: log but use in-code phases as safety net.
+
+    phases_to_run = [p for p in base_phases if p[0] not in skip_set]
     requested_skills = sorted({p[2] for p in phases_to_run})
 
     # If a previous run paused via HITL, clear the marker before continuing.
@@ -3528,6 +3928,7 @@ def run_autopilot_inner(
         "parent_run_id": based_on if iteration else None,
         "feedback": feedback if iteration else None,
         "lineage": lineage,
+        "pipeline": pipeline_meta or None,
         "phases": [
             {k: v for k, v in pr.items() if k != "text"}
             for pr in phase_results
@@ -3547,6 +3948,8 @@ def run_autopilot_inner(
 
 
 def cmd_autopilot(args: argparse.Namespace) -> int:
+    pipeline_arg = getattr(args, "pipeline", None)
+    pipeline_path = Path(pipeline_arg).expanduser().resolve() if pipeline_arg else None
     overall_ok, payload = run_autopilot_inner(
         prompt=args.prompt,
         provider=args.provider,
@@ -3561,6 +3964,7 @@ def cmd_autopilot(args: argparse.Namespace) -> int:
         based_on=getattr(args, "based_on", None),
         feedback=getattr(args, "feedback", None),
         hitl=getattr(args, "hitl", None),
+        pipeline_path=pipeline_path,
     )
     if payload.get("_error_code") == "USAGE":
         msg = payload.get("message", "usage error")
@@ -6368,6 +6772,12 @@ def cmd_design_audit(args: argparse.Namespace) -> int:
     return EXIT_RUNTIME if not ok else EXIT_OK
 
 
+DESIGN_PREFLIGHT_CHECK_IDS = {
+    "product-context", "design-context", "shape-brief",
+    "tokens", "visual-references", "anti-pattern-gate",
+}
+
+
 def cmd_design_preflight(args: argparse.Namespace) -> int:
     project = Path(args.project)
     if not project.expanduser().exists():
@@ -6377,8 +6787,69 @@ def cmd_design_preflight(args: argparse.Namespace) -> int:
             print(f"error: project path not found: {project}", file=sys.stderr)
         return EXIT_USAGE
 
+    def _split_ids(raws: list[str] | None) -> list[str]:
+        out: list[str] = []
+        for raw in raws or []:
+            for item in raw.split(","):
+                item = item.strip()
+                if not item:
+                    continue
+                if item not in DESIGN_PREFLIGHT_CHECK_IDS:
+                    return [item]  # caller handles error reporting
+                out.append(item)
+        return out
+
+    extra_required = _split_ids(args.require)
+    if extra_required and extra_required[0] not in DESIGN_PREFLIGHT_CHECK_IDS:
+        bad = extra_required[0]
+        if args.json:
+            emit_json(False, {"message": f"unknown --require id: {bad}",
+                              "known": sorted(DESIGN_PREFLIGHT_CHECK_IDS)}, code="USAGE")
+        else:
+            print(f"error: unknown --require id: {bad}", file=sys.stderr)
+            print(f"  known: {sorted(DESIGN_PREFLIGHT_CHECK_IDS)}", file=sys.stderr)
+        return EXIT_USAGE
+
+    skip_ids = _split_ids(getattr(args, "skip", None) or [])
+    if skip_ids and skip_ids[0] not in DESIGN_PREFLIGHT_CHECK_IDS:
+        bad = skip_ids[0]
+        if args.json:
+            emit_json(False, {"message": f"unknown --skip id: {bad}",
+                              "known": sorted(DESIGN_PREFLIGHT_CHECK_IDS)}, code="USAGE")
+        else:
+            print(f"error: unknown --skip id: {bad}", file=sys.stderr)
+            print(f"  known: {sorted(DESIGN_PREFLIGHT_CHECK_IDS)}", file=sys.stderr)
+        return EXIT_USAGE
+
     payload = design_preflight_scan(project, max_findings=args.max_findings)
-    ok = not args.strict or payload["mutation"] == "open"
+    failing_required = [c["id"] for c in payload["checks"]
+                        if c["id"] in extra_required and not c["ok"]]
+    payload["required_failed"] = failing_required
+    payload["required"] = sorted(set(extra_required))
+    payload["skipped"] = sorted(set(skip_ids))
+    mutation_open = payload["mutation"] == "open"
+
+    # --strict semantics: every preflight check must be ok, EXCEPT ids the user
+    # explicitly opted out of via --skip. This was previously only enforcing
+    # the anti-pattern gate (mutation), which let visual-references silently
+    # slip through and made `--strict` dishonest. open-design's craft gate
+    # treats missing visual refs as a real failure when fidelity matters.
+    strict_failed: list[str] = []
+    if args.strict:
+        for check in payload["checks"]:
+            if check["id"] in skip_ids:
+                continue
+            if not check["ok"]:
+                strict_failed.append(check["id"])
+        if not mutation_open and "anti-pattern-gate" not in skip_ids and "anti-pattern-gate" not in strict_failed:
+            strict_failed.append("anti-pattern-gate")
+    payload["strict_failed"] = strict_failed
+
+    ok = True
+    if failing_required:
+        ok = False
+    if args.strict and strict_failed:
+        ok = False
     if args.json:
         emit_json(ok, payload, code="DESIGN_PREFLIGHT_BLOCKED" if not ok else None)
     else:
@@ -6386,9 +6857,19 @@ def cmd_design_preflight(args: argparse.Namespace) -> int:
         print(payload["preflight"])
         for check in payload["checks"]:
             mark = "ok" if check["ok"] else "missing"
-            print(f"- {check['id']}: {mark}")
-            if not check["ok"]:
+            tags = []
+            if check["id"] in extra_required:
+                tags.append("required")
+            if check["id"] in skip_ids:
+                tags.append("skipped")
+            tag_str = f" ({', '.join(tags)})" if tags else ""
+            print(f"- {check['id']}: {mark}{tag_str}")
+            if not check["ok"] and check["id"] not in skip_ids:
                 print(f"  recommendation: {check['recommendation']}")
+        if failing_required:
+            print(f"required checks failing: {', '.join(failing_required)}")
+        if args.strict and strict_failed:
+            print(f"strict mode blocking: {', '.join(strict_failed)}")
     return EXIT_RUNTIME if not ok else EXIT_OK
 
 
@@ -6428,6 +6909,50 @@ def cmd_audit(args: argparse.Namespace) -> int:
         path = ROOT / rel
         executable_checks.append({"path": rel, "exists": path.exists(), "executable": os.access(path, os.X_OK)})
 
+    # super-skill.json marketplace manifests (optional sidecar per skill).
+    # Borrowed from open-design's two-layer pattern: SKILL.md stays portable;
+    # OD-only / marketplace metadata lives in super-skill.json so SKILL.md is
+    # not polluted by harness-specific fields. We only validate parse + minimal
+    # required keys when the file is present.
+    super_skill_manifests: list[dict] = []
+    super_skill_manifest_errors: list[dict] = []
+    SUPER_SKILL_REQUIRED_KEYS = ("specVersion", "name", "version")
+    for skill in skills:
+        sidecar = ROOT / Path(skill.relative_path) / "super-skill.json"
+        if not sidecar.exists():
+            continue
+        rel_sidecar = sidecar.relative_to(ROOT).as_posix()
+        try:
+            data = json.loads(sidecar.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            super_skill_manifest_errors.append({
+                "path": rel_sidecar, "error": f"invalid JSON: {exc}"
+            })
+            continue
+        if not isinstance(data, dict):
+            super_skill_manifest_errors.append({
+                "path": rel_sidecar, "error": "top-level value must be an object"
+            })
+            continue
+        missing = [k for k in SUPER_SKILL_REQUIRED_KEYS if k not in data]
+        if missing:
+            super_skill_manifest_errors.append({
+                "path": rel_sidecar, "error": f"missing required keys: {missing}"
+            })
+            continue
+        if data.get("name") != skill.name:
+            super_skill_manifest_errors.append({
+                "path": rel_sidecar,
+                "error": f"name mismatch: SKILL.md says {skill.name!r}, super-skill.json says {data.get('name')!r}",
+            })
+            continue
+        super_skill_manifests.append({
+            "path": rel_sidecar,
+            "name": data.get("name"),
+            "version": data.get("version"),
+            "tags": data.get("tags", []),
+        })
+
     failures = []
     if install_dups:
         failures.append({"check": "installable-duplicates", "items": sorted(install_dups)})
@@ -6453,6 +6978,8 @@ def cmd_audit(args: argparse.Namespace) -> int:
         failures.append({"check": "executables", "items": missing_exec})
     if secret_findings:
         failures.append({"check": "secrets", "items": secret_findings})
+    if super_skill_manifest_errors:
+        failures.append({"check": "super-skill-manifests", "items": super_skill_manifest_errors})
 
     payload = {
         "skills_total": len(skills),
@@ -6485,6 +7012,8 @@ def cmd_audit(args: argparse.Namespace) -> int:
         "risky_pattern_findings": risky_findings,
         "risky_pattern_summary": risky_summary,
         "executable_checks": executable_checks,
+        "super_skill_manifests": super_skill_manifests,
+        "super_skill_manifest_errors": super_skill_manifest_errors,
         "failures": failures,
     }
 
@@ -6513,6 +7042,10 @@ def cmd_audit(args: argparse.Namespace) -> int:
             f"{risky_summary['governed']} governed, "
             f"{risky_summary['ungoverned']} ungoverned"
         )
+        print(
+            f"super-skill.json sidecars: {len(super_skill_manifests)} valid, "
+            f"{len(super_skill_manifest_errors)} invalid"
+        )
         if failures:
             print("\nFailures:")
             for failure in failures:
@@ -6540,13 +7073,38 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             version = str(exc)
         checks.append({"name": name, "ok": ok, "version": version})
 
+    # Ralph multi-language readiness: each runner is gated by toolchain
+    # availability. Doctor reports which language paths can actually verify a
+    # ralph attempt today. Missing toolchains are not hard failures; the
+    # runner returns kind="skipped" with a reason. Spec: specs/current/ralph-multi-language.md
+    ralph_runners = []
+    for lang, exe in (
+        ("python", "python3"),
+        ("javascript", "node"),
+        ("bash", "bash"),
+        ("go", "go"),
+    ):
+        path = shutil.which(exe)
+        ralph_runners.append({
+            "language": lang,
+            "executable": exe,
+            "available": bool(path),
+            "path": path or "",
+        })
+
     ok = all(c["ok"] for c in checks[:3])
     if args.json:
-        emit_json(ok, {"checks": checks}, code="DEPENDENCY_MISSING" if not ok else None)
+        emit_json(ok, {"checks": checks, "ralph_runners": ralph_runners},
+                  code="DEPENDENCY_MISSING" if not ok else None)
     else:
         for check in checks:
             mark = "OK" if check["ok"] else "MISS"
             print(f"[{mark}] {check['name']}: {check['version']}")
+        print()
+        print("Ralph multi-language runners (autopilot phase 5 verifies these):")
+        for runner in ralph_runners:
+            mark = "OK" if runner["available"] else "MISS"
+            print(f"  [{mark}] {runner['language']:11s} via {runner['executable']}")
     return EXIT_OK if ok else EXIT_DEPENDENCY
 
 
@@ -6830,8 +7388,11 @@ def goal_build_contract(args: argparse.Namespace) -> dict:
 
 def cmd_goal(args: argparse.Namespace) -> int:
     payload = goal_build_contract(args)
+    min_score = getattr(args, "min_score", 0) or 0
+    ok = payload["score"] >= min_score
+    payload["min_score"] = min_score
     if args.json:
-        emit_json(True, payload)
+        emit_json(ok, payload, code="GOAL_BELOW_MIN_SCORE" if not ok else None)
     else:
         print(payload["goal"])
         print()
@@ -6839,7 +7400,9 @@ def cmd_goal(args: argparse.Namespace) -> int:
         print(f"Audit-friendliness: {verdict} ({payload['score']}/100)")
         for warning in payload["warnings"]:
             print(f"warning: {warning}")
-    return EXIT_OK
+        if not ok:
+            print(f"error: score {payload['score']} < required min-score {min_score}", file=sys.stderr)
+    return EXIT_RUNTIME if not ok else EXIT_OK
 
 
 def cmd_describe(args: argparse.Namespace) -> int:
@@ -7216,7 +7779,59 @@ def adapt_hermes_instructions(canonical: Path) -> list[str]:
 
 
 def cmd_adapt(args: argparse.Namespace) -> int:
+    # --detect-only path: use the AgentAdapter protocol instead of codegen.
+    # Spec: specs/current/agent-adapter-runtime.md
+    if args.detect_only:
+        runtime_id = args.runtime or args.tool
+        if not runtime_id:
+            msg = ("--detect-only requires --runtime <id> (or --tool <id> for the legacy alias). "
+                   "Known runtimes: null, claude-code, codex.")
+            if args.json:
+                emit_json(False, {"message": msg}, code="USAGE")
+            else:
+                print(f"error: {msg}", file=sys.stderr)
+            return EXIT_USAGE
+        # Lazy-import the adapter package so legacy adapt code path doesn't pay.
+        try:
+            sys.path.insert(0, str(ROOT / "scripts"))
+            from super_skill_adapters import detect_runtime  # type: ignore
+        except Exception as exc:
+            if args.json:
+                emit_json(False, {"message": f"adapter import failed: {exc}"}, code="DEPENDENCY_MISSING")
+            else:
+                print(f"error: adapter import failed: {exc}", file=sys.stderr)
+            return EXIT_RUNTIME
+        result = detect_runtime(runtime_id)
+        payload = result.to_dict()
+        if args.json:
+            emit_json(True, payload)
+        else:
+            d = payload["detection"]
+            print(f"adapter: {payload['id']} ({payload['displayName']})")
+            if d:
+                print(f"  detected: {d['executablePath']}")
+                print(f"  version: {d.get('version', '')}")
+                print(f"  auth: {d.get('authState')}")
+                if d.get("configDir"):
+                    print(f"  config: {d['configDir']}")
+                if d.get("skillsDir"):
+                    print(f"  skills: {d['skillsDir']}")
+            else:
+                print("  detected: none")
+            caps = payload["capabilities"]
+            print(f"  capabilities: streaming={caps['streaming']} resume={caps['resume']} "
+                  f"surgicalEdit={caps['surgicalEdit']} permissions={caps['permissionMode']}")
+            print(f"  recommendation: {payload['recommendation']}")
+        return EXIT_OK
+
     tool = args.tool
+    if not tool:
+        if args.json:
+            emit_json(False, {"message": "--tool is required for codegen mode (omit --detect-only)"},
+                      code="USAGE")
+        else:
+            print("error: --tool is required when --detect-only is not set", file=sys.stderr)
+        return EXIT_USAGE
     project = Path(args.project).resolve()
     canonical = ROOT
     skills = discover_skills("all")
@@ -7349,7 +7964,35 @@ def build_parser() -> argparse.ArgumentParser:
     design_preflight_p = sub.add_parser("design-preflight", help="check design context before UI mutation")
     design_preflight_p.add_argument("--project", default=".", help="project root or frontend surface to check")
     design_preflight_p.add_argument("--max-findings", type=int, default=50)
-    design_preflight_p.add_argument("--strict", action="store_true", help="exit non-zero when required context or anti-pattern gate is blocked")
+    design_preflight_p.add_argument(
+        "--strict",
+        action="store_true",
+        help=(
+            "exit non-zero when ANY preflight check is missing or the anti-pattern gate is blocked. "
+            "Use --skip <id> to opt out of a specific check for projects where it does not apply."
+        ),
+    )
+    design_preflight_p.add_argument(
+        "--require",
+        action="append",
+        default=[],
+        metavar="CHECK_ID",
+        help=(
+            "treat this check as required; exit non-zero if it is missing. "
+            "Repeatable or comma-separated. "
+            "Valid: product-context, design-context, shape-brief, tokens, visual-references, anti-pattern-gate."
+        ),
+    )
+    design_preflight_p.add_argument(
+        "--skip",
+        action="append",
+        default=[],
+        metavar="CHECK_ID",
+        help=(
+            "opt out of a check under --strict. Repeatable or comma-separated. "
+            "Same valid ids as --require. Use sparingly and document the reason."
+        ),
+    )
     design_preflight_p.add_argument("--json", action="store_true")
     design_preflight_p.set_defaults(func=cmd_design_preflight)
 
@@ -7422,6 +8065,19 @@ def build_parser() -> argparse.ArgumentParser:
     triggers_p.add_argument("--json", action="store_true")
     triggers_p.set_defaults(func=cmd_triggers)
 
+    atoms_p = sub.add_parser(
+        "atoms",
+        help="list / validate the atom catalog (manifests/atoms.json)",
+    )
+    atoms_p.add_argument(
+        "--validate",
+        metavar="PIPELINE_YAML_OR_JSON",
+        help="path to a plugin/pipeline file; check every referenced atom id and `until:` signal",
+    )
+    atoms_p.add_argument("--status", choices=["implemented", "planned", "all"], default="all")
+    atoms_p.add_argument("--json", action="store_true")
+    atoms_p.set_defaults(func=cmd_atoms)
+
     goal_p = sub.add_parser(
         "goal",
         help="build an audit-friendly Codex /goal contract from objective, scope, done-when, stop-if, and budget",
@@ -7435,6 +8091,12 @@ def build_parser() -> argparse.ArgumentParser:
     goal_p.add_argument("--budget", type=int, default=None, help="token budget for the Codex goal")
     goal_p.add_argument("--sdd-path", default=None, help="OpenSpec/spec-driven change path, e.g. openspec/changes/add-rerank")
     goal_p.add_argument("--first-action", default=None, help="explicit first action; overrides SDD read/report default")
+    goal_p.add_argument(
+        "--min-score",
+        type=int,
+        default=0,
+        help="exit non-zero if audit-friendliness score is below this threshold (0-100). Use in CI to enforce strong goal contracts.",
+    )
     goal_p.add_argument("--json", action="store_true")
     goal_p.set_defaults(func=cmd_goal)
 
@@ -7469,9 +8131,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     adapt_p = sub.add_parser(
         "adapt",
-        help="generate per-tool runtime wrappers (cursor/trae/windsurf/opencode/claude-code/codex/openclaw/hermes)",
+        help="generate per-tool runtime wrappers, or detect a runtime via the AgentAdapter protocol",
     )
-    adapt_p.add_argument("--tool", choices=ADAPT_TOOLS, required=True)
+    adapt_p.add_argument("--tool", choices=ADAPT_TOOLS, required=False,
+                         help="generate a wrapper for this tool (codegen mode)")
+    adapt_p.add_argument("--runtime", choices=sorted(["null", "claude-code", "codex"]), default=None,
+                         help="adapter id to consult via the AgentAdapter protocol (use with --detect-only)")
+    adapt_p.add_argument("--detect-only", action="store_true",
+                         help="run detect() + capabilities() on --runtime; no file writes")
     adapt_p.add_argument("--project", default=".", help="project root that should receive the wrapper (default: cwd)")
     adapt_p.add_argument("--target", default=None, help="explicit output path (default: tool-specific convention)")
     adapt_p.add_argument("--force", action="store_true", help="overwrite existing wrapper files")
@@ -7501,6 +8168,16 @@ def build_parser() -> argparse.ArgumentParser:
     auto_p.add_argument("--run-id", default=None, help="explicit run id (default: timestamped)")
     auto_p.add_argument("--max-ralph-rounds", type=int, default=20)
     auto_p.add_argument("--skip", default=None, help="comma-separated phase ids to skip (e.g. '03-design,08-memory')")
+    auto_p.add_argument(
+        "--pipeline",
+        default=None,
+        metavar="PATH",
+        help=(
+            "path to a pipeline JSON that drives stage ordering "
+            "(default: manifests/pipelines/autopilot.json). "
+            "Try `--pipeline manifests/pipelines/ultra-lite.json` for a minimal 4-phase run."
+        ),
+    )
     auto_p.add_argument("--force", action="store_true", help="regenerate phase artifacts even if present")
     auto_p.add_argument("--dry-run", action="store_true")
     auto_p.add_argument("--show-outputs", action="store_true")

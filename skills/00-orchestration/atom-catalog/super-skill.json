@@ -1,0 +1,28 @@
+{
+  "$schema": "https://super-skill.dev/schemas/skill.v1.json",
+  "specVersion": "1.0.0",
+  "name": "atom-catalog",
+  "title": "Atom Catalog",
+  "version": "0.1.0",
+  "description": "Reference and validator for Super Skill atomic harness primitives.",
+  "license": "MIT",
+  "tags": ["orchestration", "harness", "pipeline", "validator"],
+  "compat": {
+    "agentSkills": [{ "path": "./SKILL.md" }]
+  },
+  "od": {
+    "kind": "skill",
+    "taskKind": "tune-collab",
+    "mode": "utility",
+    "scenario": "orchestration",
+    "inputs": [],
+    "capabilities": ["read:catalog", "validate:pipeline"]
+  },
+  "superSkill": {
+    "category": "orchestration",
+    "lifecycleStage": "00-orchestration",
+    "atomsReferenced": [],
+    "exposesCommand": "atoms",
+    "inspiredBy": "nexu-io/open-design § first-party atom catalog"
+  }
+}

@@ -1,0 +1,2 @@
+this is not valid JSON {{{ and the verdict keyword is hidden: verdict: maybe-pass
+the grader's lenient regex fallback will fish out "maybe-pass" but parsed will be False
