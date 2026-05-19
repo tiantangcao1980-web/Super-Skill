@@ -203,6 +203,95 @@ DESIGN_AUDIT_IGNORES = {
 DESIGN_AUDIT_SEVERITY_WEIGHTS = {"P0": 25, "P1": 12, "P2": 6, "P3": 3}
 
 DESIGN_AUDIT_RULES = [
+    # ------------------------------------------------------------------
+    # Seven cardinal sins (borrowed from nexu-io/open-design + refero_skill).
+    # These are P0: must-fix on sight. They sit at the top of the rule list so
+    # design-audit reports them first.
+    # ------------------------------------------------------------------
+    {
+        "id": "tailwind-indigo-hex",
+        "category": "ai-slop",
+        "severity": "P0",
+        "pattern": re.compile(
+            r"(?:color|background(?:-color)?|fill|stroke|--accent)\s*[:=]\s*['\"]?"
+            r"#(?:6366f1|4f46e5|4338ca|3730a3|8b5cf6|7c3aed|a855f7)\b",
+            re.I,
+        ),
+        "recommendation": "Default Tailwind indigo is the textbook AI tell. Use var(--accent) bound to the brand.",
+    },
+    {
+        "id": "trust-two-stop-gradient",
+        "category": "ai-slop",
+        "severity": "P0",
+        "pattern": re.compile(
+            r"linear-gradient\([^)]*?\b(?:purple|violet|indigo)\b[^)]*?\b(?:blue|cyan|sky)\b|"
+            r"linear-gradient\([^)]*?\b(?:blue|sky)\b[^)]*?\bcyan\b|"
+            r"linear-gradient\([^)]*?\bindigo\b[^)]*?\b(?:pink|fuchsia|rose)\b|"
+            r"\bfrom-(?:purple|violet|indigo)-\d+\b[^;\n]{0,60}\bto-(?:blue|cyan|sky|pink|fuchsia|rose)-\d+\b",
+            re.I,
+        ),
+        "recommendation": "Two-stop purple/indigo→blue/cyan/pink gradients on hero surfaces are the canonical AI-template cliché. Use a flat tokenized surface plus deliberate typography hierarchy.",
+    },
+    {
+        "id": "emoji-feature-icon",
+        "category": "ai-slop",
+        "severity": "P0",
+        "pattern": re.compile(
+            r"<(?:h[1-6]|button|li)\b[^>]*>[^<\n]{0,40}[✨⚡✅\U0001f3af\U0001f389\U0001f4a1\U0001f525\U0001f680\U0001f31f\U0001f4a5\U0001f31f]|"
+            r"class\s*=\s*['\"][^'\"]*\bicon\b[^'\"]*['\"][^>]*>[^<\n]{0,40}[✨⚡\U0001f3af\U0001f389\U0001f4a1\U0001f525\U0001f680\U0001f31f]",
+            re.I,
+        ),
+        "recommendation": "Replace emoji with 1.6-1.8px monoline SVG icons using currentColor; emoji as feature icons is the loudest AI tell.",
+    },
+    {
+        "id": "invented-metric",
+        "category": "ai-slop",
+        "severity": "P0",
+        "pattern": re.compile(
+            r"\b\d+(?:\.\d+)?\s*[x×]\s*(?:faster|more\s+(?:productive|efficient|reliable)|better|smarter)\b|"
+            r"\b99\.\d+%\s*(?:uptime|reliability|accuracy)\b|"
+            r"\b\d{2,}%\s+(?:increase|improvement|boost)\b(?![^<]{0,80}(?:source|cite|ref|footnote))",
+            re.I,
+        ),
+        "recommendation": "Either cite a real source / footnote (`<sup>1</sup>`) for the metric, or replace with a labelled placeholder until evidence exists.",
+    },
+    {
+        "id": "lorem-filler-copy",
+        "category": "ai-slop",
+        "severity": "P0",
+        "pattern": re.compile(
+            r"\blorem\s+ipsum\b|"
+            r"\bfeature\s+(?:one|two|three|1|2|3)\b|"
+            r"\b(?:placeholder|sample)\s+(?:text|content|copy)\b|"
+            r"\byour\s+(?:text|content|headline)\s+here\b",
+            re.I,
+        ),
+        "recommendation": "Empty sections are design problems to solve with composition or empty states — not by inventing words.",
+    },
+    {
+        "id": "ai-dashboard-tile",
+        "category": "ai-slop",
+        "severity": "P0",
+        "pattern": re.compile(
+            r"\brounded-(?:xl|2xl|3xl)\b[^;\n]{0,80}\bborder-l-(?:[3-8])\b[^;\n]{0,80}\bborder-(?:red|orange|amber|yellow|green|emerald|teal|cyan|blue|indigo|violet|purple|pink|rose)-\d+\b|"
+            r"border-radius\s*:\s*(?:[8-9]|[1-9]\d+)px[^\n]{0,160}border-(?:left|inline-start)\s*:\s*[3-8]px\s+solid\s+(?:#(?!d|e|f)[0-9a-f]{6}|var\(--(?:accent|success|warning|danger|info))",
+            re.I,
+        ),
+        "recommendation": "The rounded card + colored left-border combo is the canonical AI dashboard tile. Drop the radius or drop the left border — not both at once.",
+    },
+    {
+        "id": "placeholder-cdn",
+        "category": "ai-slop",
+        "severity": "P1",
+        "pattern": re.compile(
+            r"https?://(?:images?\.)?(?:unsplash\.com|placehold\.co|placekitten\.com|picsum\.photos|via\.placeholder\.com)\b",
+            re.I,
+        ),
+        "recommendation": "External placeholder CDNs are fragile and obvious. Ship local SVG placeholders or real assets.",
+    },
+    # ------------------------------------------------------------------
+    # Existing rules (P1-P3 craft heuristics).
+    # ------------------------------------------------------------------
     {
         "id": "gradient-text",
         "category": "ai-slop",
@@ -1943,6 +2032,133 @@ def cmd_triggers(args: argparse.Namespace) -> int:
     return EXIT_RUNTIME if failures else EXIT_OK
 
 
+# --- atom catalog (manifests/atoms.json) ---------------------------------
+
+def atom_catalog_path() -> Path:
+    return ROOT / "manifests" / "atoms.json"
+
+
+def load_atom_catalog() -> dict:
+    path = atom_catalog_path()
+    if not path.exists():
+        return {"version": None, "atoms": [], "until_signals": {"vocabulary": []}}
+    return read_json_file(path) or {}
+
+
+def _extract_atom_refs(payload) -> tuple[list[str], list[str]]:
+    """Walk a nested dict/list and return (atom_ids, until_signal_names)."""
+    atom_ids: list[str] = []
+    signals: list[str] = []
+
+    def walk(node):
+        if isinstance(node, dict):
+            stages = node.get("stages") or node.get("pipeline")
+            if isinstance(stages, list):
+                for stage in stages:
+                    if isinstance(stage, dict):
+                        atoms = stage.get("atoms")
+                        if isinstance(atoms, list):
+                            atom_ids.extend(str(a) for a in atoms if isinstance(a, str))
+                        until = stage.get("until")
+                        if isinstance(until, str):
+                            for token in re.findall(r"[a-zA-Z][\w.]*", until):
+                                if "." in token or token == "iterations":
+                                    signals.append(token)
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    walk(payload)
+    return atom_ids, signals
+
+
+def cmd_atoms(args: argparse.Namespace) -> int:
+    catalog = load_atom_catalog()
+    atoms = catalog.get("atoms", [])
+    if args.status != "all":
+        atoms_view = [a for a in atoms if a.get("status") == args.status]
+    else:
+        atoms_view = atoms
+
+    failures: list[dict] = []
+    warnings: list[dict] = []
+    validation: dict | None = None
+
+    if args.validate:
+        target = Path(args.validate).expanduser()
+        if not target.exists():
+            failures.append({"check": "validate-path", "message": f"file not found: {target}"})
+        else:
+            try:
+                if target.suffix.lower() in {".yaml", ".yml"}:
+                    raw = target.read_text(encoding="utf-8")
+                    # minimal YAML→JSON shim: try json first, else best-effort key:value
+                    try:
+                        payload = json.loads(raw)
+                    except Exception:
+                        try:
+                            import yaml  # type: ignore
+                            payload = yaml.safe_load(raw)
+                        except Exception as exc:
+                            payload = None
+                            failures.append({"check": "validate-parse", "message": f"YAML parse failed: {exc}"})
+                else:
+                    payload = read_json_file(target)
+            except Exception as exc:
+                payload = None
+                failures.append({"check": "validate-parse", "message": str(exc)})
+
+            if payload is not None:
+                referenced_atoms, referenced_signals = _extract_atom_refs(payload)
+                catalog_ids = {a.get("id") for a in atoms}
+                planned_ids = {a.get("id") for a in atoms if a.get("status") == "planned"}
+                signal_vocab = set(catalog.get("until_signals", {}).get("vocabulary", []))
+                for atom_id in referenced_atoms:
+                    if atom_id not in catalog_ids:
+                        failures.append({"check": "unknown-atom", "atom": atom_id})
+                    elif atom_id in planned_ids:
+                        warnings.append({"check": "planned-atom", "atom": atom_id,
+                                         "message": "atom is reserved but not yet implemented"})
+                for signal in referenced_signals:
+                    if signal not in signal_vocab:
+                        failures.append({"check": "unknown-until-signal", "signal": signal})
+                validation = {
+                    "file": str(target),
+                    "referenced_atoms": referenced_atoms,
+                    "referenced_signals": referenced_signals,
+                }
+
+    payload = {
+        "version": catalog.get("version"),
+        "atoms_total": len(atoms),
+        "implemented": sum(1 for a in atoms if a.get("status") == "implemented"),
+        "planned": sum(1 for a in atoms if a.get("status") == "planned"),
+        "until_signals": catalog.get("until_signals", {}),
+        "atoms": atoms_view,
+        "warnings": warnings,
+        "failures": failures,
+        "validation": validation,
+    }
+
+    if args.json:
+        emit_json(not failures, payload, code="ATOM_VALIDATION_FAILED" if failures else None)
+    else:
+        print(f"Atom catalog v{catalog.get('version')}: {payload['atoms_total']} total "
+              f"({payload['implemented']} implemented, {payload['planned']} reserved)")
+        signals = payload["until_signals"].get("vocabulary", [])
+        if signals:
+            print(f"until signals: {', '.join(signals)}")
+        for atom in atoms_view:
+            print(f"  [{atom.get('status','?'):11s}] {atom.get('id'):28s} -> {atom.get('skill') or '<none>'}")
+        for warning in warnings:
+            print(f"  warning: {warning}")
+        for failure in failures:
+            print(f"  FAIL: {failure}")
+    return EXIT_RUNTIME if failures else EXIT_OK
+
+
 def eval_project_dirs() -> list[Path]:
     root = EVALS_ROOT / "projects"
     if not root.exists():
@@ -2629,13 +2845,34 @@ def llm_call_stub(stage: str, system: str, user: str) -> dict:
                 ```
                 """)
     elif stage in ("gate", "06-gate", "07-gate"):
+        # Critique Jury: five panelist scores + weighted composite.
+        # Stub picks deterministic per-panel scores that clear the 8.0 threshold
+        # so the happy-path CI flow stays green. Real LLM mode is expected to
+        # emit per-panel rationale and let the composite formula compute the
+        # ship/warn/fail verdict.
+        panel = {
+            "critic":   {"score": 9, "must_fix": [], "notes": "Meets contract; acceptance items satisfied (stub)."},
+            "brand":    {"score": 9, "must_fix": [], "notes": "Token honored; no AI-default accent (stub)."},
+            "a11y":     {"score": 8, "must_fix": [], "notes": "Semantic structure OK; focus states present (stub)."},
+            "copy":     {"score": 8, "must_fix": [], "notes": "Concise, no filler copy (stub)."},
+            "designer": {"score": 8, "must_fix": [], "notes": "Layout balanced; type hierarchy clear (stub)."},
+        }
+        composite = critique_jury_composite(panel)
+        verdict = critique_jury_verdict(composite)
         body = json.dumps(
             {
                 "matches_intent": True,
                 "evidence_present": True,
                 "missing": [],
-                "score": 8,
-                "verdict": "pass",
+                "score": int(round(composite)),
+                "verdict": verdict,
+                "panel": panel,
+                "composite": composite,
+                "threshold": CRITIQUE_JURY_THRESHOLD,
+                "weights": CRITIQUE_JURY_WEIGHTS,
+                "round": 1,
+                "max_rounds": CRITIQUE_JURY_MAX_ROUNDS,
+                "fallback_policy": "ship_best",
                 "trace": f"stub-{digest}",
             },
             ensure_ascii=False,
@@ -2825,6 +3062,58 @@ def llm_grade_gate(text: str) -> dict:
         return {"parsed": False, "verdict": verdict, "score": None, "ok": verdict in ("pass", "warn")}
 
 
+# --- Critique Jury (Phase 6 multi-panel scoring) -------------------------
+#
+# Borrowed from nexu-io/open-design's Critique Theater design:
+# five fixed panelists, weighted composite, threshold-driven convergence.
+# Super Skill keeps the contract provider-neutral and stub-friendly so CI can
+# verify the schema without an LLM.
+
+CRITIQUE_JURY_WEIGHTS: dict[str, float] = {
+    # critic carries the heaviest weight: "does it meet the brief?"
+    "critic": 0.40,
+    "brand": 0.20,
+    "a11y": 0.20,
+    "copy": 0.20,
+    # designer aesthetic notes travel for human review but do not gate ship.
+    # Same v1 choice open-design made; weight is exposed so the contract can
+    # be re-tuned without changing the schema.
+    "designer": 0.00,
+}
+CRITIQUE_JURY_PANELS = tuple(CRITIQUE_JURY_WEIGHTS.keys())
+CRITIQUE_JURY_THRESHOLD = 8.0
+CRITIQUE_JURY_MAX_ROUNDS = 3
+
+
+def critique_jury_composite(panel: dict) -> float:
+    """Compute weighted composite from a per-panelist score dict.
+
+    Missing panelists are scored as 0; the weights sum is preserved so
+    incomplete panels deterministically under-shoot the threshold.
+    """
+    total = 0.0
+    for role, weight in CRITIQUE_JURY_WEIGHTS.items():
+        entry = panel.get(role) if isinstance(panel, dict) else None
+        score = 0.0
+        if isinstance(entry, dict):
+            try:
+                score = float(entry.get("score", 0) or 0)
+            except (TypeError, ValueError):
+                score = 0.0
+        elif isinstance(entry, (int, float)):
+            score = float(entry)
+        total += weight * score
+    return round(total, 2)
+
+
+def critique_jury_verdict(composite: float) -> str:
+    if composite >= CRITIQUE_JURY_THRESHOLD:
+        return "pass"
+    if composite >= CRITIQUE_JURY_THRESHOLD - 1.5:
+        return "warn"
+    return "fail"
+
+
 # --- autopilot: autonomous harness-engineering closed loop ---------------
 #
 # A runnable end-to-end orchestrator that takes one user prompt and walks it
@@ -2862,10 +3151,16 @@ AUTOPILOT_PHASES = [
         "redundant comments, future-proofing shims. Preserve observable behavior. "
         "Output the simplified deliverable."),
     ("07-gate",          "Output Quality Gate",         "output-quality-gate",       "07-quality-gate.json",
-        "Stage 6: 测试与验证. Apply `output-quality-gate`. Score the simplified deliverable "
-        "against the original contract. Strict JSON only: "
+        "Stage 6: 测试与验证. Apply `output-quality-gate` as a **Critique Jury**: five fixed "
+        "panelists (critic, brand, a11y, copy, designer) score the simplified deliverable "
+        "0-10 independently. Verdict is derived from the weighted composite "
+        "(critic 0.40 + brand 0.20 + a11y 0.20 + copy 0.20 + designer 0.00); "
+        "composite ≥ 8.0 = pass, ≥ 6.5 = warn, < 6.5 = fail. Strict JSON only: "
         '{"matches_intent": bool, "evidence_present": bool, "missing": [str], "score": int(0..10), '
-        '"verdict": "pass"|"warn"|"fail", "trace": str}.'),
+        '"verdict": "pass"|"warn"|"fail", "panel": {"critic": {"score": int, "must_fix": [str], "notes": str}, '
+        '"brand": {...}, "a11y": {...}, "copy": {...}, "designer": {...}}, '
+        '"composite": float, "threshold": 8.0, "round": int, "max_rounds": 3, '
+        '"fallback_policy": "ship_best", "trace": str}.'),
     ("08-launch",        "Launch Readiness",            "deployment-patterns",       "08-launch-readiness.md",
         "Stage 7: 上线准备 / 商业化准备. Apply `deployment-patterns` (with "
         "`experiment-driven-delivery`/`observability-triage-loop` framings). "
@@ -3194,13 +3489,36 @@ def autopilot_grade_gate(text: str) -> dict:
     try:
         body = json.loads(text)
         verdict = body.get("verdict")
-        return {
+        panel = body.get("panel") if isinstance(body.get("panel"), dict) else None
+        composite = body.get("composite")
+        # Recompute composite from panel for tamper-evidence: a model that
+        # claims verdict=pass while the panel scores say otherwise gets caught.
+        recomputed = None
+        if panel:
+            recomputed = critique_jury_composite(panel)
+            if composite is None:
+                composite = recomputed
+        result = {
             "parsed": True,
             "verdict": verdict,
             "score": body.get("score"),
             "missing": body.get("missing", []),
+            "panel": panel,
+            "composite": composite,
+            "composite_recomputed": recomputed,
+            "threshold": body.get("threshold", CRITIQUE_JURY_THRESHOLD),
+            "round": body.get("round"),
             "ok": bool(body.get("matches_intent")) and verdict in ("pass", "warn"),
         }
+        # If a panel is present, the verdict must agree with the recomputed
+        # composite under the canonical threshold; otherwise mark not-ok so the
+        # gate cannot be gamed by misreporting verdict.
+        if panel and recomputed is not None:
+            canonical_verdict = critique_jury_verdict(recomputed)
+            result["canonical_verdict"] = canonical_verdict
+            if canonical_verdict == "fail":
+                result["ok"] = False
+        return result
     except Exception:
         m = re.search(r"verdict[\"'\s:]*([a-z]+)", text, re.I)
         return {"parsed": False, "verdict": (m.group(1).lower() if m else None), "score": None, "ok": False}
@@ -6462,6 +6780,50 @@ def cmd_audit(args: argparse.Namespace) -> int:
         path = ROOT / rel
         executable_checks.append({"path": rel, "exists": path.exists(), "executable": os.access(path, os.X_OK)})
 
+    # super-skill.json marketplace manifests (optional sidecar per skill).
+    # Borrowed from open-design's two-layer pattern: SKILL.md stays portable;
+    # OD-only / marketplace metadata lives in super-skill.json so SKILL.md is
+    # not polluted by harness-specific fields. We only validate parse + minimal
+    # required keys when the file is present.
+    super_skill_manifests: list[dict] = []
+    super_skill_manifest_errors: list[dict] = []
+    SUPER_SKILL_REQUIRED_KEYS = ("specVersion", "name", "version")
+    for skill in skills:
+        sidecar = ROOT / Path(skill.relative_path) / "super-skill.json"
+        if not sidecar.exists():
+            continue
+        rel_sidecar = sidecar.relative_to(ROOT).as_posix()
+        try:
+            data = json.loads(sidecar.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            super_skill_manifest_errors.append({
+                "path": rel_sidecar, "error": f"invalid JSON: {exc}"
+            })
+            continue
+        if not isinstance(data, dict):
+            super_skill_manifest_errors.append({
+                "path": rel_sidecar, "error": "top-level value must be an object"
+            })
+            continue
+        missing = [k for k in SUPER_SKILL_REQUIRED_KEYS if k not in data]
+        if missing:
+            super_skill_manifest_errors.append({
+                "path": rel_sidecar, "error": f"missing required keys: {missing}"
+            })
+            continue
+        if data.get("name") != skill.name:
+            super_skill_manifest_errors.append({
+                "path": rel_sidecar,
+                "error": f"name mismatch: SKILL.md says {skill.name!r}, super-skill.json says {data.get('name')!r}",
+            })
+            continue
+        super_skill_manifests.append({
+            "path": rel_sidecar,
+            "name": data.get("name"),
+            "version": data.get("version"),
+            "tags": data.get("tags", []),
+        })
+
     failures = []
     if install_dups:
         failures.append({"check": "installable-duplicates", "items": sorted(install_dups)})
@@ -6487,6 +6849,8 @@ def cmd_audit(args: argparse.Namespace) -> int:
         failures.append({"check": "executables", "items": missing_exec})
     if secret_findings:
         failures.append({"check": "secrets", "items": secret_findings})
+    if super_skill_manifest_errors:
+        failures.append({"check": "super-skill-manifests", "items": super_skill_manifest_errors})
 
     payload = {
         "skills_total": len(skills),
@@ -6519,6 +6883,8 @@ def cmd_audit(args: argparse.Namespace) -> int:
         "risky_pattern_findings": risky_findings,
         "risky_pattern_summary": risky_summary,
         "executable_checks": executable_checks,
+        "super_skill_manifests": super_skill_manifests,
+        "super_skill_manifest_errors": super_skill_manifest_errors,
         "failures": failures,
     }
 
@@ -6546,6 +6912,10 @@ def cmd_audit(args: argparse.Namespace) -> int:
             f"{risky_summary['total']} total, "
             f"{risky_summary['governed']} governed, "
             f"{risky_summary['ungoverned']} ungoverned"
+        )
+        print(
+            f"super-skill.json sidecars: {len(super_skill_manifests)} valid, "
+            f"{len(super_skill_manifest_errors)} invalid"
         )
         if failures:
             print("\nFailures:")
@@ -7471,6 +7841,19 @@ def build_parser() -> argparse.ArgumentParser:
     triggers_p = sub.add_parser("triggers", help="validate automatic trigger and skill lifecycle controls")
     triggers_p.add_argument("--json", action="store_true")
     triggers_p.set_defaults(func=cmd_triggers)
+
+    atoms_p = sub.add_parser(
+        "atoms",
+        help="list / validate the atom catalog (manifests/atoms.json)",
+    )
+    atoms_p.add_argument(
+        "--validate",
+        metavar="PIPELINE_YAML_OR_JSON",
+        help="path to a plugin/pipeline file; check every referenced atom id and `until:` signal",
+    )
+    atoms_p.add_argument("--status", choices=["implemented", "planned", "all"], default="all")
+    atoms_p.add_argument("--json", action="store_true")
+    atoms_p.set_defaults(func=cmd_atoms)
 
     goal_p = sub.add_parser(
         "goal",

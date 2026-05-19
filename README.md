@@ -3,7 +3,7 @@
 [![CI](https://github.com/tiantangcao1980-web/Super-Skill/actions/workflows/ci.yml/badge.svg)](https://github.com/tiantangcao1980-web/Super-Skill/actions/workflows/ci.yml)
 [![Quality](https://github.com/tiantangcao1980-web/Super-Skill/actions/workflows/quality.yml/badge.svg)](https://github.com/tiantangcao1980-web/Super-Skill/actions/workflows/quality.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Skills](https://img.shields.io/badge/skills-121-blue)](catalog/skill-index.md)
+[![Skills](https://img.shields.io/badge/skills-122-blue)](catalog/skill-index.md)
 [![Profiles](https://img.shields.io/badge/profiles-ultra--lite%20%7C%20core%20%7C%20dev%20%7C%20design%20%7C%20hermes%20%7C%20all-green)](manifests/install-profiles.json)
 
 > **Thesis.** AI coding agents fail in four predictable ways: they don't do what the user actually wanted (input quality), they ramble (output quality), the code doesn't run (verification), and yesterday's lesson never reaches today's session (memory). Super Skill is a 121-skill collection plus a runnable harness CLI built around exactly those four failure modes — every skill front-loads its trigger condition, every loop has a hard quality gate, and the autonomous closed loop (`bin/super-skill autopilot`) drives one prompt through **research → intent → business case → spec → design → ralph-loop implementation (Python/JS/Bash/Go) → simplifier → quality gate → launch readiness → pilot → commercial delivery → ops & retrospective** — all 12 phases mapped 1:1 to the standard 10-stage commercial project lifecycle (需求 → 商业交付). Every artifact is checkpointed on disk with cross-run iteration via `--based-on / --feedback` and parallel multi-agent fanout via `bin/super-skill fanout --tracks`.
@@ -61,7 +61,7 @@ Super Skill 是一个面向 AI coding agent 的全流程技能集合：从用户
 
 当前清单：
 
-- 121 个可安装生命周期技能
+- 122 个可安装生命周期技能（含新增的 `atom-catalog`）
 - 1 个 Codex 插件：`super-skill-memory-harness`
 - profile/component manifest 支持只读安装预案
 - automatic trigger / skill lifecycle manifest 支持自动触发、可控记忆、技能去重和可逆归档
@@ -344,6 +344,10 @@ CI 会运行 `doctor`、`validate`、`plan`、ultra-lite profile plan、Hermes p
 
 ## 文档
 
+- [领域词汇表 (CONTEXT.md)](CONTEXT.md)
+- [通用设计 / 工程准则 (craft/)](craft/README.md)
+- [Atom Catalog (manifests/atoms.json)](skills/00-orchestration/atom-catalog/SKILL.md)
+- [Living specs (specs/current/)](specs/README.md)
 - [生命周期地图](catalog/lifecycle-map.md)
 - [技能索引](catalog/skill-index.md)
 - [研究与编排分析](catalog/source-audit.md)

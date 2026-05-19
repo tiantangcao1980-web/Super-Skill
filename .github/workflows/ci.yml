@@ -27,10 +27,34 @@ jobs:
       - run: bin/super-skill design-live --project evals/live-projects/design-frontend-quality-gate/files/src --write-extension /tmp/super-skill-design-live-extension --force --json
       - run: bin/super-skill design-capture --project evals/live-projects/design-frontend-quality-gate/files --url http://localhost:3000 --runner /tmp/super-skill-design-capture.mjs --dry-run --force --json
       - run: bin/super-skill design-audit --project evals/live-projects/design-frontend-quality-gate/files/src --fail-on-findings --json
+      # Anti-slop negative fixture: the seven cardinal sins must trip the audit.
+      - name: design-audit negative fixture (cardinal sins must trip)
+        run: |
+          if bin/super-skill design-audit --project tests/fixtures/anti-slop-positive --fail-on-findings --json >/tmp/audit-bad.json; then
+            echo "ERROR: cardinal-sins fixture should have failed design-audit" >&2
+            cat /tmp/audit-bad.json >&2
+            exit 1
+          fi
       - run: bin/super-skill harness --json
       - run: bin/super-skill hermes --json
       - run: bin/super-skill memory --json
       - run: bin/super-skill triggers --json
+      - run: bin/super-skill atoms --json
+      # Atom-catalog negative fixture: an unknown atom + unknown until-signal
+      # must be rejected with `ok=false`. Borrowed from open-design's
+      # planned-id forward-compat policy.
+      - name: atoms validate (unknown atom must fail)
+        run: |
+          cat > /tmp/bad-pipeline.json <<'EOF'
+          {"od":{"pipeline":{"stages":[
+            {"id":"x","atoms":["unknown-atom-xyz"],"until":"made.up.signal && iterations >= 5"}
+          ]}}}
+          EOF
+          if bin/super-skill atoms --validate /tmp/bad-pipeline.json --json >/tmp/atoms-bad.json; then
+            echo "ERROR: bad pipeline should have failed validate" >&2
+            cat /tmp/atoms-bad.json >&2
+            exit 1
+          fi
       - run: bin/super-skill evals --json
       - run: bin/super-skill live-evals --json
       - run: bin/super-skill memory-plugin --dry-run --json
