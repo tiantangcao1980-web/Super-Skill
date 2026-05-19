@@ -1,13 +1,13 @@
 # Spec: Multi-language ralph-loop verification
 
-- Status: **draft**
+- Status: **building** (Phase 1 shipped — see below; Phase 2 = tests + doctor + docs is the remaining gap)
 - Owner: super-skill maintainers
 - Last-updated: 2026-05-19
-- Tracked-by: `scripts/super_skill.py::autopilot_ralph_*`, README "Python/JS/Bash/Go"
+- Tracked-by: `scripts/super_skill.py::autopilot_run_{python,javascript,bash,go}`, README "Python/JS/Bash/Go"
 
 ## Problem
 
-`README.md` claims autopilot ralph-loop runs in **Python/JS/Bash/Go**, but the implementation today only runs Python (`unittest` / bare assertions / `py-compile`). For JS/Bash/Go targets, the impl artifact is written but never executed; the gate cannot detect a regression there.
+`README.md` claims autopilot ralph-loop runs in **Python/JS/Bash/Go**. Phase 1 (the runner functions) is implemented and reachable from the stub provider, but Phase 2 — explicit toolchain reporting in `doctor`, dedicated fixtures, and a doctor surface tying it together — was missing, leaving the claim un-tested in CI.
 
 ## Goal
 

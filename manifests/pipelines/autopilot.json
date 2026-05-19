@@ -1,0 +1,105 @@
+{
+  "$schema": "https://super-skill.dev/schemas/pipeline.v1.json",
+  "specVersion": "1.0.0",
+  "name": "autopilot",
+  "label": "Autopilot (12-phase commercial delivery)",
+  "version": "0.1.0",
+  "description": "Default Super Skill autopilot pipeline. 12 phases mapped 1:1 to the standard 10-stage commercial project lifecycle (需求 → 商业交付). Each stage references one atom from manifests/atoms.json and pins the phase-id used in run.json for back-compat.",
+  "inspired_by": "nexu-io/open-design § od.pipeline.stages",
+  "od": {
+    "kind": "pipeline",
+    "taskKind": "new-generation",
+    "pipeline": {
+      "stages": [
+        {
+          "id": "00-research",
+          "label": "Research",
+          "atoms": ["research-note"],
+          "output": "00-research.md",
+          "phase_id_for_resume": "00-research"
+        },
+        {
+          "id": "01-intent",
+          "label": "Intent Contract",
+          "atoms": ["intent-contract-form"],
+          "output": "01-intent-contract.md",
+          "phase_id_for_resume": "01-intent"
+        },
+        {
+          "id": "02-business-case",
+          "label": "Business Case",
+          "atoms": ["business-case-report"],
+          "output": "02-business-case.md",
+          "phase_id_for_resume": "02-business-case"
+        },
+        {
+          "id": "03-spec",
+          "label": "Product Spec",
+          "atoms": ["product-spec"],
+          "output": "03-product-spec.md",
+          "phase_id_for_resume": "03-spec"
+        },
+        {
+          "id": "04-design",
+          "label": "Design Direction",
+          "atoms": ["design-direction"],
+          "output": "04-design.md",
+          "phase_id_for_resume": "04-design"
+        },
+        {
+          "id": "05-impl",
+          "label": "Implementation (Ralph loop)",
+          "atoms": ["ralph-attempt"],
+          "output": "05-implementation.md",
+          "phase_id_for_resume": "05-impl",
+          "repeat": true,
+          "until": "tests.pass || iterations >= 20"
+        },
+        {
+          "id": "06-simplify",
+          "label": "Code Simplifier",
+          "atoms": ["code-simplifier"],
+          "output": "06-simplified.md",
+          "phase_id_for_resume": "06-simplify"
+        },
+        {
+          "id": "07-gate",
+          "label": "Output Quality Gate",
+          "atoms": ["critique-jury"],
+          "output": "07-quality-gate.json",
+          "phase_id_for_resume": "07-gate",
+          "repeat": true,
+          "until": "critique.score >= 8 || iterations >= 3"
+        },
+        {
+          "id": "08-launch",
+          "label": "Launch Readiness",
+          "atoms": ["launch-readiness-plan"],
+          "output": "08-launch-readiness.md",
+          "phase_id_for_resume": "08-launch"
+        },
+        {
+          "id": "09-pilot",
+          "label": "Pilot / Gradual Rollout",
+          "atoms": ["pilot-plan"],
+          "output": "09-pilot.md",
+          "phase_id_for_resume": "09-pilot"
+        },
+        {
+          "id": "10-commerce",
+          "label": "Commercial Delivery",
+          "atoms": ["commercial-delivery-plan"],
+          "output": "10-commercial-delivery.md",
+          "phase_id_for_resume": "10-commerce"
+        },
+        {
+          "id": "11-ops",
+          "label": "Ops & Retrospective",
+          "atoms": ["ops-retrospective", "memory-candidate-emit"],
+          "output": "11-ops-retrospective.md",
+          "phase_id_for_resume": "11-ops"
+        }
+      ]
+    }
+  }
+}

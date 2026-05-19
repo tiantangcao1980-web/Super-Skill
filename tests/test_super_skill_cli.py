@@ -235,7 +235,12 @@ class SuperSkillCliTests(unittest.TestCase):
             (root / "src").mkdir()
             (root / "src" / "page.html").write_text("<main><h1>Dashboard</h1><p>Status is clear.</p></main>", encoding="utf-8")
 
-            data = run_cli("design-preflight", "--project", td, "--strict")
+            # This temp fixture deliberately has no images. With the new
+            # honest --strict (specs/current/design-audit-strict.md) we must
+            # explicitly --skip visual-references; the rest of the gate is
+            # still enforced.
+            data = run_cli("design-preflight", "--project", td, "--strict",
+                           "--skip", "visual-references")
             self.assertEqual(data["mutation"], "open")
             self.assertGreaterEqual(data["score"], 85)
             check_ids = {check["id"] for check in data["checks"]}
@@ -243,6 +248,7 @@ class SuperSkillCliTests(unittest.TestCase):
             self.assertIn("shape-brief", check_ids)
             self.assertIn("anti-pattern-gate", check_ids)
             self.assertIn("DESIGN_CRAFT_PREFLIGHT", data["preflight"])
+            self.assertEqual(data["skipped"], ["visual-references"])
 
     def test_design_preflight_strict_blocks_missing_context(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -902,6 +908,11 @@ class SuperSkillCliTests(unittest.TestCase):
             (root / "docs" / "shape-brief.md").write_text("Shape brief: status dashboard.", encoding="utf-8")
             (root / "design").mkdir()
             (root / "design" / "tokens.json").write_text('{"space": 16}', encoding="utf-8")
+            # Drop a tiny SVG reference so honest --strict passes through MCP.
+            (root / "design" / "reference.svg").write_text(
+                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><rect width="8" height="8" fill="#eee"/></svg>',
+                encoding="utf-8",
+            )
             (root / "src").mkdir()
             (root / "src" / "page.html").write_text("<main><h1>Dashboard</h1></main>", encoding="utf-8")
             dialogue = "\n".join([
@@ -1445,8 +1456,10 @@ class NegativeFixtureTests(unittest.TestCase):
 
     def test_design_preflight_require_rejects_missing_visual_refs(self) -> None:
         """--require visual-references must exit non-zero when the fixture
-        has no images — proves the new flag actually enforces."""
-        fixture = ROOT / "evals" / "live-projects" / "design-frontend-quality-gate" / "files"
+        has no images — proves the new flag actually enforces. Uses the
+        dedicated strict-missing negative fixture (the live-eval fixture
+        now ships a real SVG so it can no longer host this negative case)."""
+        fixture = ROOT / "tests" / "fixtures" / "design-preflight-strict-missing"
         proc = subprocess.run(
             [sys.executable, str(CLI), "design-preflight",
              "--project", str(fixture),

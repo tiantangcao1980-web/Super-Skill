@@ -264,6 +264,87 @@ class SuperSkillSidecarTests(unittest.TestCase):
 # CONTEXT.md + craft/ presence
 # ---------------------------------------------------------------------------
 
+class DesignPreflightStrictTests(unittest.TestCase):
+    """Spec: specs/current/design-audit-strict.md — make --strict honest."""
+
+    NEG = FIXTURES / "design-preflight-strict-missing"
+    HAPPY = ROOT / "evals" / "live-projects" / "design-frontend-quality-gate" / "files"
+
+    def test_strict_blocks_missing_visual_refs(self) -> None:
+        err = run_cli_expect_failure(
+            "design-preflight", "--project", str(self.NEG), "--strict",
+        )
+        self.assertEqual(err.get("strict_failed"), ["visual-references"])
+
+    def test_strict_with_skip_allows_pass(self) -> None:
+        data = run_cli(
+            "design-preflight", "--project", str(self.NEG),
+            "--strict", "--skip", "visual-references",
+        )
+        self.assertEqual(data["strict_failed"], [])
+        self.assertEqual(data["skipped"], ["visual-references"])
+
+    def test_no_strict_still_passes_legacy(self) -> None:
+        # Without --strict, missing visual-references is warn-only (legacy behavior).
+        data = run_cli("design-preflight", "--project", str(self.NEG))
+        self.assertEqual(data["strict_failed"], [])
+
+    def test_happy_fixture_passes_strict_honestly(self) -> None:
+        """The live-eval happy fixture now ships a real reference SVG so strict passes."""
+        data = run_cli(
+            "design-preflight", "--project", str(self.HAPPY), "--strict",
+        )
+        # Every check must be ok.
+        for c in data["checks"]:
+            self.assertTrue(c["ok"], f"strict happy path check {c['id']} unexpectedly failed: {c}")
+
+    def test_skip_with_unknown_id_is_rejected(self) -> None:
+        err = run_cli_expect_failure(
+            "design-preflight", "--project", str(self.HAPPY),
+            "--strict", "--skip", "not-a-real-check-id",
+        )
+        self.assertIn("unknown --skip id", err.get("message", ""))
+
+
+class AutopilotPipelineManifestTests(unittest.TestCase):
+    """Spec: specs/current/atom-runner.md — declarative pipeline JSON must stay
+    in sync with the in-code AUTOPILOT_PHASES so future runtime refactors are
+    a pure code change, not a contract change.
+    """
+
+    def setUp(self) -> None:
+        self.mod = _load_super_skill_module()
+        self.pipeline = json.loads(
+            (ROOT / "manifests" / "pipelines" / "autopilot.json").read_text(encoding="utf-8")
+        )
+
+    def test_pipeline_stage_count_matches_in_code_phases(self) -> None:
+        stages = self.pipeline["od"]["pipeline"]["stages"]
+        self.assertEqual(len(stages), len(self.mod.AUTOPILOT_PHASES))
+
+    def test_pipeline_stage_ids_and_outputs_match(self) -> None:
+        stages = self.pipeline["od"]["pipeline"]["stages"]
+        for stage, phase in zip(stages, self.mod.AUTOPILOT_PHASES):
+            phase_id, label, _skill, output_filename, _prefix = phase
+            self.assertEqual(stage["id"], phase_id,
+                             f"pipeline stage id {stage['id']!r} != in-code {phase_id!r}")
+            self.assertEqual(stage["output"], output_filename,
+                             f"pipeline stage output {stage['output']!r} != in-code {output_filename!r}")
+            self.assertEqual(stage["label"], label,
+                             f"pipeline stage label {stage['label']!r} != in-code {label!r}")
+
+    def test_pipeline_validates_against_atom_catalog(self) -> None:
+        data = run_cli("atoms", "--validate", str(ROOT / "manifests" / "pipelines" / "autopilot.json"))
+        self.assertEqual(data["failures"], [])
+        # `iterations` may appear multiple times across stages; that's fine.
+        for atom in data["validation"]["referenced_atoms"]:
+            self.assertIsInstance(atom, str)
+
+    def test_ultra_lite_pipeline_validates(self) -> None:
+        data = run_cli("atoms", "--validate", str(ROOT / "manifests" / "pipelines" / "ultra-lite.json"))
+        self.assertEqual(data["failures"], [])
+
+
 class DocsBorrowingTests(unittest.TestCase):
     def test_context_md_exists_and_defines_core_terms(self) -> None:
         path = ROOT / "CONTEXT.md"

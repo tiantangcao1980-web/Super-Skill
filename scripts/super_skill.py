@@ -6701,32 +6701,68 @@ def cmd_design_preflight(args: argparse.Namespace) -> int:
             print(f"error: project path not found: {project}", file=sys.stderr)
         return EXIT_USAGE
 
-    extra_required: list[str] = []
-    for raw in args.require or []:
-        for item in raw.split(","):
-            item = item.strip()
-            if not item:
-                continue
-            if item not in DESIGN_PREFLIGHT_CHECK_IDS:
-                if args.json:
-                    emit_json(False, {"message": f"unknown --require id: {item}",
-                                      "known": sorted(DESIGN_PREFLIGHT_CHECK_IDS)}, code="USAGE")
-                else:
-                    print(f"error: unknown --require id: {item}", file=sys.stderr)
-                    print(f"  known: {sorted(DESIGN_PREFLIGHT_CHECK_IDS)}", file=sys.stderr)
-                return EXIT_USAGE
-            extra_required.append(item)
+    def _split_ids(raws: list[str] | None) -> list[str]:
+        out: list[str] = []
+        for raw in raws or []:
+            for item in raw.split(","):
+                item = item.strip()
+                if not item:
+                    continue
+                if item not in DESIGN_PREFLIGHT_CHECK_IDS:
+                    return [item]  # caller handles error reporting
+                out.append(item)
+        return out
+
+    extra_required = _split_ids(args.require)
+    if extra_required and extra_required[0] not in DESIGN_PREFLIGHT_CHECK_IDS:
+        bad = extra_required[0]
+        if args.json:
+            emit_json(False, {"message": f"unknown --require id: {bad}",
+                              "known": sorted(DESIGN_PREFLIGHT_CHECK_IDS)}, code="USAGE")
+        else:
+            print(f"error: unknown --require id: {bad}", file=sys.stderr)
+            print(f"  known: {sorted(DESIGN_PREFLIGHT_CHECK_IDS)}", file=sys.stderr)
+        return EXIT_USAGE
+
+    skip_ids = _split_ids(getattr(args, "skip", None) or [])
+    if skip_ids and skip_ids[0] not in DESIGN_PREFLIGHT_CHECK_IDS:
+        bad = skip_ids[0]
+        if args.json:
+            emit_json(False, {"message": f"unknown --skip id: {bad}",
+                              "known": sorted(DESIGN_PREFLIGHT_CHECK_IDS)}, code="USAGE")
+        else:
+            print(f"error: unknown --skip id: {bad}", file=sys.stderr)
+            print(f"  known: {sorted(DESIGN_PREFLIGHT_CHECK_IDS)}", file=sys.stderr)
+        return EXIT_USAGE
 
     payload = design_preflight_scan(project, max_findings=args.max_findings)
     failing_required = [c["id"] for c in payload["checks"]
                         if c["id"] in extra_required and not c["ok"]]
     payload["required_failed"] = failing_required
     payload["required"] = sorted(set(extra_required))
+    payload["skipped"] = sorted(set(skip_ids))
     mutation_open = payload["mutation"] == "open"
+
+    # --strict semantics: every preflight check must be ok, EXCEPT ids the user
+    # explicitly opted out of via --skip. This was previously only enforcing
+    # the anti-pattern gate (mutation), which let visual-references silently
+    # slip through and made `--strict` dishonest. open-design's craft gate
+    # treats missing visual refs as a real failure when fidelity matters.
+    strict_failed: list[str] = []
+    if args.strict:
+        for check in payload["checks"]:
+            if check["id"] in skip_ids:
+                continue
+            if not check["ok"]:
+                strict_failed.append(check["id"])
+        if not mutation_open and "anti-pattern-gate" not in skip_ids and "anti-pattern-gate" not in strict_failed:
+            strict_failed.append("anti-pattern-gate")
+    payload["strict_failed"] = strict_failed
+
     ok = True
-    if args.strict and not mutation_open:
-        ok = False
     if failing_required:
+        ok = False
+    if args.strict and strict_failed:
         ok = False
     if args.json:
         emit_json(ok, payload, code="DESIGN_PREFLIGHT_BLOCKED" if not ok else None)
@@ -6735,12 +6771,19 @@ def cmd_design_preflight(args: argparse.Namespace) -> int:
         print(payload["preflight"])
         for check in payload["checks"]:
             mark = "ok" if check["ok"] else "missing"
-            required_mark = " (required)" if check["id"] in extra_required else ""
-            print(f"- {check['id']}: {mark}{required_mark}")
-            if not check["ok"]:
+            tags = []
+            if check["id"] in extra_required:
+                tags.append("required")
+            if check["id"] in skip_ids:
+                tags.append("skipped")
+            tag_str = f" ({', '.join(tags)})" if tags else ""
+            print(f"- {check['id']}: {mark}{tag_str}")
+            if not check["ok"] and check["id"] not in skip_ids:
                 print(f"  recommendation: {check['recommendation']}")
         if failing_required:
             print(f"required checks failing: {', '.join(failing_required)}")
+        if args.strict and strict_failed:
+            print(f"strict mode blocking: {', '.join(strict_failed)}")
     return EXIT_RUNTIME if not ok else EXIT_OK
 
 
@@ -6944,13 +6987,38 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             version = str(exc)
         checks.append({"name": name, "ok": ok, "version": version})
 
+    # Ralph multi-language readiness: each runner is gated by toolchain
+    # availability. Doctor reports which language paths can actually verify a
+    # ralph attempt today. Missing toolchains are not hard failures; the
+    # runner returns kind="skipped" with a reason. Spec: specs/current/ralph-multi-language.md
+    ralph_runners = []
+    for lang, exe in (
+        ("python", "python3"),
+        ("javascript", "node"),
+        ("bash", "bash"),
+        ("go", "go"),
+    ):
+        path = shutil.which(exe)
+        ralph_runners.append({
+            "language": lang,
+            "executable": exe,
+            "available": bool(path),
+            "path": path or "",
+        })
+
     ok = all(c["ok"] for c in checks[:3])
     if args.json:
-        emit_json(ok, {"checks": checks}, code="DEPENDENCY_MISSING" if not ok else None)
+        emit_json(ok, {"checks": checks, "ralph_runners": ralph_runners},
+                  code="DEPENDENCY_MISSING" if not ok else None)
     else:
         for check in checks:
             mark = "OK" if check["ok"] else "MISS"
             print(f"[{mark}] {check['name']}: {check['version']}")
+        print()
+        print("Ralph multi-language runners (autopilot phase 5 verifies these):")
+        for runner in ralph_runners:
+            mark = "OK" if runner["available"] else "MISS"
+            print(f"  [{mark}] {runner['language']:11s} via {runner['executable']}")
     return EXIT_OK if ok else EXIT_DEPENDENCY
 
 
@@ -7758,7 +7826,14 @@ def build_parser() -> argparse.ArgumentParser:
     design_preflight_p = sub.add_parser("design-preflight", help="check design context before UI mutation")
     design_preflight_p.add_argument("--project", default=".", help="project root or frontend surface to check")
     design_preflight_p.add_argument("--max-findings", type=int, default=50)
-    design_preflight_p.add_argument("--strict", action="store_true", help="exit non-zero when required context or anti-pattern gate is blocked")
+    design_preflight_p.add_argument(
+        "--strict",
+        action="store_true",
+        help=(
+            "exit non-zero when ANY preflight check is missing or the anti-pattern gate is blocked. "
+            "Use --skip <id> to opt out of a specific check for projects where it does not apply."
+        ),
+    )
     design_preflight_p.add_argument(
         "--require",
         action="append",
@@ -7768,6 +7843,16 @@ def build_parser() -> argparse.ArgumentParser:
             "treat this check as required; exit non-zero if it is missing. "
             "Repeatable or comma-separated. "
             "Valid: product-context, design-context, shape-brief, tokens, visual-references, anti-pattern-gate."
+        ),
+    )
+    design_preflight_p.add_argument(
+        "--skip",
+        action="append",
+        default=[],
+        metavar="CHECK_ID",
+        help=(
+            "opt out of a check under --strict. Repeatable or comma-separated. "
+            "Same valid ids as --require. Use sparingly and document the reason."
         ),
     )
     design_preflight_p.add_argument("--json", action="store_true")

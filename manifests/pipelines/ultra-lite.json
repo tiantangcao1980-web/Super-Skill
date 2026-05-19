@@ -1,0 +1,51 @@
+{
+  "$schema": "https://super-skill.dev/schemas/pipeline.v1.json",
+  "specVersion": "1.0.0",
+  "name": "ultra-lite",
+  "label": "Ultra-lite engineering pipeline",
+  "version": "0.1.0",
+  "description": "Minimum-viable Super Skill loop for small-scope code work. Skips business case / launch / commerce stages; keeps intent contract → ralph → simplifier → critique jury → memory candidate.",
+  "inspired_by": "open-design's plugin authors who want a short pipeline without the full 12-phase commercial flow.",
+  "od": {
+    "kind": "pipeline",
+    "taskKind": "code-migration",
+    "pipeline": {
+      "stages": [
+        {
+          "id": "00-intent",
+          "label": "Intent Contract",
+          "atoms": ["intent-contract-form"],
+          "output": "00-intent-contract.md"
+        },
+        {
+          "id": "01-impl",
+          "label": "Implementation (Ralph loop)",
+          "atoms": ["ralph-attempt"],
+          "output": "01-implementation.md",
+          "repeat": true,
+          "until": "tests.pass || iterations >= 10"
+        },
+        {
+          "id": "02-simplify",
+          "label": "Code Simplifier",
+          "atoms": ["code-simplifier"],
+          "output": "02-simplified.md"
+        },
+        {
+          "id": "03-gate",
+          "label": "Output Quality Gate (Critique Jury)",
+          "atoms": ["critique-jury"],
+          "output": "03-quality-gate.json",
+          "repeat": true,
+          "until": "critique.score >= 8 || iterations >= 3"
+        },
+        {
+          "id": "04-memory",
+          "label": "Memory Candidate",
+          "atoms": ["memory-candidate-emit"],
+          "output": "04-memory.md"
+        }
+      ]
+    }
+  }
+}

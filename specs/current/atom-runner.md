@@ -25,10 +25,16 @@ Rewrite the autopilot runner so:
 
 ## Plan
 
-### Phase 1 — declarative form (this PR)
+### Phase 1 — declarative form (shipped)
 - [x] Land `manifests/atoms.json` with 21 atoms (15 implemented, 6 reserved).
 - [x] Land `bin/super-skill atoms --validate` that catches `unknown-atom` + `unknown-until-signal`.
 - [x] Land `skills/00-orchestration/atom-catalog/SKILL.md` that documents composition.
+
+### Phase 1.5 — declarative pipeline JSONs (this PR)
+- [x] Land `manifests/pipelines/autopilot.json` — every stage from `AUTOPILOT_PHASES` written as data, referencing canonical atom ids.
+- [x] Land `manifests/pipelines/ultra-lite.json` — minimal 5-stage code-work pipeline that proves the format works for non-autopilot scopes.
+- [x] Land `bin/super-skill atoms --validate manifests/pipelines/*.json` wired into CI.
+- [x] Land integrity test: pipeline JSON `stage.id` / `output` / `label` arrays must match the in-code `AUTOPILOT_PHASES` tuple list 1:1 so they cannot drift.
 
 ### Phase 2 — runner refactor (next PR)
 - [ ] Extract every atom's prompt fragment from `llm_call_stub()` and the `AUTOPILOT_PHASES` tuple into a per-atom dict (`{atom_id: {system_prefix, output_filename, run_fn, ...}}`).
