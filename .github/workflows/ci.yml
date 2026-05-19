@@ -36,4 +36,22 @@ jobs:
       - run: bin/super-skill memory-plugin --dry-run --json
       - run: bin/super-skill install --profile core --dry-run --json
       - run: bin/super-skill install --profile core --dry-run --with-memory-plugin --json
+      # Strict goal contract gate — proves audit-friendliness scoring blocks weak contracts.
+      - name: goal min-score gate (strong contract should pass)
+        run: |
+          bin/super-skill goal \
+            --objective 'Implement openspec/changes/add-rerank exactly as specified' \
+            --done 'Each task in openspec/changes/add-rerank/tasks.md is checked off' \
+            --done '`npm test` exits 0' \
+            --done 'Each SHALL has a passing test in tests/retrieval' \
+            --stop-if 'git diff touches auth/ outside scope' \
+            --stop-if 'A new dependency requires npm install' \
+            --min-score 70 --json
+      - name: goal min-score gate (weak contract must fail)
+        run: |
+          if bin/super-skill goal --objective demo --done 'tests pass' \
+              --stop-if 'scope creep' --min-score 70 --json; then
+            echo "ERROR: weak contract should have failed --min-score 70" >&2
+            exit 1
+          fi
       - run: python3 -m unittest discover -s tests

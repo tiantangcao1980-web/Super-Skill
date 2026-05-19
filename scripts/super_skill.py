@@ -6368,6 +6368,12 @@ def cmd_design_audit(args: argparse.Namespace) -> int:
     return EXIT_RUNTIME if not ok else EXIT_OK
 
 
+DESIGN_PREFLIGHT_CHECK_IDS = {
+    "product-context", "design-context", "shape-brief",
+    "tokens", "visual-references", "anti-pattern-gate",
+}
+
+
 def cmd_design_preflight(args: argparse.Namespace) -> int:
     project = Path(args.project)
     if not project.expanduser().exists():
@@ -6377,8 +6383,33 @@ def cmd_design_preflight(args: argparse.Namespace) -> int:
             print(f"error: project path not found: {project}", file=sys.stderr)
         return EXIT_USAGE
 
+    extra_required: list[str] = []
+    for raw in args.require or []:
+        for item in raw.split(","):
+            item = item.strip()
+            if not item:
+                continue
+            if item not in DESIGN_PREFLIGHT_CHECK_IDS:
+                if args.json:
+                    emit_json(False, {"message": f"unknown --require id: {item}",
+                                      "known": sorted(DESIGN_PREFLIGHT_CHECK_IDS)}, code="USAGE")
+                else:
+                    print(f"error: unknown --require id: {item}", file=sys.stderr)
+                    print(f"  known: {sorted(DESIGN_PREFLIGHT_CHECK_IDS)}", file=sys.stderr)
+                return EXIT_USAGE
+            extra_required.append(item)
+
     payload = design_preflight_scan(project, max_findings=args.max_findings)
-    ok = not args.strict or payload["mutation"] == "open"
+    failing_required = [c["id"] for c in payload["checks"]
+                        if c["id"] in extra_required and not c["ok"]]
+    payload["required_failed"] = failing_required
+    payload["required"] = sorted(set(extra_required))
+    mutation_open = payload["mutation"] == "open"
+    ok = True
+    if args.strict and not mutation_open:
+        ok = False
+    if failing_required:
+        ok = False
     if args.json:
         emit_json(ok, payload, code="DESIGN_PREFLIGHT_BLOCKED" if not ok else None)
     else:
@@ -6386,9 +6417,12 @@ def cmd_design_preflight(args: argparse.Namespace) -> int:
         print(payload["preflight"])
         for check in payload["checks"]:
             mark = "ok" if check["ok"] else "missing"
-            print(f"- {check['id']}: {mark}")
+            required_mark = " (required)" if check["id"] in extra_required else ""
+            print(f"- {check['id']}: {mark}{required_mark}")
             if not check["ok"]:
                 print(f"  recommendation: {check['recommendation']}")
+        if failing_required:
+            print(f"required checks failing: {', '.join(failing_required)}")
     return EXIT_RUNTIME if not ok else EXIT_OK
 
 
@@ -6830,8 +6864,11 @@ def goal_build_contract(args: argparse.Namespace) -> dict:
 
 def cmd_goal(args: argparse.Namespace) -> int:
     payload = goal_build_contract(args)
+    min_score = getattr(args, "min_score", 0) or 0
+    ok = payload["score"] >= min_score
+    payload["min_score"] = min_score
     if args.json:
-        emit_json(True, payload)
+        emit_json(ok, payload, code="GOAL_BELOW_MIN_SCORE" if not ok else None)
     else:
         print(payload["goal"])
         print()
@@ -6839,7 +6876,9 @@ def cmd_goal(args: argparse.Namespace) -> int:
         print(f"Audit-friendliness: {verdict} ({payload['score']}/100)")
         for warning in payload["warnings"]:
             print(f"warning: {warning}")
-    return EXIT_OK
+        if not ok:
+            print(f"error: score {payload['score']} < required min-score {min_score}", file=sys.stderr)
+    return EXIT_RUNTIME if not ok else EXIT_OK
 
 
 def cmd_describe(args: argparse.Namespace) -> int:
@@ -7350,6 +7389,17 @@ def build_parser() -> argparse.ArgumentParser:
     design_preflight_p.add_argument("--project", default=".", help="project root or frontend surface to check")
     design_preflight_p.add_argument("--max-findings", type=int, default=50)
     design_preflight_p.add_argument("--strict", action="store_true", help="exit non-zero when required context or anti-pattern gate is blocked")
+    design_preflight_p.add_argument(
+        "--require",
+        action="append",
+        default=[],
+        metavar="CHECK_ID",
+        help=(
+            "treat this check as required; exit non-zero if it is missing. "
+            "Repeatable or comma-separated. "
+            "Valid: product-context, design-context, shape-brief, tokens, visual-references, anti-pattern-gate."
+        ),
+    )
     design_preflight_p.add_argument("--json", action="store_true")
     design_preflight_p.set_defaults(func=cmd_design_preflight)
 
@@ -7435,6 +7485,12 @@ def build_parser() -> argparse.ArgumentParser:
     goal_p.add_argument("--budget", type=int, default=None, help="token budget for the Codex goal")
     goal_p.add_argument("--sdd-path", default=None, help="OpenSpec/spec-driven change path, e.g. openspec/changes/add-rerank")
     goal_p.add_argument("--first-action", default=None, help="explicit first action; overrides SDD read/report default")
+    goal_p.add_argument(
+        "--min-score",
+        type=int,
+        default=0,
+        help="exit non-zero if audit-friendliness score is below this threshold (0-100). Use in CI to enforce strong goal contracts.",
+    )
     goal_p.add_argument("--json", action="store_true")
     goal_p.set_defaults(func=cmd_goal)
 
