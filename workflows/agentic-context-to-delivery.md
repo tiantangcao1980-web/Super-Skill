@@ -2,6 +2,8 @@
 
 Use this workflow when a project is driven by an AI agent or LLM and quality depends on both input clarity and output verification.
 
+> **Orchestration.** Run the phases with `skill-composition` (frame → build → gate; couple phases through each phase's `Outputs` as shared artifacts; serialize conflicting skills).
+
 ## 0. Intent Contract
 
 Skills:
@@ -23,6 +25,7 @@ Skills:
 - `prompt-cache-layering`
 - `token-budgeting`
 - `file-curation`
+- `domain-context-adr`
 - `model-adaptation-contract`
 
 Outputs:
@@ -38,6 +41,9 @@ Outputs:
 
 Skills:
 
+- `engineering-core-loop`
+- `karpathy-discipline`
+- `goal-driven-workflow`
 - `dev-tool-adapter`
 - `harness-engineering`
 - `agent-legible-architecture`
@@ -65,6 +71,8 @@ Skills:
 - `qa-strategy`
 - `verification-loop`
 - `security-review`
+- `safe-command-governance`
+- `performance`
 - `checkpoint-rollback-safety`
 - `browser-automation`
 - `output-quality-gate`
@@ -109,3 +117,12 @@ Outputs:
 - commit, PR, release, or deployed artifact
 - concise final report
 - reusable lessons routed into memory, searchable history, docs, tests, automation, skills, or rejected negative memory
+
+## Completion Gate
+
+Do not declare done until:
+
+- Each phase produced its named `Outputs`, or recorded why it was skipped.
+- Quality Verification shows fresh evidence, not a stale or assumed pass.
+- The intent contract's definition of done and output shape are satisfied.
+- Lessons are routed into memory/docs/skills (or rejected as negative memory).

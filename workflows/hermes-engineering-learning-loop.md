@@ -2,6 +2,8 @@
 
 Use this workflow after complex agent work, repeated failures, long sessions, or any task where future agents should become better.
 
+> **Orchestration.** Sequence these stages with `skill-composition` (frame → build → gate); each stage consumes the prior stage's named outputs as shared artifacts.
+
 ## 1. Capture The Experience
 
 Skills:

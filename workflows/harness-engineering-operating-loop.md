@@ -2,6 +2,8 @@
 
 Use this workflow when a team wants to move from AI-assisted development to AI-first delivery.
 
+> **Orchestration.** Apply `skill-composition` to sequence each stage's skills (frame → build → gate) and to couple stages through their named outputs as shared artifacts.
+
 ## 0. Readiness Assessment
 
 Skills/tools:
