@@ -100,10 +100,35 @@ Defaults above are deliberately non-generic. Do not silently reset to `5,5,5,5,5
 
 ---
 
+## 7.5 POSITIVE VOCABULARY — TOKEN TRIPLETS & GEOMETRY TRANSLATION
+
+> Adapted from [google-labs-code/stitch-skills](https://github.com/google-labs-code/stitch-skills) (Apache-2.0, © Google LLC — not an official Google product). Banning the mean is half the job; the other half is a precise vocabulary for what to write instead.
+
+**Write tokens as triplets, never bare CSS.** Every color/spacing/radius token =
+`Semantic Name (value) – functional role`. Intent over syntax:
+
+```
+Deep Muted Teal-Navy (#294056) – primary actions
+Parchment (#faf7f0) – page canvas, never #fff
+```
+
+**Translate raw CSS into physical language** so prompts describe intent, not
+syntax (LLMs reproduce intent more consistently than property soup):
+
+| Raw CSS | Write instead |
+|---|---|
+| `border-radius: 9999px` | "pill-shaped" |
+| `border-radius: 16px` | "softly rounded" |
+| `border-radius: 0` | "hard-edged / architectural" |
+| `box-shadow` (large, soft) | "floating / elevated above the surface" |
+| `box-shadow: none` + border | "flush / inset / recessed" |
+| `backdrop-blur` | "frosted overlay" (overlays only — see §7 ban) |
+| tight `letter-spacing` on display | "compressed / engineered" |
+
 ## 8. CONDITIONAL RULES (driven by dials)
 
 - **IF `DESIGN_VARIANCE` > 7** → asymmetric layouts BANNED to be symmetric; every section must have a distinct structure. Use `grid-template-columns: 2fr 1fr 1fr` patterns; break the 12-column grid at least once per page.
-- **IF `VISUAL_DENSITY` > 7** → generic card containers BANNED. Use `border-t` / `divide-y` for data tables instead of boxed cards. Show 3× more information per screen.
+- **IF `VISUAL_DENSITY` > 7** → generic card containers BANNED. Use `border-t` / `divide-y` for data tables instead of boxed cards. Show 3× more information per screen. Numeric/tabular values use a **monospace** face for alignment.
 - **IF `VISUAL_DENSITY` < 3** → card stacks BANNED. Use whitespace as the container. Minimum 120px vertical gap between sections.
 - **IF `MOTION_INTENSITY` > 6** → at least one continuous micro-animation on the hero (not a one-time entrance). Examples: marquee, typewriter, shimmer, gradient drift.
 - **IF `MOTION_INTENSITY` < 3** → BANNED: any animation > 200ms; BANNED: scroll-triggered reveals; use static images only.
@@ -111,6 +136,20 @@ Defaults above are deliberately non-generic. Do not silently reset to `5,5,5,5,5
 - **IF `CONTRAST` < 4** → BANNED: black text on white; use `#44403c` on `#fafaf9`.
 
 ---
+
+## 8.5 QUANTITATIVE THRESHOLDS (universal, from stitch taste-design)
+
+Hard numbers that keep "taste" from being vague. Apply regardless of dials:
+
+- Body prose line length ≤ **65 characters** (`max-w-[65ch]`).
+- Full-height sections use `min-h-[100dvh]`, never `h-screen` (mobile viewport
+  bug).
+- Tap targets ≥ **44×44px**.
+- Motion: animate **only `transform` / `opacity` / `color`** — never layout
+  properties. Springs around **stiffness 100 / damping 20**; avoid bounce/elastic
+  unless the brand is explicitly playful.
+- Prefer **OKLCH** for new color ramps; raise to min `L≈45%` for accents on
+  white.
 
 ## 9. PRE-FLIGHT CHECKLIST
 
@@ -147,6 +186,11 @@ Components
 Dials conformance
 - [ ] DESIGN_VARIANCE, MOTION_INTENSITY, VISUAL_DENSITY declared
 - [ ] Conditional rules matching my dial values are applied
+
+Thresholds
+- [ ] Body line length ≤ 65ch
+- [ ] Tap targets ≥ 44px; full-height uses 100dvh not h-screen
+- [ ] Animations touch only transform/opacity/color
 ```
 
 **If any item is unchecked, revise before output.** This checklist is mandatory for every generated page. Do not skip.

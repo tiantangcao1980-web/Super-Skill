@@ -3,7 +3,7 @@ name: cli-design
 description: |
   CLI 设计规范 skill:对齐 opencli + CLI-Anything,把"做命令行工具"这件事工业化。
   覆盖命令树结构、flag 命名、输入输出、退出码、错误码、JSON schema 暴露,以及"任意能力 CLI 化"的 5 步法。
-  触发词:「设计 CLI」「命令行接口」「opencli」「CLI-Anything」「命令树」「子命令」「CLI 规范」「scaffold CLI」「CLI 化」。
+  触发词:「设计 CLI」「命令行接口」「CLI-Anything」「命令树」「子命令」「CLI 规范」「scaffold CLI」「CLI 化」。
   适用阶段:开发者工具立项、给 LLM/agent 暴露能力、把已有逻辑封装为可调用 CLI。
 ---
 
@@ -13,7 +13,7 @@ description: |
 
 ## 灵感来源
 
-- [opencli](https://github.com/jackwener/opencli) —— Open CLI Specification(机器可发现的 CLI)
+- [opencli](https://github.com/jackwener/opencli) —— 把任意网站/登录态浏览器变成确定性 CLI 接口(AI agent 可调用);这里只借鉴它"机器可发现、确定性接口"的设计理念。**驱动网站/写 adapter 本身见 `browser-automation` skill**(那里是 opencli 工具的归属)。
 - [CLI-Anything](https://github.com/HKUDS/CLI-Anything) —— 把任意能力封装为 CLI 的方法论
 
 本 skill 把两者的精华提炼成可执行规范,**不复制原文**。

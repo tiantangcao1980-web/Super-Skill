@@ -2,6 +2,8 @@
 
 Use this flow when a project starts from an idea, rough requirement, product bet, feature request, or redesign request.
 
+> **Orchestration.** Sequence these phases with `skill-composition` (frame → build → gate; serialize conflicting skills). Each phase's `Outputs` are the shared-artifact seam the next phase consumes — never re-decide an upstream Output.
+
 ## 0. Intake
 
 Skills:
@@ -9,6 +11,7 @@ Skills:
 - `intent-contract`
 - `context-engineering`
 - `token-budgeting`
+- `domain-context-adr`
 
 Clarify:
 
@@ -68,17 +71,20 @@ Outputs:
 
 Skills:
 
+- `design-craft-gate`
 - `designdna`
 - `design-templates`
+- `anti-slop`
 - `copywriting-design`
 - relevant UI library skill
 
 Outputs:
 
-- DESIGN.md
+- DESIGN.md (with parseable `name`+`colors` frontmatter contract)
 - Tokens
 - Copy matrix
 - Banned patterns
+- Cross-page consistency loop for multi-surface projects
 
 ## 5. Interface
 
@@ -99,6 +105,9 @@ Outputs:
 
 Skills:
 
+- `engineering-core-loop`
+- `karpathy-discipline`
+- `test-driven-development`
 - `frontend-patterns`
 - `backend-patterns`
 - `database-patterns`
@@ -111,6 +120,7 @@ Outputs:
 - Working implementation
 - Tests around risky behavior
 - Clear code ownership
+- Every changed line traceable to the request (no speculative scope)
 
 ## 7. Quality
 
@@ -121,8 +131,10 @@ Skills:
 - `test-generation`
 - `e2e-testing`
 - `debugging`
+- `performance`
 - `code-review`
 - `security-review`
+- `safe-command-governance`
 - `verification-loop`
 - `output-quality-gate`
 
@@ -164,3 +176,12 @@ Outputs:
 - README/docs
 - Lessons learned
 - Knowledge base updates
+
+## Completion Gate
+
+Do not declare done until:
+
+- Every phase produced its named `Outputs`, or recorded why it was skipped.
+- The Quality phase shows fresh verification evidence (not a stale claim).
+- The intent contract's definition of done is met and the output shape matches.
+- Reusable lessons are routed into memory, docs, tests, or skills (or explicitly rejected as negative memory).

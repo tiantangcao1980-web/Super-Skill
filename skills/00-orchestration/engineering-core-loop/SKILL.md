@@ -53,6 +53,8 @@ memory=<candidate|skipped:reason>
 
 ## When To Use Other Skills
 
+- Use `skill-composition` when more than one skill applies and you need the
+  trigger order, handoffs, and conflict rules across them.
 - Use `goal-driven-workflow` when the task spans multiple phases or sessions.
 - Use `test-driven-development` for any protected behavior change.
 - Use `karpathy-discipline` when scope may bloat or assumptions are fuzzy.

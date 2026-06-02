@@ -26,6 +26,7 @@ flowchart LR
 - `token-budgeting`: 保留高信号上下文，减少重复和噪声。
 - `persistent-memory-curation`: 决定什么进入长期记忆、会话搜索、项目上下文或技能。
 - `skill-evolution-loop`: 从成功经验和失败模式中演进技能。
+- `skill-composition`: 决定多技能的触发顺序、共享工件交接与冲突处理（frame → build → gate）。
 - `auto-flow`: 串联主闭环。
 - `ralph-loop`: 对长任务执行小步循环和验证。
 - `durable-agent-board`: 把跨角色、可恢复、需人工解锁的任务放进持久队列。

@@ -1453,6 +1453,42 @@ def cmd_vendor(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def validate_workflows(workflows_dir: Path | None = None) -> list[str]:
+    """Workflow integrity check (deterministic validation applied to the
+    workflows themselves):
+
+    1. Every skill referenced as a ``- `name` `` list item must be a real
+       installable skill (or an allowlisted non-skill such as a sibling
+       workflow or the memory plugin).
+    2. Every workflow must carry artifact/gate discipline: an ``Outputs:``
+       block or a Completion Gate / Done / Audit heading.
+    """
+    workflows_dir = workflows_dir or (ROOT / "workflows")
+    if not workflows_dir.exists():
+        return []
+    known_skills = {s.name for s in discover_skills("all")}
+    workflow_stems = {p.stem for p in workflows_dir.glob("*.md")}
+    reference_allowlist = workflow_stems | {
+        "super-skill-memory-harness",  # Codex plugin, not an installable skill
+    }
+    known = known_skills | reference_allowlist
+    failures: list[str] = []
+    for wf in sorted(workflows_dir.glob("*.md")):
+        if wf.name.lower() == "readme.md":
+            continue
+        text = wf.read_text(encoding="utf-8")
+        for ref in re.findall(r"(?m)^\s*-\s+`([a-z0-9][a-z0-9-]+)`", text):
+            if ref not in known:
+                failures.append(f"{wf.name}: references unknown skill `{ref}`")
+        has_outputs = "Outputs:" in text
+        has_gate = bool(re.search(r"(?im)^#{1,3}\s.*\b(gate|done|completion|audit)\b", text))
+        if not (has_outputs or has_gate):
+            failures.append(
+                f"{wf.name}: missing Outputs or Completion Gate (artifact/gate discipline)"
+            )
+    return failures
+
+
 def cmd_validate(args: argparse.Namespace) -> int:
     skills = discover_skills("all")
     failures = []
@@ -1473,6 +1509,16 @@ def cmd_validate(args: argparse.Namespace) -> int:
             }
         )
 
+    workflow_failures = validate_workflows()
+    if workflow_failures:
+        failures.append(
+            {
+                "skill": {"name": "<workflows>"},
+                "errors": workflow_failures,
+            }
+        )
+    workflows_checked = len(list((ROOT / "workflows").glob("*.md"))) if (ROOT / "workflows").exists() else 0
+
     design_brands = [p for p in (ROOT / "resources" / "design-md").iterdir() if p.is_dir()] if (ROOT / "resources" / "design-md").exists() else []
     vendor_skills = discover_vendor_skills()
     payload = {
@@ -1481,6 +1527,8 @@ def cmd_validate(args: argparse.Namespace) -> int:
         "warnings_total": sum(len(w["warnings"]) for w in warnings),
         "design_brands": len(design_brands),
         "vendor_skill_files": len(vendor_skills),
+        "workflows_checked": workflows_checked,
+        "workflow_failures": workflow_failures,
         "failures": failures,
         "warnings": warnings,
     }
@@ -1491,6 +1539,7 @@ def cmd_validate(args: argparse.Namespace) -> int:
         print(f"Installable skills: {len(skills)}")
         print(f"Design brand systems: {len(design_brands)}")
         print(f"Vendor skill files: {len(vendor_skills)}")
+        print(f"Workflows checked: {workflows_checked}")
         print(f"Warnings: {payload['warnings_total']}")
         if failures:
             print("\nFailures:")

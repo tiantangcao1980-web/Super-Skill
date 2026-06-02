@@ -2,6 +2,8 @@
 
 Use this workflow when a task is too large for a single prompt but should not become an unmanaged autonomous run.
 
+> **Orchestration.** This is a `skill-composition` chain: frame (`intent-contract` → `product-spec`/specs → goal contract) → build (`ralph-loop` slices) → gate (`code-simplifier` after green → audit → `agent-memory-dream-loop`). Each step hands the next a file-backed artifact, not chat memory.
+
 ## 1. Clarify
 
 Use `intent-contract` or Plan mode to turn the user request into:
