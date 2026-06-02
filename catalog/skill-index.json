@@ -1,5 +1,5 @@
 {
-  "generated_at": 1778166790,
+  "generated_at": 1780376496,
   "installable_skills": [
     {
       "name": "auto-flow",
@@ -80,6 +80,14 @@
       "stage_label": "Orchestration",
       "source": "core",
       "path": "skills/00-orchestration/ralph-loop"
+    },
+    {
+      "name": "skill-composition",
+      "description": "Use when more than one skill could apply to a task and the agent must decide trigger order, how skills hand off, and how to avoid conflicts. Covers process-before-implementation ordering, gatekeeper-last review, shared-artifact coupling, conflict serialization, override precedence, and the single-vs-combined decision. Trigger when a request spans research, design, build, test, and ship; when two skills give conflicting guidance; when building an entry/router skill that dispatches others.",
+      "stage": "00-orchestration",
+      "stage_label": "Orchestration",
+      "source": "core",
+      "path": "skills/00-orchestration/skill-composition"
     },
     {
       "name": "toolset-sandbox-routing",
@@ -251,7 +259,7 @@
     },
     {
       "name": "design-templates",
-      "description": "设计规范文档 skill:产出标准化的 DESIGN.md / Design Tokens / 配色卡 / 字体表 / 间距规范。 灵感:tiantangcao1980-web/awesome-design-md —— 设计规范模板集。 触发词:「DESIGN.md」「设计规范」「设计 token」「色板」「字体规范」「布局规范」「设计系统文档」「style guide」「设计文档模板」。 适用阶段:项目立项后的设计规范文档化、design system 初始化、新人 onboarding、设计稿 → 代码 token 同步。",
+      "description": "设计规范文档 skill:产出标准化的 DESIGN.md / Design Tokens / 配色卡 / 字体表 / 间距规范。 灵感:tiantangcao1980-web/awesome-design-md —— 设计规范模板集。 触发词:「DESIGN.md」「设计规范」「设计 token」「色板」「字体规范」「布局规范」「设计系统文档」「style guide」「设计文档模板」「多页一致性」「站点地图」「整站设计」「多页面生成」。 适用阶段:项目立项后的设计规范文档化、design system 初始化、新人 onboarding、设计稿 → 代码 token 同步。",
       "stage": "04-design-system",
       "stage_label": "Design",
       "source": "core",
@@ -579,7 +587,7 @@
     },
     {
       "name": "cli-design",
-      "description": "CLI 设计规范 skill:对齐 opencli + CLI-Anything,把\"做命令行工具\"这件事工业化。 覆盖命令树结构、flag 命名、输入输出、退出码、错误码、JSON schema 暴露,以及\"任意能力 CLI 化\"的 5 步法。 触发词:「设计 CLI」「命令行接口」「opencli」「CLI-Anything」「命令树」「子命令」「CLI 规范」「scaffold CLI」「CLI 化」。 适用阶段:开发者工具立项、给 LLM/agent 暴露能力、把已有逻辑封装为可调用 CLI。",
+      "description": "CLI 设计规范 skill:对齐 opencli + CLI-Anything,把\"做命令行工具\"这件事工业化。 覆盖命令树结构、flag 命名、输入输出、退出码、错误码、JSON schema 暴露,以及\"任意能力 CLI 化\"的 5 步法。 触发词:「设计 CLI」「命令行接口」「CLI-Anything」「命令树」「子命令」「CLI 规范」「scaffold CLI」「CLI 化」。 适用阶段:开发者工具立项、给 LLM/agent 暴露能力、把已有逻辑封装为可调用 CLI。",
       "stage": "05-interface-and-cli",
       "stage_label": "Interface",
       "source": "core",
@@ -675,7 +683,7 @@
     },
     {
       "name": "browser-automation",
-      "description": "浏览器自动化 skill:LLM 探索 + Playwright 稳定回归 + Chrome MCP 真实交互三档,按场景选最轻量的。 覆盖 browser-use(Python LLM 驱动)、agent-browser(Vercel agent + 浏览器)、Playwright(工业级 E2E)、claude-in-chrome MCP(用户真实会话)。 触发词:「浏览器自动化」「E2E 测试」「agent 操作浏览器」「browser-use」「agent-browser」「Playwright」「视觉回归」「网页自动化」「填表机器人」。 适用阶段:design-dev-flow ⑥ 验证幕、写爬虫、做 E2E 回归、需要登录态的真实交互。",
+      "description": "浏览器自动化 skill:LLM 探索 + Playwright 稳定回归 + Chrome MCP 真实交互三档,按场景选最轻量的。 覆盖 browser-use(Python LLM 驱动)、agent-browser(Vercel agent + 浏览器)、opencli(adapter 反复抓取同站)、Playwright(工业级 E2E)、claude-in-chrome MCP(用户真实会话)。 触发词:「浏览器自动化」「E2E 测试」「agent 操作浏览器」「browser-use」「agent-browser」「opencli」「爬虫」「抓取网站」「Playwright」「视觉回归」「网页自动化」「填表机器人」「登录态」。 适用阶段:design-dev-flow ⑥ 验证幕、写爬虫、做 E2E 回归、需要登录态的真实交互。",
       "stage": "07-testing-and-quality",
       "stage_label": "Quality",
       "source": "core",
