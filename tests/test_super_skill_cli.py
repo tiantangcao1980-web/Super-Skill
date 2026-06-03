@@ -1350,6 +1350,36 @@ class SuperSkillCliTests(unittest.TestCase):
         self.assertIn("bigger", code)
         self.assertNotIn("tiny", code)
 
+    def test_validate_reports_workflow_integrity(self) -> None:
+        data = run_cli("validate")
+        self.assertGreaterEqual(data["workflows_checked"], 6)
+        self.assertEqual(data["workflow_failures"], [])
+
+    def test_validate_workflows_detects_unknown_skill_reference(self) -> None:
+        mod = _load_super_skill_module()
+        with tempfile.TemporaryDirectory() as td:
+            wf = Path(td) / "bogus.md"
+            wf.write_text(
+                "# Bogus\n\n## 1. Step\n\nSkills:\n\n"
+                "- `intent-contract`\n- `this-skill-does-not-exist`\n\n"
+                "Outputs:\n\n- something\n",
+                encoding="utf-8",
+            )
+            failures = mod.validate_workflows(Path(td))
+            self.assertTrue(any("this-skill-does-not-exist" in f for f in failures))
+            self.assertFalse(any("intent-contract" in f for f in failures))
+
+    def test_validate_workflows_requires_outputs_or_gate(self) -> None:
+        mod = _load_super_skill_module()
+        with tempfile.TemporaryDirectory() as td:
+            wf = Path(td) / "nogate.md"
+            wf.write_text(
+                "# Minimal Flow\n\n## Step One\n\nSkills:\n\n- `intent-contract`\n",
+                encoding="utf-8",
+            )
+            failures = mod.validate_workflows(Path(td))
+            self.assertTrue(any("missing Outputs or Completion Gate" in f for f in failures))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -47,7 +47,7 @@ Super Skill 是一个面向 AI coding agent 的全流程技能集合：从用户
 
 | 阶段 | 目录 | 代表技能 |
 | --- | --- | --- |
-| 编排/输入质量 | `skills/00-orchestration` | `intent-contract`, `goal-driven-workflow`, `context-engineering`, `prompt-cache-layering`, `toolset-sandbox-routing`, `durable-agent-board`, `ralph-loop` |
+| 编排/输入质量 | `skills/00-orchestration` | `intent-contract`, `skill-composition`, `goal-driven-workflow`, `context-engineering`, `prompt-cache-layering`, `toolset-sandbox-routing`, `durable-agent-board`, `ralph-loop` |
 | 调研 | `skills/01-research` | `user-research`, `market-research` |
 | 分析 | `skills/02-analysis` | `requirement-analysis`, `data-analysis` |
 | 产品 | `skills/03-product` | `product-spec`, `agentic-product-iteration` |
@@ -353,8 +353,11 @@ CI 会运行 `doctor`、`validate`、`plan`、ultra-lite profile plan、Hermes p
 - [Harness Engineering Validation](docs/harness-engineering-validation.md)
 - [Hermes Engineering Analysis](docs/hermes-engineering-analysis.md)
 - [Dev Tool, Model, and Memory Adaptation](docs/dev-tool-model-memory-adaptation.md)
+- [Workflow 设计哲学与 gate 约定](workflows/README.md)
+- [2026-06 Workflow-Philosophy 升级记录](docs/2026-06-workflow-philosophy-upgrade.md)
 - [端到端工作流](workflows/research-to-delivery.md)
 - [Agentic 上下文到交付工作流](workflows/agentic-context-to-delivery.md)
+- [目标驱动的 Agentic 交付](workflows/goal-driven-agentic-delivery.md)
 - [Harness Engineering Operating Loop](workflows/harness-engineering-operating-loop.md)
 - [Hermes Engineering Learning Loop](workflows/hermes-engineering-learning-loop.md)
 - [Adaptive Agent Memory Harness Loop](workflows/adaptive-agent-memory-harness-loop.md)

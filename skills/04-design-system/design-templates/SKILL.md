@@ -3,7 +3,7 @@ name: design-templates
 description: |
   设计规范文档 skill:产出标准化的 DESIGN.md / Design Tokens / 配色卡 / 字体表 / 间距规范。
   灵感:tiantangcao1980-web/awesome-design-md —— 设计规范模板集。
-  触发词:「DESIGN.md」「设计规范」「设计 token」「色板」「字体规范」「布局规范」「设计系统文档」「style guide」「设计文档模板」。
+  触发词:「DESIGN.md」「设计规范」「设计 token」「色板」「字体规范」「布局规范」「设计系统文档」「style guide」「设计文档模板」「多页一致性」「站点地图」「整站设计」「多页面生成」。
   适用阶段:项目立项后的设计规范文档化、design system 初始化、新人 onboarding、设计稿 → 代码 token 同步。
 ---
 
@@ -158,6 +158,19 @@ description: |
 - 小变更(加一个间距 token)直接提
 
 ---
+
+## 跨页一致性闭环(多页项目)
+
+> 借鉴 [google-labs-code/stitch-skills](https://github.com/google-labs-code/stitch-skills)(Apache-2.0,© Google LLC,非 Google 官方产品)的 `stitch-loop`。单页靠 anti-slop 控质量,**多页要靠一个闭环防止"每页各做各的、品牌悄悄漂移"**。
+
+四件套,缺一不可:
+
+1. **`SITE.md`(站点地图)** — 一次列全所有页面 + 每页职责,作为唯一权威清单。生成前先查它,**已存在的页面不重复生成**。
+2. **token 走 project 级,prompt 只描述布局** — 每页生成 prompt 内联 DESIGN.md 的"颜色快速参考/语义 token 名",但**不重抄 hex/字体**(对接 `designdna` 的正交分层 A/B);风格统一从 project 级注入。
+3. **`next-prompt.md`(传棒)** — 上一页跑完把"下一页该做什么 + 已确立的约定"写进传棒文件,下一页从约定起步,而不是从零重描。
+4. **`metadata.json`(持久化)** — 记录每页已生成状态、用的 token 版本、布局决策。断点可续,跨会话可恢复(对接 `skill-composition` 的共享工件接缝)。
+
+**最小流程**:`建 SITE.md → 注入 project 级 token → 逐页生成(查 SITE.md 防重 + 读 next-prompt.md)→ 写回 metadata.json + 更新传棒`。
 
 ## 反模式
 

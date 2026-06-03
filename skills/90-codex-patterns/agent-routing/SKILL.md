@@ -37,3 +37,9 @@ Every delegated or tool-routed task needs:
 ## Stop Conditions
 
 Stop routing and ask only when the next action is destructive, permission-bound, or materially ambiguous.
+
+## Scope Note
+
+This skill chooses the lightest execution *path* within a step. To order
+multiple *skills* across a task (frame → build → gate, handoffs, conflict
+rules), use `skill-composition`.

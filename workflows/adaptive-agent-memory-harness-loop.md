@@ -2,6 +2,8 @@
 
 Use this workflow when an AI-first project must support multiple developer tools, multiple LLMs, and durable learning without losing token efficiency.
 
+> **Orchestration.** Use `skill-composition` to sequence the loop's skills (frame → build → gate) and to couple stages through shared artifacts; conflicting skills run serially, never in parallel.
+
 ## Loop
 
 ```mermaid

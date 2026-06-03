@@ -60,6 +60,47 @@ inspired by Impeccable's context-first design vocabulary. It does not replace
 Load [references/design-context.md](references/design-context.md) when the
 project lacks `PRODUCT.md`, `DESIGN.md`, tokens, or a current shape brief.
 
+## Asset & Fact Protocol
+
+Run this before designing anything tied to a real brand, product, or library.
+
+- **Verify before design (Principle #0).** If the request names a real product,
+  version, or component library, confirm it exists and its current specs with a
+  quick `WebSearch` first. Ten seconds of checking saves an hour redoing work
+  built on a wrong assumption.
+- **Assets are facts, not memory.** Never guess a brand's colors, logo, or
+  imagery. Resolve them through a degradation chain and freeze the result:
+  1. Ask the user for brand assets or a guide when ambiguous.
+  2. Search official sources: brand site, press kit, public design system.
+  3. Download with fallbacks — logo: SVG → inline SVG → PNG; imagery: hero shot
+     → press image → representative frame.
+  4. `grep` real hex / token values out of the downloaded assets — never
+     eyeball a color.
+  5. Freeze into `brand-spec.md` (or `DESIGN.md` tokens) so every downstream
+     skill consumes verified facts, not guesses.
+
+This pairs with `designdna` as the token authority and feeds the shared-artifact
+seam in `skill-composition`.
+
+## Shape Gap Matrix
+
+Before writing the shape brief, fill this gap matrix (adapted from
+stitch-skills' `enhance-prompt`, Apache-2.0). Each row is `known | assumed |
+ask`; anything left `ask` blocks the build until resolved or explicitly waived.
+
+| Dimension | Resolved? |
+| --- | --- |
+| Platform / device (web, mobile, responsive range) | known / assumed / ask |
+| Page type & primary job (landing, dashboard, form, checkout…) | known / assumed / ask |
+| Structure & key sections (what blocks, in what order) | known / assumed / ask |
+| Style register (brand vs product, dials) | known / assumed / ask |
+| Colors & tokens (frontmatter contract present?) | known / assumed / ask |
+| Component vocabulary (which library / patterns) | known / assumed / ask |
+| Content & data (real copy, real numbers, states) | known / assumed / ask |
+
+Turn every `assumed` into an explicit assumption in the brief, and every `ask`
+into a question or a verified fact before UI edits.
+
 ## Required Preflight
 
 Before UI code edits, report this compact preflight in the work notes:
@@ -71,6 +112,7 @@ product_register=<brand|product|mixed|unknown>
 shape_brief=<pass|missing>
 tokens=<pass|missing|not_applicable>
 visual_refs=<pass|skipped:reason>
+assets=<verified|not_applicable|assumed:reason>
 anti_pattern_gate=<planned|pass|skipped:reason>
 mutation=<open|blocked>
 ```
@@ -109,6 +151,10 @@ Always apply these laws unless an existing brand system explicitly overrides
 them:
 
 - Use semantic tokens rather than one-off hex/px values.
+- Every `DESIGN.md` carries a parseable `name`+`colors` YAML frontmatter (the
+  machine contract from `designdna`); treat a missing frontmatter as an
+  incomplete design system. For multi-page surfaces, keep generation prompts to
+  layout/content and inject tokens once at project level.
 - Prefer OKLCH or documented palette ramps for new colors.
 - Avoid pure `#000000` and pure `#ffffff` as default surfaces/text.
 - Treat gray-on-color, default purple/cyan gradients, nested cards, side-tab
