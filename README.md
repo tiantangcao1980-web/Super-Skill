@@ -354,6 +354,7 @@ CI 会运行 `doctor`、`validate`、`plan`、ultra-lite profile plan、Hermes p
 - [Hermes Engineering Analysis](docs/hermes-engineering-analysis.md)
 - [Dev Tool, Model, and Memory Adaptation](docs/dev-tool-model-memory-adaptation.md)
 - [Workflow 设计哲学与 gate 约定](workflows/README.md)
+- [2026-06 Workflow-Philosophy 升级记录](docs/2026-06-workflow-philosophy-upgrade.md)
 - [端到端工作流](workflows/research-to-delivery.md)
 - [Agentic 上下文到交付工作流](workflows/agentic-context-to-delivery.md)
 - [目标驱动的 Agentic 交付](workflows/goal-driven-agentic-delivery.md)
